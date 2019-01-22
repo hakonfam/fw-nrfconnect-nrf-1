@@ -187,6 +187,8 @@ static int nrf_to_z_protocol(int proto)
 		return IPPROTO_TLS_1_2;
 	case NRF_PROTO_AT:
 		return NPROTO_AT;
+	case NRF_PROTO_DFU:
+		return NPROTO_DFU;
 	case 0:
 		return PROTO_WILDCARD;
 	/*
@@ -214,6 +216,8 @@ static int z_to_nrf_protocol(int proto)
 		return NRF_SPROTO_TLS1v2;
 	case NPROTO_AT:
 		return NRF_PROTO_AT;
+	case NPROTO_DFU:
+		return NRF_PROTO_DFU;
 	case PROTO_WILDCARD:
 		return 0;
 	/*
