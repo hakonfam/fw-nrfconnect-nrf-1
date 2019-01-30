@@ -15,3 +15,8 @@ add_subdirectory(drivers)
 set(               NRFXLIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../nrfxlib)
 assert_exists(     NRFXLIB_DIR)
 add_subdirectory(${NRFXLIB_DIR} ${PROJECT_BINARY_DIR}/nrfxlib)
+
+# Add the lwm2m repository
+set(               NRFXLIB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../lwm2m)
+assert_exists(     NRFXLIB_DIR)
+add_subdirectory(${NRFXLIB_DIR} ${PROJECT_BINARY_DIR}/lwm2m)

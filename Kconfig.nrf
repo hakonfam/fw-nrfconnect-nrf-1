@@ -12,5 +12,6 @@ rsource "drivers/Kconfig"
 rsource "ext/Kconfig"
 
 orsource "../nrfxlib/Kconfig.nrfxlib"
+orsource "../lwm2m/Kconfig"
 
 endmenu
