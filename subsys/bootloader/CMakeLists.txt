@@ -1,6 +1,7 @@
 add_subdirectory(c_runtime_setup)
 add_subdirectory(provision)
 add_subdirectory(image/fw_metadata)
+set(KERNEL_ELF ${IMAGE}kernel_elf)
 
 set_property(
   GLOBAL APPEND PROPERTY
@@ -11,7 +12,7 @@ set_property(
 set_property(
   GLOBAL APPEND PROPERTY
   HEX_FILES_TO_MERGE_TARGET
-  ${logical_target_for_zephyr_elf}
+  ${KERNEL_ELF}
 )
 
 add_subdirectory_ifdef(CONFIG_SECURE_BOOT_CRYPTO bl_crypto)
