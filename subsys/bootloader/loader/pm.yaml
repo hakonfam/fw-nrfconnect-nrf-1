@@ -1,7 +1,4 @@
-#include <autoconf.h>
 b0:
   placement: {before: [mcuboot, app]}
-#ifndef CONFIG_SOC_NRF9160
 provision:
   placement: last
-#endif

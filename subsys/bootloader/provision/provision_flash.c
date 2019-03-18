@@ -21,11 +21,7 @@ typedef struct {
 } provision_flash_t;
 
 static const provision_flash_t *p_provision_data =
-#ifdef CONFIG_SOC_NRF9160
-	(provision_flash_t *)NRF_UICR_S->OTP;
-#else
 	(provision_flash_t *)PM_CFG_PROVISION_ADDRESS;
-#endif
 
 u32_t s0_address_read(void)
 {
