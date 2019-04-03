@@ -182,7 +182,7 @@ static void spm_config_flash(void)
 
 		NRF_SPU->FLASHREGION[i].PERM = flash_perm[i];
 
-		PRINT("%02u 0x%05x 0x%05x \t", i, 8 * KB(i), 8 * KB(i + 1));
+		PRINT("%02u 0x%05x 0x%05x \t", i, 32 * KB(i), 32 * KB(i + 1));
 		PRINT("%s", flash_perm[i] & FLASH_SECURE ? "Secure\t\t" :
 							   "Non-Secure\t");
 
@@ -216,7 +216,7 @@ static void spm_config_sram(void)
 
 		NRF_SPU->RAMREGION[i].PERM = sram_perm[i];
 
-		PRINT("%02u 0x%05x 0x%05x\t", i, 4 * KB(i), 4 * KB(i + 1));
+		PRINT("%02u 0x%05x 0x%05x\t", i, 8 * KB(i), 8 * KB(i + 1));
 		PRINT("%s", sram_perm[i] & SRAM_SECURE ? "Secure\t\t" :
 							 "Non-Secure\t");
 
