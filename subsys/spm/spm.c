@@ -18,6 +18,7 @@
 #include <cortex_m/tz.h>
 
 #include <nrfx.h>
+#include <pm_config.h>
 
 /*
  *  * The following security configuration for Flash and SRAM is applied:
@@ -160,19 +161,26 @@ extern int irq_target_state_is_secure(unsigned int irq);
 	((SPU_PERIPHID_PERM_LOCK_Locked << SPU_PERIPHID_PERM_LOCK_Pos) &       \
 	 SPU_PERIPHID_PERM_LOCK_Msk)
 
+/* Size of secure attribution configurable flash region */
+#define FLASH_SECURE_ATTRIBUTION_REGION_SIZE (32*1024)
+#define LAST_SECURE_ADDRESS (PM_SPM_ADDRESS + PM_SPM_SIZE)
+#define LAST_SECURE_REGION_INDEX \
+	((LAST_SECURE_ADDRESS/FLASH_SECURE_ATTRIBUTION_REGION_SIZE) - 1)
+
 static void spm_config_flash(void)
 {
-	/* Lower 256 kB of flash is allocated to MCUboot (if present)
-	 * and to the Secure firmware image. The rest of flash is
-	 * allocated to Non-Secure firmware image.
+	/* Regions of flash up to and including SPM are configured as Secure.
+	 * The rest of flash is configured as Non-Secure.
 	 */
 	static const u32_t flash_perm[] = {
-		/* Configuration for Regions 0 - 7 (0 - 256 kB) */
-		[0 ... 7] = FLASH_READ | FLASH_WRITE | FLASH_EXEC |
-			    FLASH_LOCK | FLASH_SECURE,
-		/* Configuration for Regions 8 - 31 (256 kB - 1 MB) */
-		[8 ... 31] = FLASH_READ | FLASH_WRITE | FLASH_EXEC |
-			     FLASH_LOCK | FLASH_NONSEC,
+		/* Configuration for Secure Regions */
+		[0 ... LAST_SECURE_REGION_INDEX] =
+			FLASH_READ | FLASH_WRITE | FLASH_EXEC |
+			FLASH_LOCK | FLASH_SECURE,
+		/* Configuration for Non Secure Regions */
+		[(LAST_SECURE_REGION_INDEX + 1) ... 31] =
+			FLASH_READ | FLASH_WRITE | FLASH_EXEC |
+			FLASH_LOCK | FLASH_NONSEC,
 	};
 
 	PRINT("Flash region\t\tDomain\t\tPermissions\n");
@@ -374,7 +382,7 @@ void spm_jump(void)
 	/* Extract initial MSP of the Non-Secure firmware image.
 	 * The assumption is that the MSP is located at VTOR_NS[0].
 	 */
-	u32_t *vtor_ns = (u32_t *)DT_FLASH_AREA_IMAGE_0_NONSECURE_OFFSET_0;
+	u32_t *vtor_ns = (u32_t *)PM_APP_ADDRESS;
 
 	PRINT("SPM: MSP_NS %x\n", vtor_ns[0]);
 
