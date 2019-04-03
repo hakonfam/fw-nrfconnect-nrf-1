@@ -11,6 +11,14 @@ menuconfig SPM
 
 if SPM
 
+config PARTITION_MANAGER_RESERVED_SPACE_SPM
+	hex "Flash space reserved for SPM."
+	default 0x8000
+	help
+	  Flash space set aside for the SPM. Note, the name
+	  of this configuration needs to match the requirements set by the
+	  script 'partition_manager.py'. See pm.yml.
+
 config SPM_BOOT_SILENTLY
 	bool "Boot silently"
 	default n
