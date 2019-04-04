@@ -27,6 +27,8 @@ manifest:
       # nRF Connect SDK base URL.
     - name: ncs
       url-base: https://github.com/NordicPlayground
+    - name: haam
+      url-base: https://github.com/hakonfam
     - name: zephyrproject
       url-base: https://github.com/zephyrproject-rtos
     - name: throwtheswitch
@@ -38,10 +40,12 @@ manifest:
     - name: fw-nrfconnect-zephyr
       path: zephyr
       west-commands: scripts/west-commands.yml
-      revision: pull/120/head
-    - name: fw-nrfconnect-mcuboot
+      revision: hw-spm-mb
+      remote: haam
+    - name: fw-nrfconnect-mcuboot-1
       path: mcuboot
-      revision: pull/20/head
+      revision: hw-spm-mb
+      remote: haam
     - name: nrfxlib
       path: nrfxlib
       revision: 9bcc77b27d12162adc31d8c8c70f4e499338fbdb
