@@ -31,6 +31,21 @@ config SPM_BUILD_STRATEGY_SKIP_BUILD
 	# Mandatory option when being built through 'zephyr_add_executable'
 	bool "Skip building SPM"
 
+if SPM_BUILD_STRATEGY_SKIP_BUILD
+
+config SPM_BUILD_STRATEGY_SKIP_ADDRESS
+        hex "Start address of skipped hex file"
+
+config SPM_BUILD_STRATEGY_SKIP_SIZE
+        hex "Size of skipped hex file"
+
+endif  # SPM_BUILD_STRATEGY_SKIP_BUILD
+
+if !SPM_BUILD_STRATEGY_FROM_SOURCE
+config SPM_BUILD_STRATEGY_PLACEMENT
+        string "pm.yml style configuration of placement"
+endif
+
 config SPM_BUILD_STRATEGY_FROM_SOURCE
 	# Mandatory option when being built through 'zephyr_add_executable'
 	bool "Build from source"
