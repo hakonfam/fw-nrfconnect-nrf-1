@@ -12,6 +12,7 @@
 #include <logging/log.h>
 #include <gpio.h>
 #include <dfu/mcuboot.h>
+#include <pm_config.h>
 
 #define LED_PORT	LED0_GPIO_CONTROLLER
 
@@ -53,7 +54,7 @@ static int app_dfu_init(void)
 {
 	int i;
 
-	flash_address = DT_FLASH_AREA_IMAGE_1_OFFSET;
+	flash_address = PM_MCUBOOT_PARTITIONS_SECONDARY_ADDRESS;
 	for (i = 0; i < FLASH_PAGE_MAX_CNT; i++) {
 		is_flash_page_erased[i] = false;
 	}
@@ -104,7 +105,7 @@ static int app_download_client_event_handler(
 	case DOWNLOAD_CLIENT_EVT_DOWNLOAD_FRAG: {
 		struct flash_pages_info info;
 
-		if (dfu->object_size > DT_FLASH_AREA_IMAGE_1_SIZE) {
+		if (dfu->object_size > PM_MCUBOOT_PARTITIONS_SECONDARY_SIZE) {
 			printk("Requested file too big to fit in flash\n");
 			return 1;
 		}
