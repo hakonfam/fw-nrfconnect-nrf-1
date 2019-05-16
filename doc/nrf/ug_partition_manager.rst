@@ -63,7 +63,7 @@ Where ``option_dict_name`` can be:
 placement: dict
    The placement of the partition relative to other partitions, the end of flash, or the root image partition ``app``.
    A partition with the placement property set is either an *image partition* or a *placeholder partition*.
-   The partition with the same name as the image is the image partitition; all the others are placeholder partitions.
+   The partition with the same name as the image is the image partition; all the others are placeholder partitions.
    It is required that each :file:`pm.yml` defines exactly one *image partition*.
    The placement is formatted as a yaml dict.
    The valid keywords are listed below.
@@ -234,7 +234,7 @@ See :ref:`pm_generated_output_and_usage`.
 
 Generated output and usage
 ==========================
-For each sub-image and the root app, Partition Manager generates three files, one C header file :file:`pm_config.h`, one Kconfig file :file:`pm.config`, and one YAML file :file:`partitions.yml`.
+For each sub-image and the root app, Partition Manager generates three files, one C header file :file:`pm_config.h`, one Kconfig file :file:`pm.config`, and one YAML file :file:`prj.partitions.yml`.
 The C header file is used in the C code while the Kconfig file is imported in CMake.
 Both these files contain the start address and size of all partitions.
 The Kconfig file additionally contains the build directory and generated include folder for each image.
@@ -278,4 +278,73 @@ CMake usage
       :caption: mcuboot/zephyr/CmakeLists.txt
 
       --slot-size $<TARGET_PROPERTY:partition_manager,MCUBOOT_SLOT_SIZE>
+
+.. _ug_pm_predefined:
+
+Predefined configuration
+========================
+Predefined configuration is a feature intended for deployed products which consists of multiple images where
+only a subset of the included images will be upgradeable through firmware update mechanisms.
+One example of this is a device which includes a non-upgradable first stage bootloader and an upgradeable application.
+In these use cases, the images to be upgraded must be linked to the same address as that which is deployed.
+This is to avoid accidental overrides and incorrect configurations.
+
+Predefined configuration still allows the user to configure the **dynamic partition**.
+The dynamic partition consists of all memory adjacent to the "app" partition which is not occupied by a predefined partition.
+When Partition Manager is executed, it only operates on the dynamic partition, assuming that all other memory is reserved.
+Within the dynamic partition, it is allowed to define new partitions.
+The dynamic partition is re-sized by adding or removing partitions to the predefined configuration.
+
+.. _ug_pm_predefined_providing:
+
+Providing predefined configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The predefined configuration is provided through a YAML formatted configuration file.
+This file is similar to the regular :file:`pm.yml` configuration files, except
+that it also defines the start address for all partitions.
+The given configuration for a build can be found in :file:`${BUILD_DIR}/zephyr/include/generated/prj.partitions.yml`.
+To apply the current configuration as a predefined configuration, copy this file to the application source directory.
+When the build system sees a file named :file:`prj.partitions.yml` in an applications source directory, it is automatically provided to the partition manager script as the predefined configuration.
+If desired, the file can be modified as described below.
+
+.. _ug_pm_predefined_remove:
+
+Removing a predefined partition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+A predefined partition is removed by deleting its entry in :file:`prj.partitions.yml`.
+Only partitions adjacent to the ``app`` partition or other removed partitions can itself be removed.
+
+.. _ug_pm_predefined_modify:
+
+Modifying a predefined partition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To modify a predefined partition, remove the partition from :file:`prj.partitions.yml` as described above.
+This will add its reserved area to the dynamic partition.
+Now the partition will be configured by Partition Manager.
+If the partition being modified is an image partition, ensure that the build strategy for corresponding sub-image is "Build from source" and update the configured partition size.
+Only partitions adjacent with the ``app`` partition can be modified.
+
+.. _ug_pm_predefined_add_dynamic:
+
+Adding a partition to dynamic partition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+New partitions are added to the dynamic partition when they are included in the build (i.e. listed in a :file:`pm.yml` file.), but not listed in the predefined configuration.
+
+.. note::
+   Partitions that are included in :file:`prj.partitions.yml` will be ignored if found in the ``placement: before`` or ``placement: after`` property for new partition definitions.
+
+.. _ug_pm_predefined_add:
+
+Adding a predefined partition
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+To add a new predefined partition, add an entry for it in the file :file:`prj.partitions.yml`.
+This entry must define the properties ``address``, ``size``, and if applicable - ``span``.
+
+.. code-block:: yaml
+   :caption: Example of predefined configuration of partition with span.
+
+   partition_name:
+      address: 0xab00
+      size: 0x1000
+      span: [example]  # Only if this partition had the `span` property set originally.
 
