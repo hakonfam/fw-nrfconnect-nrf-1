@@ -289,11 +289,11 @@ One example of this is a device which includes a non-upgradable first stage boot
 In these use cases, the images to be upgraded must be linked to the same address as that which is deployed.
 This is to avoid accidental overrides and incorrect configurations.
 
-Predefined configuration still allows the user to configure the **dynamic partition**.
-The dynamic partition consists of all memory adjacent to the "app" partition which is not occupied by a predefined partition.
-When Partition Manager is executed, it only operates on the dynamic partition, assuming that all other memory is reserved.
-Within the dynamic partition, it is allowed to define new partitions.
-The dynamic partition is re-sized by adding or removing partitions to the predefined configuration.
+Predefined configuration still allows the user to configure partitions inside the **dynamic area**.
+The dynamic area consists of all memory adjacent to the "app" partition which is not occupied by a predefined partition.
+When Partition Manager is executed, it only operates on the dynamic area, assuming that all other memory is reserved.
+Within the dynamic area, it is allowed to define new partitions.
+The dynamic area is re-sized by adding or removing partitions to the predefined configuration.
 
 .. _ug_pm_predefined_providing:
 
@@ -319,16 +319,16 @@ Only partitions adjacent to the ``app`` partition or other removed partitions ca
 Modifying a predefined partition
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 To modify a predefined partition, remove the partition from :file:`prj.partitions.yml` as described above.
-This will add its reserved area to the dynamic partition.
+This will add its reserved area to the dynamic area.
 Now the partition will be configured by Partition Manager.
 If the partition being modified is an image partition, ensure that the build strategy for corresponding sub-image is "Build from source" and update the configured partition size.
 Only partitions adjacent with the ``app`` partition can be modified.
 
 .. _ug_pm_predefined_add_dynamic:
 
-Adding a partition to dynamic partition
+Adding a partition to dynamic area
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-New partitions are added to the dynamic partition when they are included in the build (i.e. listed in a :file:`pm.yml` file.), but not listed in the predefined configuration.
+New partitions are added to the dynamic area when they are included in the build (i.e. listed in a :file:`pm.yml` file.), but not listed in the predefined configuration.
 
 .. note::
    Partitions that are included in :file:`prj.partitions.yml` will be ignored if found in the ``placement: before`` or ``placement: after`` property for new partition definitions.
