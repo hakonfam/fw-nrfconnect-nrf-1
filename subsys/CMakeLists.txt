@@ -19,6 +19,7 @@ add_subdirectory_ifdef(CONFIG_NRFXLIB_NFC	nfc)
 add_subdirectory_ifdef(CONFIG_IS_SPM		spm)
 add_subdirectory_ifdef(CONFIG_FW_METADATA	fw_metadata)
 add_subdirectory_ifdef(CONFIG_SHELL_BT_NUS	shell)
+add_subdirectory_ifdef(CONFIG_DFU_DATA_WRITER dfu_data_writer)
 
 add_subdirectory(debug)
 add_subdirectory(partition_manager)

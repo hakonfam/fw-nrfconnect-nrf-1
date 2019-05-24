@@ -1,0 +1,21 @@
+#
+# Copyright (c) 2019 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
+
+menuconfig DFU_DATA_WRITER
+	bool "DFU Data writer"
+	select IMG_MANAGER
+	select FLASH
+	select FLASH_PAGE_LAYOUT
+	select MPU_ALLOW_FLASH_WRITE
+
+if (DFU_DATA_WRITER)
+
+module=DFU_DATA_WRITER
+module-dep=LOG
+module-str=DFU Data writer
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # DFU_DATA_WRITER

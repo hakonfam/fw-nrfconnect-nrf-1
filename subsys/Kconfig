@@ -25,4 +25,6 @@ rsource "fw_metadata/Kconfig"
 
 rsource "debug/Kconfig"
 
+rsource "dfu_data_writer/Kconfig"
+
 rsource "shell/Kconfig"
