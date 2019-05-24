@@ -8,26 +8,16 @@
 #include <flash.h>
 #include <bsd.h>
 #include <nrf_socket.h>
-#include <download_client.h>
-#include <logging/log.h>
-#include <gpio.h>
+#include <http_fota_dl.h>
 #include <dfu/mcuboot.h>
-#include <pm_config.h>
+#include <gpio.h>
 
 #define LED_PORT	LED0_GPIO_CONTROLLER
 
-static struct		device	*flash_dev;
-static bool		is_flash_page_erased[FLASH_PAGE_MAX_CNT];
 static volatile bool	start_dfu;
 static struct		device *gpiob;
 static struct		gpio_callback gpio_cb;
-static u32_t		flash_address;
 static k_tid_t		main_thread;
-
-static int download_client_callback(const struct download_client_evt *);
-
-
-static struct download_client dfu;
 
 
 /**@brief Recoverable BSD library error. */
@@ -43,164 +33,6 @@ void bsd_irrecoverable_error_handler(uint32_t err)
 
 	__ASSERT_NO_MSG(false);
 }
-
-
-/**@brief Initialize application. */
-static int app_dfu_init(void)
-{
-	int i;
-
-	flash_address = PM_MCUBOOT_SECONDARY_ADDRESS;
-	for (i = 0; i < FLASH_PAGE_MAX_CNT; i++) {
-		is_flash_page_erased[i] = false;
-	}
-	flash_dev = device_get_binding(DT_FLASH_DEV_NAME);
-	if (flash_dev == 0) {
-		printk("Nordic nRF flash driver was not found!\n");
-		return 1;
-	}
-
-	int retval = download_client_init(&dfu, download_client_callback);
-
-	if (retval != 0) {
-		printk("download_client_init() failed, err %d", retval);
-		return 1;
-	}
-	return 0;
-}
-
-
-/**@brief Start transfer of the file. */
-static int app_dfu_transfer_start(void)
-{
-	int retval = download_client_connect(&dfu, CONFIG_DOWNLOAD_HOST);
-
-	if (retval != 0) {
-		printk("download_client_connect() failed, err %d",
-			retval);
-		return 1;
-	}
-
-	retval = download_client_start(&dfu, CONFIG_DOWNLOAD_FILE, 0);
-	if (retval != 0) {
-		printk("download_client_start() failed, err %d",
-			retval);
-		return 1;
-	}
-	
-	return 0;
-}
-
-static int flash_page_erase_if_needed(u32_t address)
-{
-	int err;
-	struct flash_pages_info info;
-
-	err = flash_get_page_info_by_offs(flash_dev, address,
-		&info);
-	if (err != 0) {
-		printk("flash_get_page_info_by_offs returned error %d\n",
-			err);
-		return 1;
-	}
-	if (!is_flash_page_erased[info.index]) {
-		err = flash_write_protection_set(flash_dev, false);
-		if (err != 0) {
-			printk("flash_write_protection_set returned error %d\n",
-				err);
-			return 1;
-		}
-		err = flash_erase(flash_dev, info.start_offset, info.size);
-		if (err != 0) {
-			printk("flash_erase returned error %d at address %08x\n",
-				err, info.start_offset);
-			return 1;
-		}
-		is_flash_page_erased[info.index] = true;
-		err = flash_write_protection_set(flash_dev, true);
-		if (err != 0) {
-			printk("flash_write_protection_set returned error %d\n",
-				err);
-			return 1;
-		}
-	}
-	return 0;
-}
-
-
-static int download_client_callback(const struct download_client_evt *event)
-{
-	int err;
-
-	switch (event->id) {
-	case DOWNLOAD_CLIENT_EVT_FRAGMENT: {
-
-		size_t size;
-		err = download_client_file_size_get(&dfu, &size);
-		if (err != 0) {
-			printk("download_client_file_size_get returned error %d\n",
-				err);
-			return 1;
-		}
-		if (size > PM_MCUBOOT_SECONDARY_SIZE) {
-			printk("Requested file too big to fit in flash\n");
-			return 1;
-		}
-
-		err = flash_page_erase_if_needed(flash_address);
-		if (err != 0) {
-			return 1;
-		}
-		err = flash_write_protection_set(flash_dev, false);
-		if (err != 0) {
-			printk("flash_write_protection_set returned error %d\n",
-				err);
-			return 1;
-		}
-		err = flash_write(flash_dev, flash_address,
-				  event->fragment.buf, event->fragment.len);
-		if (err != 0) {
-			printk("Flash write error %d at address %08x\n",
-				err, flash_address);
-			return 1;
-		}
-		err = flash_write_protection_set(flash_dev, true);
-		if (err != 0) {
-			printk("flash_write_protection_set returned error %d\n",
-				err);
-			return 1;
-		}
-		flash_address += event->fragment.len;
-		break;
-	}
-
-	case DOWNLOAD_CLIENT_EVT_DONE:
-		flash_address = PM_MCUBOOT_SECONDARY_ADDRESS +
-				PM_MCUBOOT_SECONDARY_SIZE - 0x4;
-		err = flash_page_erase_if_needed(flash_address);
-		if (err != 0) {
-			return 1;
-		}
-		err = boot_request_upgrade(0);
-		if (err != 0) {
-			printk("boot_request_upgrade returned error %d\n", err);
-			return 1;
-		}
-		k_thread_resume(main_thread);
-		break;
-
-	case DOWNLOAD_CLIENT_EVT_ERROR: {
-		download_client_disconnect(&dfu);
-		printk("Download client error, please restart "
-			"the application\n");
-		break;
-	}
-	default:
-		break;
-	}
-	return 0;
-}
-
 
 /**@brief Turn on LED0 and LED1 if CONFIG_APPLICATION_VERSION
  * is 2 and LED0 otherwise.
@@ -262,6 +94,16 @@ static int dfu_button_init(void)
 	return 0;
 }
 
+
+void fota_dl_handler(const struct http_fota_dl_evt *evt)
+{
+	if (evt->id == HTTP_FOTA_DL_EVT_DOWNLOAD_CLIENT && \
+		evt->dl_evt->id == DOWNLOAD_CLIENT_EVT_DONE) {
+		k_thread_resume(main_thread);
+	}
+}
+
+
 static int application_init(void)
 {
 	int err;
@@ -276,7 +118,7 @@ static int application_init(void)
 		return err;
 	}
 
-	err = app_dfu_init();
+	err = http_fota_dl_init(fota_dl_handler);
 	if (err != 0) {
 		return err;
 	}
@@ -301,7 +143,8 @@ void main(void)
 		start_dfu = false;
 		while(!start_dfu) {
 		}
-		err = app_dfu_transfer_start();
+		err = http_fota_dl_start(CONFIG_DOWNLOAD_HOST,
+					 CONFIG_DOWNLOAD_FILE);
 		if (err != 0) {
 			return;
 		}
