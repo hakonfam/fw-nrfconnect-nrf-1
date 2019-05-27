@@ -22,6 +22,7 @@ static volatile bool	start_dfu;
 static struct		device *gpiob;
 static struct		gpio_callback gpio_cb;
 static u32_t		flash_address;
+static k_tid_t		main_thread;
 
 static int download_client_callback(const struct download_client_evt *);
 
@@ -86,6 +87,7 @@ static int app_dfu_transfer_start(void)
 			retval);
 		return 1;
 	}
+	
 	return 0;
 }
 
@@ -132,12 +134,19 @@ static int download_client_callback(const struct download_client_evt *event)
 
 	switch (event->id) {
 	case DOWNLOAD_CLIENT_EVT_FRAGMENT: {
-#if 0
-		if (dfu->file_size > PM_MCUBOOT_SECONDARY_SIZE) {
+
+		size_t size;
+		err = download_client_file_size_get(&dfu, &size);
+		if (err != 0) {
+			printk("download_client_file_size_get returned error %d\n",
+				err);
+			return 1;
+		}
+		if (size > PM_MCUBOOT_SECONDARY_SIZE) {
 			printk("Requested file too big to fit in flash\n");
 			return 1;
 		}
-#endif
+
 		err = flash_page_erase_if_needed(flash_address);
 		if (err != 0) {
 			return 1;
@@ -177,7 +186,7 @@ static int download_client_callback(const struct download_client_evt *event)
 			printk("boot_request_upgrade returned error %d\n", err);
 			return 1;
 		}
-		printk("DOWNLOAD_CLIENT_EVT_DOWNLOAD_DONE");
+		k_thread_resume(main_thread);
 		break;
 
 	case DOWNLOAD_CLIENT_EVT_ERROR: {
@@ -217,7 +226,7 @@ static int led_app_version(void)
 }
 
 void dfu_button_pressed(struct device *gpiob, struct gpio_callback *cb,
-		    u32_t pins)
+			u32_t pins)
 {
 	start_dfu = true;
 	gpio_pin_disable_callback(gpiob, SW0_GPIO_PIN);
@@ -253,20 +262,23 @@ static int dfu_button_init(void)
 	return 0;
 }
 
-static int application_update(void)
+static int application_init(void)
 {
 	int err;
 
-	start_dfu = false;
+	err = dfu_button_init();
+	if (err != 0) {
+		return err;
+	}
+	
+	err = led_app_version();
+	if (err != 0) {
+		return err;
+	}
 
 	err = app_dfu_init();
 	if (err != 0) {
-		return 1;
-	}
-
-	err = app_dfu_transfer_start();
-	if (err != 0) {
-		return 1;
+		return err;
 	}
 
 	return 0;
@@ -277,21 +289,23 @@ void main(void)
 	int err;
 
 	boot_write_img_confirmed();
-	start_dfu = false;
-	err = dfu_button_init();
+
+	err = application_init();
 	if (err != 0) {
 		return;
 	}
-	err = led_app_version();
-	if (err != 0) {
-		return;
-	}
+
+	main_thread = k_current_get();
 	while (true) {
-		if (start_dfu) {
-			err = application_update();
-			if (err != 0) {
-				return;
-			}
+		printk("Press Button 1 to start the download\n");
+		start_dfu = false;
+		while(!start_dfu) {
 		}
+		err = app_dfu_transfer_start();
+		if (err != 0) {
+			return;
+		}
+		k_thread_suspend(main_thread);
+		gpio_pin_enable_callback(gpiob, SW0_GPIO_PIN);
 	}
 }
