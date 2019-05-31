@@ -35,15 +35,12 @@ extern "C" {
 int dfu_data_writer_verify_size(size_t size);
 
 
-/**@brief Finalize the firmware write operation.
- *
- * When the write is finalized, MCUboots secondary slot is tagged as having
- * a valid firmware inside it. The completion is reported through an event.
+/**@brief Initialize library.
  *
  * @retval 0 If successfully initialized.
  *           Otherwise, a negative value is returned.
  */
-int dfu_data_writer_finalize(void);
+int dfu_data_writer_init(void);
 
 /**@brief Write firmware fragment.
  *
@@ -56,12 +53,15 @@ int dfu_data_writer_finalize(void);
  */
 int dfu_data_writer_fragment(const u8_t *data, size_t len);
 
-/**@brief Initialize library.
+/**@brief Finalize the firmware write operation.
+ *
+ * When the write is finalized, MCUboots secondary slot is tagged as having
+ * a valid firmware inside it. The completion is reported through an event.
  *
  * @retval 0 If successfully initialized.
  *           Otherwise, a negative value is returned.
  */
-int dfu_data_writer_init(void);
+int dfu_data_writer_finalize(void);
 
 #ifdef __cplusplus
 }

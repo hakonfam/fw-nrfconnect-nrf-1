@@ -24,7 +24,7 @@ static int flash_page_erase_if_needed(u32_t address)
 	int err = flash_get_page_info_by_offs(flash_dev, address, &info);
 
 	if (err != 0) {
-		LOG_ERR("flash_get_page_info_by_offs returned error %d\n", err);
+		LOG_ERR("flash_get_page_info_by_offs error %d\n", err);
 		return err;
 	}
 	if (!is_flash_page_erased[info.index]) {
@@ -55,7 +55,6 @@ int dfu_data_writer_verify_size(size_t size)
 		LOG_ERR("Requested file too big to fit in flash\n");
 		return -EFBIG;
 	}
-
 	return 0;
 }
 
