@@ -1,12 +1,11 @@
 #include <zephyr.h>
 #include <stdio.h>
-#include <json.h>
 #include <net/fota_download.h>
 #include <net/aws_jobs.h>
 #include <net/aws_fota.h>
 #include <logging/log.h>
 
-#include "aws_fota_internal.h"
+#include "aws_fota_json.h"
 
 #define ERR_CHECK(err)\
 	do {\
@@ -16,115 +15,6 @@
 	} while(0)
 
 LOG_MODULE_REGISTER(aws_jobs_fota, CONFIG_AWS_JOBS_FOTA_LOG_LEVEL);
-
-/* Enum to keep the fota status */
-enum fota_status {
-	NONE = 0,
-	DOWNLOAD_FIRMWARE,
-	APPLY_FIRMWARE,
-};
-
-/* Map of fota status to report back */
-static const char *fota_status_strings[] = {
-	[DOWNLOAD_FIRMWARE] = "download_firmware",
-	[APPLY_FIRMWARE] = "apply_update",
-	[NONE] = "none",
-};
-
-static const struct json_obj_descr location_obj_descr[] = {
-	JSON_OBJ_DESCR_PRIM(struct location_obj, protocol, JSON_TOK_STRING),
-	JSON_OBJ_DESCR_PRIM(struct location_obj, host, JSON_TOK_STRING),
-	JSON_OBJ_DESCR_PRIM(struct location_obj, path, JSON_TOK_STRING),
-};
-
-static const struct json_obj_descr job_document_obj_descr[] = {
-	JSON_OBJ_DESCR_PRIM(struct job_document_obj,
-			    operation,
-			    JSON_TOK_STRING),
-	JSON_OBJ_DESCR_PRIM_NAMED(struct job_document_obj,
-				  "fwversion",
-				  fw_version,
-				  JSON_TOK_STRING),
-	JSON_OBJ_DESCR_PRIM(struct job_document_obj, size, JSON_TOK_NUMBER),
-	JSON_OBJ_DESCR_OBJECT(struct job_document_obj,
-			      location,
-			      location_obj_descr),
-};
-
-static const struct json_obj_descr execution_obj_descr[] = {
-	JSON_OBJ_DESCR_PRIM_NAMED(struct execution_obj,
-				  "jobId",
-				  job_id,
-				  JSON_TOK_STRING),
-	JSON_OBJ_DESCR_PRIM(struct execution_obj, status, JSON_TOK_STRING),
-	JSON_OBJ_DESCR_PRIM_NAMED(struct execution_obj,
-				  "queuedAt",
-				  queued_at,
-				  JSON_TOK_NUMBER),
-	JSON_OBJ_DESCR_PRIM_NAMED(struct execution_obj,
-				  "lastUpdatedAt",
-				  last_update_at,
-				  JSON_TOK_NUMBER),
-	JSON_OBJ_DESCR_PRIM_NAMED(struct execution_obj,
-				  "versionNumber",
-				  version_number,
-				  JSON_TOK_NUMBER),
-	JSON_OBJ_DESCR_PRIM_NAMED(struct execution_obj,
-				  "executionNumber",
-				  execution_number,
-				  JSON_TOK_NUMBER),
-	JSON_OBJ_DESCR_OBJECT_NAMED(struct execution_obj,
-				    "jobDocument",
-				    job_document,
-				    job_document_obj_descr),
-};
-
-static const struct json_obj_descr notify_next_obj_descr[] = {
-	JSON_OBJ_DESCR_PRIM(struct notify_next_obj, timestamp, JSON_TOK_NUMBER),
-	JSON_OBJ_DESCR_OBJECT(struct notify_next_obj,
-			      execution,
-			      execution_obj_descr),
-};
-
-static const struct json_obj_descr status_details_obj_descr[] = {
-	JSON_OBJ_DESCR_PRIM_NAMED(struct status_details_obj,
-				  "nextState",
-				  next_state,
-				  JSON_TOK_STRING),
-};
-
-static const struct json_obj_descr execution_state_obj_descr[] = {
-	JSON_OBJ_DESCR_PRIM(struct execution_state_obj,
-			    status,
-			    JSON_TOK_STRING),
-	JSON_OBJ_DESCR_OBJECT_NAMED(struct execution_state_obj,
-				    "statusDetails",
-				    status_details,
-				    status_details_obj_descr),
-	JSON_OBJ_DESCR_PRIM_NAMED(struct execution_state_obj,
-				  "versionNumber",
-				  version_number,
-				  JSON_TOK_NUMBER),
-};
-
-static const struct json_obj_descr update_response_obj_descr[] = {
-	JSON_OBJ_DESCR_OBJECT_NAMED(struct update_response_obj,
-				    "executionState",
-				    execution_state,
-				    execution_state_obj_descr),
-	JSON_OBJ_DESCR_PRIM_NAMED(struct update_response_obj,
-				  "jobDocument",
-				  job_document,
-				  JSON_TOK_STRING),
-	JSON_OBJ_DESCR_PRIM(struct update_response_obj,
-			    timestamp,
-			    JSON_TOK_NUMBER),
-	JSON_OBJ_DESCR_PRIM_NAMED(struct update_response_obj,
-				  "clientToken",
-				  client_token,
-				  JSON_TOK_STRING),
-};
-
 /* Pointer to initialized MQTT client instance */
 // TODO: A better awy of doing this?
 static struct mqtt_client *c;
@@ -314,41 +204,6 @@ static int update_job_execution(struct mqtt_client *const client,
 		return ret;
 }
 
-static int parse_notify_next_document(char *job_document,
-				      u32_t payload_len,
-				      char *job_id_buf,
-				      char *hostname_buf,
-				      char *file_path_buf)
-{
-	struct notify_next_obj job;
-
-	int ret = json_obj_parse(job_document,
-				 payload_len,
-				 notify_next_obj_descr,
-				 ARRAY_SIZE(notify_next_obj_descr),
-				 &job);
-	if (ret < 0) {
-		return -EFAULT;
-	}
-
-	memcpy(job_id_buf, job.execution.job_id,
-	       MIN(strlen(job.execution.job_id), JOB_ID_MAX_LEN));
-
-	memcpy(hostname_buf, job.execution.job_document.location.host,
-	       MIN(strlen(job.execution.job_document.location.host),
-			  CONFIG_AWS_IOT_FOTA_HOSTNAME_MAX_LEN));
-
-	memcpy(file_path_buf, job.execution.job_document.location.path,
-	       MIN(strlen(job.execution.job_document.location.path),
-			  CONFIG_AWS_IOT_FOTA_FILE_PATH_MAX_LEN));
-
-	printk("Lib job_id: %s", job_id);
-	printk("Lib hostname: %s", hostname);
-	printk("Lib file_path: %s", file_path);
-
-	return 0;
-}
-
 
 static int aws_fota_on_publish_evt(struct mqtt_client *const client,
 				   const u8_t *topic,
@@ -370,7 +225,7 @@ static int aws_fota_on_publish_evt(struct mqtt_client *const client,
 		 */
 		/*
 		*/
-		err = parse_notify_next_document(json_payload, payload_len,
+		err = aws_fota_parse_notify_next_document(json_payload, payload_len,
 						 job_id, hostname, file_path);
 		ERR_CHECK(err);
 
@@ -575,19 +430,3 @@ int aws_fota_init(struct mqtt_client *const client,
 	return 0;
 }
 
-
-/*
-static int parse_job_document(const u8_t *job_document)
-{
-	struct notif_next_obj job;
-	int ret = json_obj_parse(job_document,
-				 ARRAY_SIZE(job_document),
-				 notify_next_obj_descr,
-				 &job);
-	if (ret < 0) {
-		return -EFAULT;
-	}
-	printk("jobs status: %s", job.execution.status);
-	return 0;
-}
-*/

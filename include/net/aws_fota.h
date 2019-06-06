@@ -15,6 +15,8 @@
 extern "C" {
 #endif
 
+#include <net/mqtt.h>
+
 enum aws_fota_evt_id {
 	/** AWS FOTA complete and status reported to job document */
 	AWS_FOTA_EVT_DONE,

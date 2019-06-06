@@ -36,14 +36,6 @@ extern "C" {
 #include <zephyr/types.h>
 #include <net/mqtt.h>
 
-
-/** @brief The max JOB_ID_LEN according to AWS docs
- * https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html
- */
-#define JOB_ID_MAX_LEN (64)
-#define STATUS_MAX_LEN (12)
-
-
 /** @name MQTT message IDs used for identifying subscribe message ACKs
  * @{
  */
