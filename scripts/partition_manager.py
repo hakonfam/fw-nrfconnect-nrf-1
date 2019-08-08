@@ -12,10 +12,11 @@ import sys
 from pprint import pformat
 
 
+PERMITTED_STR_KEYS = ['size']
+
+
 def remove_item_not_in_list(list_to_remove_from, list_to_check):
-    for x in list_to_remove_from:
-        if x not in list_to_check and x != 'app':
-            list_to_remove_from.remove(x)
+    [list_to_remove_from.remove(x) for x in list_to_remove_from.copy() if x not in list_to_check and x is not 'app']
 
 
 def item_is_placed(d, item, after_or_before):
@@ -25,23 +26,37 @@ def item_is_placed(d, item, after_or_before):
 
 
 def remove_irrelevant_requirements(reqs):
-    # Remove items dependencies to partitions which are not present
-    for x in reqs.keys():
+    # Remove dependencies to partitions which are not present
+    to_delete = list()
+    for k, v in reqs.items():
         for before_after in ['before', 'after']:
-            if 'placement' in reqs[x].keys() and before_after in reqs[x]['placement'].keys():
-                [remove_item_not_in_list(reqs[x]['placement'][before_after], [*reqs.keys(), 'start', 'end'])]
-                if not reqs[x]['placement'][before_after]:
-                    del reqs[x]['placement'][before_after]
-        if 'span' in reqs[x].keys():
-            [remove_item_not_in_list(reqs[x]['span'], reqs.keys())]
-        if 'inside' in reqs[x].keys():
-            [remove_item_not_in_list(reqs[x]['inside'], reqs.keys())]
-            if not reqs[x]['inside']:
-                del reqs[x]['inside']
-        if 'share_size' in reqs[x].keys():
-            [remove_item_not_in_list(reqs[x]['share_size'], reqs.keys())]
-            if not reqs[x]['share_size']:
-                del reqs[x]['share_size']
+            if 'placement' in v.keys() and before_after in v['placement'].keys():
+                remove_item_not_in_list(v['placement'][before_after], [*reqs.keys(), 'start', 'end'])
+                if not v['placement'][before_after]:
+                    del v['placement'][before_after]
+        if 'span' in v.keys():
+            if type(v['span']) == dict and 'one_of' in v['span'].keys():
+                remove_item_not_in_list(v['span']['one_of'], reqs.keys())
+                tmp = v['span']['one_of'].copy()
+                del v['span']['one_of']
+                v['span'] = list()
+                v['span'].append(tmp[0])
+            else:
+                remove_item_not_in_list(v['span'], reqs.keys())
+        if 'inside' in v.keys():
+            remove_item_not_in_list(v['inside'], reqs.keys())
+            if not v['inside']:
+                del v['inside']
+        if 'share_size' in v.keys():
+            remove_item_not_in_list(v['share_size'], reqs.keys())
+            if not v['share_size']:
+                del v['share_size']
+                if 'size' not in v.keys():
+                    # The partition has no size, delete it
+                    to_delete.append(k)
+
+    for x in to_delete:
+        del reqs[x]
 
 
 def get_images_which_need_resolving(reqs, sub_partitions):
@@ -92,12 +107,12 @@ def solve_direction(reqs, sub_partitions, unsolved, solution, ab):
 
 
 def solve_first_last(reqs, unsolved, solution):
-    for fl in [('after', 'start', 0), ('before', 'end', len(solution))]:
+    for fl in [('after', 'start', lambda x: solution.insert(0, x)), ('before', 'end', solution.append)]:
         first_or_last = [x for x in reqs.keys() if 'placement' in reqs[x]
                          and fl[0] in reqs[x]['placement'].keys()
                          and fl[1] in reqs[x]['placement'][fl[0]]]
         if first_or_last:
-            solution.insert(fl[2], first_or_last[0])
+            fl[2](first_or_last[0])
             if first_or_last[0] in unsolved:
                 unsolved.remove(first_or_last[0])
 
@@ -134,7 +149,17 @@ def extract_sub_partitions(reqs):
     return sub_partitions
 
 
+def convert_str_to_list(with_str):
+    for k, v in with_str.items():
+        if type(v) is dict:
+            convert_str_to_list(v)
+        elif type(v) is str and k not in PERMITTED_STR_KEYS:
+            with_str[k] = list()
+            with_str[k].append(v)
+
+
 def resolve(reqs):
+    convert_str_to_list(reqs)
     solution = list(['app'])
     remove_irrelevant_requirements(reqs)
     sub_partitions = extract_sub_partitions(reqs)
@@ -182,10 +207,17 @@ def set_shared_size(reqs, sub_partitions, total_size):
                 all_reqs[size_source]['sharers'] = 0
             all_reqs[size_source]['sharers'] += 1
             all_reqs[req]['share_size'] = [size_source]
+
     new_sizes = dict()
-    for req in all_reqs.keys():
-        if 'share_size' in all_reqs[req].keys():
-            new_sizes[req] = shared_size(all_reqs, all_reqs[req]['share_size'][0], total_size)
+    dynamic_size_sharers = [k for k,v in all_reqs.items() if 'share_size' in v.keys()
+                                                              and (v['share_size'][0] == 'app'
+                                                                  or ('span' in all_reqs[v['share_size'][0]].keys()
+                                                                      and 'app' in all_reqs[v['share_size'][0]]['span']))]
+    static_size_sharers  = [k for k,v in all_reqs.items() if 'share_size' in v.keys() and k not in dynamic_size_sharers]
+    for req in static_size_sharers:
+        all_reqs[req]['size'] = shared_size(all_reqs, all_reqs[req]['share_size'][0], total_size)
+    for req in dynamic_size_sharers:
+        new_sizes[req] = shared_size(all_reqs, all_reqs[req]['share_size'][0], total_size)
     # Update all sizes after-the-fact or else the calculation will be messed up.
     for key, value in new_sizes.items():
         all_reqs[key]['size'] = value
@@ -239,7 +271,7 @@ def sizeof(reqs, req, total_size):
 
 def load_reqs(reqs, input_config):
     for name, ymlpath in input_config.items():
-        if (path.exists(ymlpath)):
+        if path.exists(ymlpath):
             with open(ymlpath, 'r') as f:
                 reqs.update(yaml.safe_load(f))
 
@@ -352,6 +384,12 @@ def expect_addr_size(td, name, expected_address, expected_size):
 
 
 def test():
+    list_one = [1, 2, 3, 4]
+    items_to_check = [4]
+    remove_item_not_in_list(list_one, items_to_check)
+    assert list_one[0] == 4
+    assert len(list_one) == 1
+
     test_config = {
         'first': {'address': 0,    'size': 10},
         # Gap from deleted partition.
@@ -389,6 +427,26 @@ def test():
     assert (start == 10)
     assert (size == 100 - 10)
 
+    # Verify that if a partition X uses 'share_size' with a non-existing partition, then partition X is given size 0,
+    # and is hence not created.
+    td = {'should_not_exist': {'placement': {'before': 'exists'}, 'share_size': 'does_not_exist'},
+          'exists': {'placement': {'before': 'app'}, 'size': 100},
+          'app': {}}
+    s, sub_partitions = resolve(td)
+    set_addresses(td, sub_partitions, s, 1000)
+    set_sub_partition_address_and_size(td, sub_partitions)
+    assert 'should_not_exist' not in td.keys()
+
+    # Verify that if a partition X uses 'share_size' with a non-existing partition, but has set a default size,
+    # then partition X is created with the default size.
+    td = {'should_exist': {'placement': {'before': 'exists'}, 'share_size': 'does_not_exist', 'size': 200},
+          'exists': {'placement': {'before': 'app'}, 'size': 100},
+          'app': {}}
+    s, sub_partitions = resolve(td)
+    set_addresses(td, sub_partitions, s, 1000)
+    set_sub_partition_address_and_size(td, sub_partitions)
+    expect_addr_size(td, 'should_exist', 0, 200)
+
     td = {'spm': {'placement': {'before': ['app']}, 'size': 100},
           'mcuboot': {'placement': {'before': ['spm', 'app']}, 'size': 200},
           'app': {}}
@@ -411,11 +469,32 @@ def test():
     expect_addr_size(td, 'app', 300, 700)
     expect_addr_size(td, 'mcuboot_slot0', 200, 800)
 
+    td = {'spm': {'placement': {'before': 'app'}, 'size': 100, 'inside': 'mcuboot_slot0'},
+          'mcuboot': {'placement': {'before': 'app'}, 'size': 200},
+          'mcuboot_pad': {'placement': {'after': 'mcuboot'}, 'inside': 'mcuboot_slot0', 'size': 10},
+          'app_partition': {'span': ['spm', 'app'], 'inside': 'mcuboot_slot0'},
+          'mcuboot_slot0': {'span': ['app', 'foo']},
+          'mcuboot_data': {'placement': {'after': ['mcuboot_slot0']}, 'size': 200},
+          'mcuboot_slot1': {'share_size': 'mcuboot_slot0', 'placement': {'after': 'mcuboot_data'}},
+          'mcuboot_slot2': {'share_size': 'mcuboot_slot1', 'placement': {'after': 'mcuboot_slot1'}},
+          'app': {}}
+    s, sub_partitions = resolve(td)
+    set_addresses(td, sub_partitions, s, 1000)
+    set_sub_partition_address_and_size(td, sub_partitions)
+    expect_addr_size(td, 'mcuboot', 0, None)
+    expect_addr_size(td, 'spm', 210, None)
+    expect_addr_size(td, 'mcuboot_slot0', 200, 200)
+    expect_addr_size(td, 'mcuboot_slot1', 600, 200)
+    expect_addr_size(td, 'mcuboot_slot2', 800, 200)
+    expect_addr_size(td, 'app', 310, 90)
+    expect_addr_size(td, 'mcuboot_pad', 200, 10)
+    expect_addr_size(td, 'mcuboot_data', 400, 200)
+
     td = {'spm': {'placement': {'before': ['app']}, 'size': 100, 'inside': ['mcuboot_slot0']},
           'mcuboot': {'placement': {'before': ['app']}, 'size': 200},
           'mcuboot_pad': {'placement': {'after': ['mcuboot']}, 'inside': ['mcuboot_slot0'], 'size': 10},
           'app_partition': {'span': ['spm', 'app'], 'inside': ['mcuboot_slot0']},
-          'mcuboot_slot0': {'span': ['app', 'foo']},
+          'mcuboot_slot0': {'span': {'one_of': ['app', 'mcuboot', 'foo', 'mcuboot_pad']}},
           'mcuboot_data': {'placement': {'after': ['mcuboot_slot0']}, 'size': 200},
           'mcuboot_slot1': {'share_size': ['mcuboot_slot0'], 'placement': {'after': ['mcuboot_data']}},
           'mcuboot_slot2': {'share_size': ['mcuboot_slot1'], 'placement': {'after': ['mcuboot_slot1']}},
