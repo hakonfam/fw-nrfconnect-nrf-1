@@ -166,7 +166,7 @@ pipeline {
       steps {
         script {
           CI_STATE.NRF.WAITING = true
-          def DOWNSTREAM_JOBS = lib_Main.getDownStreamJobs(JOB_NAME)
+          def DOWNSTREAM_JOBS = ['Bootloader/test-fw-nrfconnect-mcuboot/feature/NCSDK-2692_all_strategies']
           def jobs = [:]
           DOWNSTREAM_JOBS.each {
             jobs["${it}"] = {
