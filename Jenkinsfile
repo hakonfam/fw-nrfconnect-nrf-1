@@ -4,7 +4,7 @@
 def AGENT_LABELS = lib_Main.getAgentLabels(JOB_NAME)
 def IMAGE_TAG    = lib_Main.getDockerImage(JOB_NAME)
 def TIMEOUT      = lib_Main.getTimeout(JOB_NAME)
-def INPUT_STATE  = '{"NRF":{"BUILD_TYPE":"BRANCH"}, "GIT_REF":"pull/1027/head"},"NRFXLIB":{"WAITING":"false","BRANCH_NAME":"master","GIT_BRANCH":"","GIT_URL":"https://github.com/NordicPlayground/nrfxlib.git"},"ZEPHYR":{"WAITING":"false","BRANCH_NAME":"master","GIT_BRANCH":"","GIT_URL":"https://github.com/NordicPlayground/fw-nrfconnect-zephyr.git"},"MCUBOOT":{"WAITING":"false","BRANCH_NAME":"master","GIT_BRANCH":"","GIT_URL":"https://github.com/NordicPlayground/fw-nrfconnect-mcuboot.git"}}'
+def INPUT_STATE  = '{"NRF":{"BUILD_TYPE":"BRANCH", "GIT_REF":"pull/1027/head"},"NRFXLIB":{"WAITING":"false","BRANCH_NAME":"master","GIT_BRANCH":"","GIT_URL":"https://github.com/NordicPlayground/nrfxlib.git"},"ZEPHYR":{"WAITING":"false","BRANCH_NAME":"master","GIT_BRANCH":"","GIT_URL":"https://github.com/NordicPlayground/fw-nrfconnect-zephyr.git"},"MCUBOOT":{"WAITING":"false","BRANCH_NAME":"master","GIT_BRANCH":"","GIT_URL":"https://github.com/NordicPlayground/fw-nrfconnect-mcuboot.git"}}'
 def CI_STATE = new HashMap()
 
 pipeline {
