@@ -8,6 +8,12 @@ if (CONFIG_BOOTLOADER_MCUBOOT)
   set(image_to_boot mcuboot_)
   set(s0_addr $<TARGET_PROPERTY:partition_manager,PM_S0_ADDRESS>)
   set(s1_addr $<TARGET_PROPERTY:partition_manager,PM_S1_ADDRESS>)
+
+  # Include a kconfig file which enables CONFIG_MCUBOOT_BUILD_S1_VARIANT
+  set(old_conf ${mcuboot_OVERLAY_CONFIG})
+  set(mcuboot_OVERLAY_CONFIG
+    "${old_conf} ${CMAKE_CURRENT_SOURCE_DIR}/build_s1.conf"
+    CACHE STRING "" FORCE)
 else()
   if (CONFIG_SPM)
     set(image_to_boot spm_)
@@ -24,6 +30,7 @@ set(old_conf ${${image_to_boot}OVERLAY_CONFIG})
 set(${image_to_boot}OVERLAY_CONFIG
   "${old_conf} ${CMAKE_CURRENT_SOURCE_DIR}/fw_metadata.conf"
   CACHE STRING "" FORCE)
+
 
 if (s1_addr)
   set(s1_arg --s1-addr ${s1_addr})

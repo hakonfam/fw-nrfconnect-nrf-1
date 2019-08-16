@@ -111,10 +111,7 @@ extern u32_t _vector_table_pointer;
 
 static void boot_from(u32_t *address)
 {
-	if (!verify_firmware((u32_t)address)) {
-		return;
-	}
-
+	printk("Attempting to boot from address 0x%x.\n\r", address);
 #if CONFIG_ARCH_HAS_USERSPACE
 	__ASSERT(!(CONTROL_nPRIV_Msk & __get_CONTROL()),
 			"Not in Privileged mode");
@@ -189,6 +186,6 @@ void main(void)
 	}
 #endif /* CONFIG_SOC_NRF9160 */
 
-	boot_from((u32_t *)s0_address_read());
+	boot_from((u32_t *)s1_address_read());
 	CODE_UNREACHABLE;
 }

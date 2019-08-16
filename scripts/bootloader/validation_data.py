@@ -82,11 +82,11 @@ def parse_args():
         description="Sign hex file and append metadata at specified offset.",
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("-i", "--input", required=True, type=argparse.FileType('r', encoding='UTF-8'),
+    parser.add_argument("-i", "--input", required=True, type=argparse.FileType('r', encoding='UTF-8'), nargs="+",
                         help="Hex file to sign.")
     parser.add_argument("-o", "--offset", required=False, type=int,
                         help="Offset to store validation metadata at.", default=0)
-    parser.add_argument("-s", "--signature", required=True, type=argparse.FileType('rb'),
+    parser.add_argument("-s", "--signature", required=True, type=argparse.FileType('rb'), nargs="+",
                         help="Signature file (DER).")
     parser.add_argument("-p", "--public-key", required=True, type=argparse.FileType('r', encoding='UTF-8'),
                         help="Public key file (PEM).")
@@ -94,7 +94,7 @@ def parse_args():
                         help="ASCII representation of magic value.")
     parser.add_argument("-l", "--pk-hash-len", required=False, type=int, default=-1,
                         help="The length to truncate the public key hash to. Default: no truncation.")
-    parser.add_argument("--output", required=False, default=None, type=argparse.FileType('w'),
+    parser.add_argument("--output", required=False, default=None, type=argparse.FileType('w'), nargs="+",
                         help="Output file name Default is to overwrite --input.")
     parser.add_argument("-v", "--verbose", required=False, action="count",
                         help="Verbose mode.")
@@ -113,13 +113,14 @@ def main():
     global VERBOSE
     VERBOSE = args.verbose
 
-    sign_and_append_validation_data(signature=args.signature.read(),
-                                    input_file=args.input,
-                                    public_key=ecdsa.VerifyingKey.from_pem(args.public_key.read()),
-                                    offset=args.offset,
-                                    output_file=args.output,
-                                    magic_value=args.magic_value,
-                                    pk_hash_len=args.pk_hash_len)
+    for hex_to_sign, output_file, signature in zip(args.input, args.output, args.signature):
+        sign_and_append_validation_data(signature=signature.read(),
+                                        input_file=hex_to_sign,
+                                        public_key=ecdsa.VerifyingKey.from_pem(args.public_key.read()),
+                                        offset=args.offset,
+                                        output_file=output_file,
+                                        magic_value=args.magic_value,
+                                        pk_hash_len=args.pk_hash_len)
 
 
 if __name__ == "__main__":
