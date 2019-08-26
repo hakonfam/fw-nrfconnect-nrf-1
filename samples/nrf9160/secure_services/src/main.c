@@ -56,6 +56,16 @@ void main(void)
 		printk("%d", buf[i]);
 	}
 
+	ret = spm_request_read(buf, (u32_t)NRF_FICR_S->INFO.DEVICEID, sizeof(NRF_FICR_S->INFO.DEVICEID));
+	if (ret != 0) {
+		printk("Could not read data (err: %d)\n", ret);
+	}
+	printk("\nRead DEVICEID: %x%x\n", sizeof(NRF_FICR_S->INFO.DEVICEID), buf[1]);
+	for (int i = 0; i < 8; i++) {
+		printk("%x", buf[i]);
+	}
+
+
 	printk("\nReboot in %d ms.\n", sleep_time_ms);
 	k_sleep(sleep_time_ms);
 

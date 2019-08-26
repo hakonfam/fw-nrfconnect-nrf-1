@@ -10,6 +10,7 @@
 #include <autoconf.h>
 #include <secure_services.h>
 #include <string.h>
+#include <nrf.h>
 
 #if USE_PARTITION_MANAGER
 #include <pm_config.h>
@@ -68,6 +69,10 @@ int spm_request_read(void *destination, u32_t addr, size_t num)
 		{.start = PM_MCUBOOT_PAD_ADDRESS,
 		 .size = PM_MCUBOOT_PAD_SIZE},
 #endif
+		/* Allow read of FICR->DEVICEID */
+		{.start = (u32_t)&NRF_FICR_S->INFO.DEVICEID[0],
+		 .size = sizeof(NRF_FICR_S->INFO.DEVICEID)},
+
 	};
 
 	if (destination == NULL || num <= 0) {
