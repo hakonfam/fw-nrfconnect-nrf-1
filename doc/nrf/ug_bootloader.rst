@@ -101,7 +101,7 @@ Complete the following steps to add a secure bootloader chain to your applicatio
 #. Run ``menuconfig`` to enable Secure Boot:
 
    a. Select **Project** > **Configure nRF Connect SDK project**.
-   #. Go to **Nordic nRF Connect** and select **Secure Boot** to enable :option:`CONFIG_SECURE_BOOT`.
+   #. Go to **Nordic nRF Connect** and select **Secure Boot** to enable :option:`CONFIG_NSB_BOOTLOADER`.
    #. Under **Private key PEM file** (:option:`CONFIG_SB_SIGNING_KEY_FILE`), enter the path to the private key that you created.
       If you choose to run the sample with default debug keys, you can skip this step.
 

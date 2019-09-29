@@ -11,7 +11,7 @@ if (CONFIG_SPM)
   endif ()
 endif()
 
-if (CONFIG_SECURE_BOOT)
+if (CONFIG_NSB_BOOTLOADER)
   zephyr_add_executable(b0 require_build)
   if(${require_build})
     add_subdirectory(bootloader ${CMAKE_BINARY_DIR}/b0)

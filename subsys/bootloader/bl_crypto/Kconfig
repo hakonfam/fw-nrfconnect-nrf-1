@@ -4,11 +4,11 @@
 # SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
 #
 
-menuconfig SECURE_BOOT_CRYPTO
+menuconfig NSB_BOOTLOADER_CRYPTO
 	bool
 	prompt "Secure Boot Crypto"
 
-if (SECURE_BOOT_CRYPTO)
+if (NSB_CRYPTO)
 config SB_ECDSA_SECP256R1
 	bool
 	select FW_ECDSA_SECP256R1
@@ -102,4 +102,4 @@ config SB_PUBLIC_KEY_HASH_LEN
 	  The length to which public key hashes in the list of Root of Trust
 	  Public Keys are truncated.
 
-endif # SECURE_BOOT_CRYPTO
+endif # NSB_BOOTLOADER_CRYPTO
