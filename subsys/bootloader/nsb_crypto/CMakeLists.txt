@@ -8,9 +8,9 @@ zephyr_library()
 zephyr_library_sources(nsb_crypto.c)
 zephyr_library_link_libraries(${IMAGE}nrfxlib_crypto)
 
-if (CONFIG_SB_CRYPTO_OBERON_ECDSA_SECP256R1)
+if (CONFIG_NSB_CRYPTO_OBERON_ECDSA_SECP256R1)
   zephyr_library_sources(nsb_crypto_oberon_ecdsa.c)
-elseif (CONFIG_SB_CRYPTO_CC310_ECDSA_SECP256R1)
+elseif (CONFIG_NSB_CRYPTO_CC310_ECDSA_SECP256R1)
   zephyr_library_sources(
     nsb_crypto_cc310_ecdsa.c
     nsb_crypto_cc310_common.c
@@ -19,9 +19,9 @@ else()
   message(FATAL_ERROR "No signature implementation chosen for bootloader.")
 endif()
 
-if (CONFIG_SB_CRYPTO_OBERON_SHA256)
+if (CONFIG_NSB_CRYPTO_OBERON_SHA256)
   zephyr_library_sources(nsb_crypto_oberon_hash.c)
-elseif (CONFIG_SB_CRYPTO_CC310_SHA256)
+elseif (CONFIG_NSB_CRYPTO_CC310_SHA256)
   zephyr_library_sources(
     nsb_crypto_cc310_hash.c
     nsb_crypto_cc310_common.c
