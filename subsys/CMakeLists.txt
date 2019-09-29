@@ -10,7 +10,7 @@ endif()
 
 add_subdirectory_ifdef(CONFIG_IS_NSB_BOOTLOADERLOADER bootloader)
 add_subdirectory_ifdef(CONFIG_NSB_BOOTLOADER bootloader/image)
-add_subdirectory_ifdef(CONFIG_NSB_CRYPTO_CLIENT bootloader/bl_crypto_client)
+add_subdirectory_ifdef(CONFIG_NSB_CRYPTO_CLIENT bootloader/nsb_crypto_client)
 
 add_subdirectory(net)
 add_subdirectory_ifdef(CONFIG_NRF_ESB		enhanced_shockburst)

@@ -8,12 +8,12 @@
 #include <zephyr/types.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <bl_crypto.h>
+#include <nsb_crypto.h>
 #include <ocrypto_ecdsa_p256.h>
-#include "bl_crypto_internal.h"
+#include "nsb_crypto_internal.h"
 
 
-int bl_secp256r1_validate(const u8_t *hash, u32_t hash_len,
+int nsb_secp256r1_validate(const u8_t *hash, u32_t hash_len,
 			const u8_t *public_key, const u8_t *signature)
 {
 	if (!hash || (hash_len != CONFIG_SB_HASH_LEN) || !public_key

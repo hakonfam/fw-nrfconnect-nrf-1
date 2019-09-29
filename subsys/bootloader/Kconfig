@@ -161,6 +161,6 @@ config SB_FIRMWARE_INFO_OFFSET
 	hex
 	default FW_FIRMWARE_INFO_OFFSET
 
-rsource "bl_crypto/Kconfig"
+rsource "nsb_crypto/Kconfig"
 endif # IS_NSB_BOOTLOADERLOADER || NSB_BOOTLOADER
 

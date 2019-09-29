@@ -6,11 +6,11 @@
 
 #include <zephyr/types.h>
 #include <errno.h>
-#include <nrf_cc310_bl_ecdsa_verify_secp256r1.h>
-#include <nrf_cc310_bl_hash_sha256.h>
-#include <bl_crypto.h>
-#include "bl_crypto_internal.h"
-#include "bl_crypto_cc310_common.h"
+#include <nrf_cc310_nsb_ecdsa_verify_secp256r1.h>
+#include <nrf_cc310_nsb_hash_sha256.h>
+#include <nsb_crypto.h>
+#include "nsb_crypto_internal.h"
+#include "nsb_crypto_cc310_common.h"
 
 
 /*! Illegal signature pointer. */
@@ -31,24 +31,24 @@
 
 int crypto_init_signing(void)
 {
-	return cc310_bl_init();
+	return cc310_nsb_init();
 }
 
 
-int bl_secp256r1_validate(const u8_t *hash, u32_t hash_len,
+int nsb_secp256r1_validate(const u8_t *hash, u32_t hash_len,
 		const u8_t *public_key, const u8_t *signature)
 {
 	CRYSError_t ret;
-	nrf_cc310_bl_ecdsa_verify_context_secp256r1_t context;
+	nrf_cc310_nsb_ecdsa_verify_context_secp256r1_t context;
 
-	cc310_bl_backend_enable();
-	ret = nrf_cc310_bl_ecdsa_verify_secp256r1(&context,
-			(nrf_cc310_bl_ecc_public_key_secp256r1_t *) public_key,
-			(nrf_cc310_bl_ecc_signature_secp256r1_t *)  signature,
+	cc310_nsb_backend_enable();
+	ret = nrf_cc310_nsb_ecdsa_verify_secp256r1(&context,
+			(nrf_cc310_nsb_ecc_public_key_secp256r1_t *) public_key,
+			(nrf_cc310_nsb_ecc_signature_secp256r1_t *)  signature,
 			hash,
 			hash_len
 	);
-	cc310_bl_backend_disable();
+	cc310_nsb_backend_disable();
 
 	switch (ret) {
 	case CRYS_ECDSA_VERIFY_SIGNER_PUBL_KEY_VALIDATION_TAG_ERROR:
