@@ -44,7 +44,7 @@ if (s1_addr)
 endif()
 
 # Build and include hex file with provision data about the image to be booted.
-set(NRF_BOOTLOADER_SCRIPTS ${NRF_DIR}/scripts/bootloader)
+set(NRF_BOOTLOADER_SCRIPTS ${NRF_DIR}/scripts/nsb)
 set(PROVISION_HEX_NAME     provision.hex)
 set(PROVISION_HEX          ${PROJECT_BINARY_DIR}/${PROVISION_HEX_NAME})
 
