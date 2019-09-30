@@ -31,7 +31,7 @@ config NSB_BOOTLOADER
 
 if NSB_BOOTLOADER
 
-module=B0
+module=NSB
 source "${ZEPHYR_BASE}/../nrf/subsys/partition_manager/Kconfig.template.build_strategy"
 
 config NSB_PRIVATE_KEY_PROVIDED
