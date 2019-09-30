@@ -10,7 +10,7 @@
 #include <nrf.h>
 #include <errno.h>
 #include <pm_config.h>
-#include "bootloader.h"
+#include "nsb.h"
 #include "nsb_crypto.h"
 #include "fw_metadata.h"
 #include <misc/printk.h>

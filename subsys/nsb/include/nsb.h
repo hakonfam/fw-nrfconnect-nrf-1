@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
 
-#ifndef BOOTLOADER_H__
-#define BOOTLOADER_H__
+#ifndef NSB_H__
+#define NSB_H__
 
 #include <fw_metadata.h>
 
@@ -76,5 +76,5 @@ validation_info_find(const struct fw_firmware_info *finfo,
 	return NULL;
 }
 
-#endif /* BOOTLOADER_H__ */
+#endif /* NSB_H__ */
 
