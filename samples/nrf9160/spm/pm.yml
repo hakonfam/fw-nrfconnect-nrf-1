@@ -1,5 +1,6 @@
 #include <autoconf.h>
 
+
 spm:
   size: CONFIG_PM_PARTITION_SIZE_SPM
   placement:

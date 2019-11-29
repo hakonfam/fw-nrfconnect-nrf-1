@@ -4,7 +4,23 @@
 # SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
 #
 
+get_domain(${BOARD} domain)
+
 if(IMAGE_NAME)
+  # Current image is a child image
+
+  # Store the ${PROJECT_BINARY_DIR} of the current image
+  set_property(
+    TARGET        zephyr_property_target
+    APPEND_STRING
+    PROPERTY      shared_vars
+    "set(${domain}_${IMAGE_NAME}PROJECT_BINARY_DIR ${PROJECT_BINARY_DIR})\n"
+    )
+
+  print(logical_target_for_zephyr_elf)
+  # Store the ${logical_target_for_zephyr_elf} of the current image
+
+
   set_property(
     TARGET         zephyr_property_target
     APPEND_STRING
@@ -70,7 +86,7 @@ function(add_child_image name sourcedir)
 endfunction()
 
 function(add_child_image_from_source name sourcedir)
-  message("\n=== child image ${name} begin ===")
+  message("\n=== child image ${name} for domain ${domain} begin ===")
 
   # Construct a list of variables that, when present in the root
   # image, should be passed on to all child images as well.
@@ -83,6 +99,7 @@ function(add_child_image_from_source name sourcedir)
     ZEPHYR_TOOLCHAIN_VARIANT
     GNUARMEMB_TOOLCHAIN_PATH
     EXTRA_KCONFIG_TARGETS
+    PM_DOMAINS
     )
 
   foreach(kconfig_target ${EXTRA_KCONFIG_TARGETS})
@@ -155,17 +172,24 @@ function(add_child_image_from_source name sourcedir)
     message(FATAL_ERROR "CMake generation for ${name} failed, aborting. Command: ${ret}")
   endif()
 
-  message("=== child image ${name} end ===\n")
+  message("=== child image ${name} for domain ${domain} end ===\n")
 
   # Include some variables from the child image into the parent image
-  # namespace
+  # namespace. Note that these are by default only visible in the current
+  # cmake namespace.
   include(${CMAKE_BINARY_DIR}/${name}/shared_vars.cmake)
 
-  # Increase the scope of this variable to make it more available
+  # Increase the scope of these variables to make them more available
   set(${name}_KERNEL_HEX_NAME ${${name}_KERNEL_HEX_NAME} CACHE STRING "" FORCE)
+  set(
+    ${domain}_${name}_PROJECT_BINARY_DIR
+    ${${domain}_${name}_PROJECT_BINARY_DIR}
+    CACHE STRING "" FORCE
+    )
+  set(PM_DOMAINS ${PM_DOMAINS} CACHE STRING "" FORCE)
 
   include(ExternalProject)
-  ExternalProject_Add(${name}_subimage
+  ExternalProject_Add(${domain}_${name}_subimage
     SOURCE_DIR ${sourcedir}
     BINARY_DIR ${CMAKE_BINARY_DIR}/${name}
     BUILD_BYPRODUCTS ${${name}_BUILD_BYPRODUCTS} # Set by shared_vars.cmake
@@ -190,7 +214,7 @@ function(add_child_image_from_source name sourcedir)
 
   set_property(
     GLOBAL APPEND PROPERTY
-    PM_IMAGES
+    PM_IMAGES_${domain}
     "${name}"
     )
 endfunction()

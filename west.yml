@@ -29,14 +29,17 @@ manifest:
       url-base: https://github.com/ThrowTheSwitch
     - name: armmbed
       url-base: https://github.com/ARMmbed
+    - name: hakonfam
+      url-base: https://github.com/hakonfam
 
   # The list of external projects for the nRF Connect SDK.
   #
   projects:
     - name: zephyr
+      remote: hakonfam
       repo-path: fw-nrfconnect-zephyr
       west-commands: scripts/west-commands.yml
-      revision: 9a0a85cf67602e4fa5b0c6d7cef2c5e58ca4ac34
+      revision: pm_53
     - name: nffs
       revision: bc62a2fa9d98ddb5d633c932ea199bc68e10f194
       path: modules/fs/nffs
@@ -50,8 +53,9 @@ manifest:
       revision: 4f1e8f5a78dc08aa42a47cc1ad059cce558c26c3
       remote: zephyrproject
     - name: mcuboot
-      repo-path: fw-nrfconnect-mcuboot
-      revision: 0b59f48e4dce86d0c8d4e09688feb362c7223ad3
+      remote: hakonfam
+      repo-path: fw-nrfconnect-mcuboot-1
+      revision: pm_53
     - name: mcumgr
       repo-path: fw-nrfconnect-mcumgr
       revision: f663988d35da559a37f263d369842dbce309d1fa

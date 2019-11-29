@@ -81,7 +81,7 @@ def main():
         pm_config = yaml.safe_load(f)
     min_address = min((part['address'] for part in pm_config.values() if 'address' in part))
     max_address = max((part['address'] + part['size'] for part in pm_config.values() if 'address' in part))
-    print_region('FLASH', max_address - min_address, pm_config)
+    print_region('FLASH per {}'.format(args.input), max_address - min_address, pm_config)
 
 
 if __name__ == "__main__":

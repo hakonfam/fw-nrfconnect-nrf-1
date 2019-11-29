@@ -5,6 +5,7 @@
 #
 
 if (CONFIG_SPM)
+  message("adding spm PM_DOMAINS is ${PM_DOMAINS}")
   add_child_image(spm ${CMAKE_CURRENT_LIST_DIR}/nrf9160/spm)
 
   if (CONFIG_ARM_FIRMWARE_USES_SECURE_ENTRY_FUNCS AND
@@ -19,5 +20,6 @@ if (CONFIG_SPM)
 endif()
 
 if (CONFIG_SECURE_BOOT)
+  message("adding b0 PM_DOMAINS is ${PM_DOMAINS}")
   add_child_image(b0 ${CMAKE_CURRENT_LIST_DIR}/bootloader)
 endif ()

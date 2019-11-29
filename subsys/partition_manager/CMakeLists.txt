@@ -20,7 +20,6 @@ function(preprocess_pm_yml in_file out_file)
   if(NOT "${ret}" STREQUAL "0")
     message(FATAL_ERROR "command failed with return code: ${ret}")
   endif()
-
 endfunction()
 
 # We are using partition manager if we are a child image or if we are
@@ -41,13 +40,49 @@ set_property(GLOBAL APPEND PROPERTY
 if((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME)
   # Only preprocess pm.yml when being built as sub image.
 
+  # Only add ${BOARD} as domain if not already added
+  if (NOT (${BOARD} IN_LIST PM_DOMAINS))
+    set_property(
+      TARGET         zephyr_property_target
+      APPEND_STRING
+      PROPERTY       shared_vars
+      "list(APPEND PM_DOMAINS ${BOARD})\n"
+      )
+
+    # TODO get this from CONFIG_DT_FLASH_BASE_ADDRESS
+    set_property(
+      TARGET         zephyr_property_target
+      APPEND_STRING
+      PROPERTY       shared_vars
+      "set(PM_DOMAINS_${BOARD}_FLASH_BASE_ADDRESS 0 CACHE STRING \"\" FORCE)\n"
+      )
+
+    # TODO get this from CONFIG_DT_FLASH_SIZE
+    set_property(
+      TARGET         zephyr_property_target
+      APPEND_STRING
+      PROPERTY       shared_vars
+      "set(PM_DOMAINS_${BOARD}_FLASH_SIZE 1024 CACHE STRING \"\" FORCE)\n"
+      )
+  endif()
+
   preprocess_pm_yml(
     ${CMAKE_SOURCE_DIR}/pm.yml
     ${PROJECT_BINARY_DIR}/include/generated/pm.yml
     )
+  set_property(
+    GLOBAL APPEND PROPERTY
+    PM_IMAGES_${BOARD}
+    ${IMAGE}
+    )
 endif()
 
-get_property(img_pm_subsys GLOBAL PROPERTY PM_SUBSYS)
+get_property(
+  img_pm_subsys
+  GLOBAL PROPERTY
+  ${BOARD}_${IMAGE}PM_SUBSYS # ${IMAGE} ends with '_' 
+  )
+
 if (img_pm_subsys)
   foreach (subsys_pm_yml ${img_pm_subsys})
     file(RELATIVE_PATH rel_path_to_yml ${ZEPHYR_BASE} ${subsys_pm_yml})
@@ -57,10 +92,10 @@ if (img_pm_subsys)
       ${subsys_pm_yml}
       ${subsys_pm_preprocessed}
       )
-  set_property(
-    GLOBAL APPEND PROPERTY
-    PM_SUBSYS_PREPROCESSED
+    set_property(
+      GLOBAL APPEND PROPERTY
+      PM_SUBSYS_PREPROCESSED_${BOARD}
       ${subsys_pm_preprocessed}
-    )
+      )
   endforeach()
 endif()

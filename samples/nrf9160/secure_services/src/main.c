@@ -31,7 +31,7 @@ void main(void)
 {
 	struct fw_info info_app;
 	const int sleep_time_s = 5;
-	const int random_number_count = 16;
+	const int random_number_count = 1024;
 	const int random_number_len = 144;
 	int ret;
 
