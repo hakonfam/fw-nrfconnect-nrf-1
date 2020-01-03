@@ -35,7 +35,7 @@ int dfu_target_flash_cfg(const char *dev_name, size_t start, size_t end,
  *
  * @retval true if data matches, false otherwise.
  */
-bool dfu_target_flash_set_callback(dfu_target_callback_t callback);
+int dfu_target_flash_set_callback(dfu_target_callback_t callback);
 
 /**
  * @brief See if data in buf indicates flash device style upgrade.

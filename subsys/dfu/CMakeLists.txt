@@ -12,7 +12,7 @@ endif()
 zephyr_library()
 zephyr_library_include_directories(include)
 
-zephyr_library_sources(
+zephyr_library_sources_ifdef(CONFIG_DFU_TARGET
   src/dfu_target.c
   )
 zephyr_library_sources_ifdef(CONFIG_DFU_TARGET_MODEM
