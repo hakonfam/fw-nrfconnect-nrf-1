@@ -1,0 +1,27 @@
+#
+# Copyright (c) 2019 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
+
+menu "Peripheral CPU DFU"
+
+menuconfig PCD
+	bool "Peripheral CPU DFU Support"
+	select FLASH_PAGE_LAYOUT
+	select FLASH_MAP
+	select FLASH_IMG
+	select IMG_ERASE_PROGRESSIVELY
+	select TINYCRYPT
+	select TINYCRYPT_SHA256
+
+if (PCD)
+
+module=PCD
+module-dep=LOG
+module-str=Peripheral Core DFU
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # PCD
+
+endmenu

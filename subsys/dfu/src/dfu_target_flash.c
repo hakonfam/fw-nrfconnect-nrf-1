@@ -110,6 +110,8 @@ int dfu_target_flash_set_callback(dfu_target_callback_t callback_in)
 	}
 
 	callback = callback_in;
+
+	return 0;
 }
 
 int dfu_target_flash_init(size_t file_size)

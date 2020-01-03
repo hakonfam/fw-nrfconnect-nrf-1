@@ -1,0 +1,6 @@
+test_block:
+  address: 0xe0000
+  placement:
+    after:
+    - app
+  size: 0x20000
