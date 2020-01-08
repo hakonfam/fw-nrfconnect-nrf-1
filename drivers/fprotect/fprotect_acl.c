@@ -11,6 +11,8 @@ int fprotect_area(u32_t start, size_t length)
 {
 	static u32_t region_idx;
 
+	assert(NRF_FICR->CODEPAGESIZE == CONFIG_FPROTECT_BLOCK_SIZE);
+
 	if (region_idx >= ACL_REGIONS_COUNT) {
 		return -ENOSPC;
 	}
