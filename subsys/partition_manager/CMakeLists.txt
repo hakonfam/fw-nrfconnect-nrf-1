@@ -56,20 +56,27 @@ if (((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME) OR
       "list(APPEND PM_DOMAINS ${BOARD})\n"
       )
 
-    # TODO get this from CONFIG_DT_FLASH_BASE_ADDRESS
+    # TODO get these from DT or something
+    if (${BOARD} STREQUAL nrf5340_dk_nrf5340_cpunet)
+      set(base 16777216)
+      set(size 256)
+    else()
+      set(base 0)
+      set(size 1024)
+    endif()
+
     set_property(
       TARGET         zephyr_property_target
       APPEND_STRING
       PROPERTY       shared_vars
-      "set(PM_DOMAINS_${BOARD}_FLASH_BASE_ADDRESS 0 CACHE STRING \"\" FORCE)\n"
+      "set(PM_DOMAINS_${BOARD}_FLASH_BASE_ADDRESS ${base} CACHE STRING \"\" FORCE)\n"
       )
 
-    # TODO get this from CONFIG_DT_FLASH_SIZE
     set_property(
       TARGET         zephyr_property_target
       APPEND_STRING
       PROPERTY       shared_vars
-      "set(PM_DOMAINS_${BOARD}_FLASH_SIZE 1024 CACHE STRING \"\" FORCE)\n"
+      "set(PM_DOMAINS_${BOARD}_FLASH_SIZE ${size} CACHE STRING \"\" FORCE)\n"
       )
   endif()
 

@@ -13,6 +13,9 @@ if (IMAGE_NAME OR
   return()
 endif()
 
+# TODO make it so that this is not required
+list(REMOVE_DUPLICATES PM_DOMAINS)
+
 # Create a variable exposing the correct logical target for the current image.
 get_domain(${BOARD} domain)
 
@@ -82,17 +85,17 @@ foreach (d ${PM_DOMAINS})
     list(APPEND header_files ${PROJECT_BINARY_DIR}/${generated_path}/pm_config.h)
 
     set(${d}_app_PROJECT_BINARY_DIR ${PROJECT_BINARY_DIR})
+
+    set_property(GLOBAL PROPERTY
+      PM_${d}_app_HEX_FILE
+      ${PROJECT_BINARY_DIR}/${KERNEL_HEX_NAME}
+      )
+
+    set_property(GLOBAL PROPERTY
+      PM_${d}_app_TARGET
+      ${logical_target_for_zephyr_elf}
+      )
   endif()
-
-  set_property(GLOBAL PROPERTY
-    PM_${d}_app_HEX_FILE
-    ${PROJECT_BINARY_DIR}/${KERNEL_HEX_NAME}
-    )
-
-  set_property(GLOBAL PROPERTY
-    PM_${d}_app_TARGET
-    ${logical_target_for_zephyr_elf}
-    )
 
   # Prepare the input_files, header_files, and images lists
   foreach (image_name ${PM_IMAGES_${d}})
@@ -179,8 +182,6 @@ endforeach()
 
 
 foreach (d ${PM_DOMAINS})
-  set(dpart ${d}_${part})
-
   # Turn the space-separated list into a Cmake list.
   string(REPLACE " " ";" PM_${d}_ALL_BY_SIZE ${PM_${d}_ALL_BY_SIZE})
 
@@ -225,7 +226,6 @@ foreach (d ${PM_DOMAINS})
     ${${d}_implicitly_assigned} ${${d}_explicitly_assigned}
     )
 
-
   set(MERGED_overlap TRUE) # Enable overlapping for the merged hex file.
 
   # Iterate over all container partitions, plus the "fake" merged paritition.
@@ -236,8 +236,8 @@ foreach (d ${PM_DOMAINS})
     # Prepare the list of hex files and list of dependencies for the merge
     # command. Add all hex files inside span of container.
     foreach(part ${PM_${d}_${CONTAINER}_SPAN})
-      list(APPEND ${container}_hex_files ${PM_${d}_${part}_HEX_FILE})
-      list(APPEND ${container}_targets ${PM_${d}_${part}_TARGET})
+      list(APPEND ${d}_${container}_hex_files ${PM_${d}_${part}_HEX_FILE})
+      list(APPEND ${d}_${container}_targets ${PM_${d}_${part}_TARGET})
     endforeach()
 
 
@@ -249,6 +249,7 @@ foreach (d ${PM_DOMAINS})
 
     set(merge_out ${PROJECT_BINARY_DIR}/${d}_${container}.hex)
 
+    print(${d}_${container}_hex_files)
     # Add command to merge files.
     add_custom_command(
       OUTPUT ${merge_out}
@@ -257,11 +258,13 @@ foreach (d ${PM_DOMAINS})
       ${ZEPHYR_BASE}/scripts/mergehex.py
       -o ${merge_out}
       ${${container}_overlap_arg}
-      ${${container}_hex_files}
+      ${${d}_${container}_hex_files}
       DEPENDS
-      ${${container}_targets}
+      ${${d}_${container}_targets}
       )
 
+    message("creating ")
+    print(${d}_${container}_hex)
     # Wrapper target for the merge command.
     # We have to prepend with domain to make it unique.
     add_custom_target(
