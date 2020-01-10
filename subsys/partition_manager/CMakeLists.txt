@@ -37,11 +37,18 @@ set_property(GLOBAL APPEND PROPERTY
   -DUSE_PARTITION_MANAGER=${using_partition_manager}
   )
 
-if((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME)
+
+get_domain(${BOARD} domain)
+
+if (((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME) OR
+  ("${IMAGE_NAME}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}_"))
   # Only preprocess pm.yml when being built as sub image.
+
+  message("Checking if ${BOARD} is in ${PM_DOMAINS}")
 
   # Only add ${BOARD} as domain if not already added
   if (NOT (${BOARD} IN_LIST PM_DOMAINS))
+    message("ADDING BOARD ${BOARD}")
     set_property(
       TARGET         zephyr_property_target
       APPEND_STRING
@@ -66,16 +73,20 @@ if((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME)
       )
   endif()
 
-  preprocess_pm_yml(
-    ${CMAKE_SOURCE_DIR}/pm.yml
-    ${PROJECT_BINARY_DIR}/include/generated/pm.yml
-    )
-  set_property(
-    GLOBAL APPEND PROPERTY
-    PM_IMAGES_${BOARD}
-    ${IMAGE}
-    )
+  # Only non-dynamic sub-images will have pm.yml files.
+  if (EXISTS ${CMAKE_SOURCE_DIR}/pm.yml)
+    preprocess_pm_yml(
+      ${CMAKE_SOURCE_DIR}/pm.yml
+      ${PROJECT_BINARY_DIR}/include/generated/pm.yml
+      )
+    set_property(
+      GLOBAL APPEND PROPERTY
+      PM_IMAGES_${BOARD}
+      ${IMAGE}
+      )
+  endif()
 endif()
+
 
 get_property(
   img_pm_subsys

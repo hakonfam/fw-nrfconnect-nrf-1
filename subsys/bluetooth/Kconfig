@@ -21,6 +21,16 @@ rsource "mesh/Kconfig"
 
 rsource "services/Kconfig"
 
+config HCI_RPMSG
+	bool
+	default y if (SOC_NRF5340_CPUAPP && BT)
+
+if HCI_RPMSG
+module=HCI_RPMSG
+source "${ZEPHYR_BASE}/../nrf/subsys/partition_manager/Kconfig.template.build_strategy"
+endif
+
 endif # BT
 
 endmenu
+

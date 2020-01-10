@@ -84,11 +84,6 @@ def write_gpm_config(gpm_config, name, out_path):
     config_lines = get_config_lines(gpm_config, "#define ", " ", DEST_HEADER, domain)
     image_config_lines = list.copy(config_lines)
 
-    all_partition_names = list()
-    for domain, pm_config in gpm_config.items():
-        all_partition_names.extend(list(pm_config.keys()))
-    all_partition_names = list(set(all_partition_names))
-
     image_config_lines.append("#define PM_ADDRESS 0x{:x}".format(gpm_config[domain][image]['address']))
     image_config_lines.append("#define PM_SIZE 0x{:x}".format(gpm_config[domain][image]['size']))
 
@@ -120,6 +115,9 @@ def parse_args():
     parser.add_argument("--header-files", required=True, type=str, nargs='+',
                         help="Paths to the output header files files."
                              "These will be matched to the --input-names.")
+
+    parser.add_argument("-d", "--dynamic-partition", required=False, type=str,
+                        help="Name of dynamic partition ('app' is default). ")
 
     return parser.parse_args()
 

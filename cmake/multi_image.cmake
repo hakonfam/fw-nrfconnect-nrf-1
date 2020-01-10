@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
 #
 
-get_domain(${BOARD} domain)
 
 if(IMAGE_NAME)
+  get_domain(${BOARD} domain)
   # Current image is a child image
 
   # Store the ${PROJECT_BINARY_DIR} of the current image
@@ -17,10 +17,7 @@ if(IMAGE_NAME)
     "set(${domain}_${IMAGE_NAME}PROJECT_BINARY_DIR ${PROJECT_BINARY_DIR})\n"
     )
 
-  print(logical_target_for_zephyr_elf)
   # Store the ${logical_target_for_zephyr_elf} of the current image
-
-
   set_property(
     TARGET         zephyr_property_target
     APPEND_STRING
@@ -86,7 +83,17 @@ function(add_child_image name sourcedir)
 endfunction()
 
 function(add_child_image_from_source name sourcedir)
-  message("\n=== child image ${name} for domain ${domain} begin ===")
+  message("\n=== child image ${name} begin ===")
+
+  # Set ${name}_BOARD based on what BOARD is set to if not already done.
+  if (NOT ${name}_BOARD)
+    image_board_selection(${BOARD} ${name}_BOARD)
+  endif()
+
+  get_domain(${${name}_BOARD} domain)
+
+  message("=== Domain - ${domain}  ===")
+
 
   # Construct a list of variables that, when present in the root
   # image, should be passed on to all child images as well.
@@ -100,6 +107,7 @@ function(add_child_image_from_source name sourcedir)
     GNUARMEMB_TOOLCHAIN_PATH
     EXTRA_KCONFIG_TARGETS
     PM_DOMAINS
+    PM_${domain}_DYNAMIC_PARTITION
     )
 
   foreach(kconfig_target ${EXTRA_KCONFIG_TARGETS})
@@ -118,9 +126,6 @@ function(add_child_image_from_source name sourcedir)
         )
     endif()
   endforeach()
-
-  # Set ${name}_BOARD based on what BOARD is set to.
-  image_board_selection(${BOARD} ${name}_BOARD)
 
   get_cmake_property(VARIABLES              VARIABLES)
   get_cmake_property(VARIABLES_CACHED CACHE_VARIABLES)
@@ -181,6 +186,11 @@ function(add_child_image_from_source name sourcedir)
 
   # Increase the scope of these variables to make them more available
   set(${name}_KERNEL_HEX_NAME ${${name}_KERNEL_HEX_NAME} CACHE STRING "" FORCE)
+  set(
+    ${domain}_${name}_PROJECT_BINARY_DIR
+    ${${domain}_${name}_PROJECT_BINARY_DIR}
+    CACHE STRING "" FORCE
+    )
   set(
     ${domain}_${name}_PROJECT_BINARY_DIR
     ${${domain}_${name}_PROJECT_BINARY_DIR}

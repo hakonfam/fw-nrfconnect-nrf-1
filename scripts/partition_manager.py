@@ -519,6 +519,9 @@ This file contains all addresses and sizes of all partitions.
     parser.add_argument("--output", required=True, type=str,
                         help="Path to output file.")
 
+    parser.add_argument("-d", "--dynamic-partition", required=False, type=str,
+                        help="Name of dynamic partition ('app' is default). ")
+
     parser.add_argument("-s", "--static-config", required=False, type=argparse.FileType(mode='r'),
                         help="Path static configuration.")
 
@@ -526,7 +529,6 @@ This file contains all addresses and sizes of all partitions.
 
 
 def main():
-    print("Running Partition Manager...")
     if len(sys.argv) > 1:
         static_config = None
         args = parse_args()
@@ -534,6 +536,9 @@ def main():
             print("Partition Manager using static configuration at " + args.static_config.name)
             static_config = yaml.safe_load(args.static_config)
         pm_config = get_pm_config(args.input_files, args.flash_start, args.flash_size * 1024, static_config)
+        if args.dynamic_partition:
+            pm_config[args.dynamic_partition.strip()] = pm_config['app']
+            del pm_config['app']
         write_yaml_out_file(pm_config, args.output)
     else:
         print("No input, running tests.")
@@ -598,6 +603,19 @@ def test():
     start, size = get_dynamic_area_start_and_size(test_config, 100)
     assert start == 10
     assert size == 100 - 10
+
+    # Verify that empty placement property throws error
+    td = {'spm': {'placement': {'before': ['app']}, 'size': 100, 'inside': ['mcuboot_slot0']},
+          'mcuboot': {'placement': {'before': ['spm', 'app']}, 'size': 200},
+          'mcuboot_slot0': {'span': ['app']},
+          'invalid': {'placement': {}},
+          'app': {}}
+    failed = False
+    try:
+        s, sub_partitions = resolve(td)
+    except RuntimeError:
+        failed = True
+    assert failed
 
     # Verify that empty placement property throws error
     td = {'spm': {'placement': {'before': ['app']}, 'size': 100, 'inside': ['mcuboot_slot0']},
