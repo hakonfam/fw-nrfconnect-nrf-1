@@ -263,8 +263,6 @@ foreach (d ${PM_DOMAINS})
       ${${d}_${container}_targets}
       )
 
-    message("creating ")
-    print(${d}_${container}_hex)
     # Wrapper target for the merge command.
     # We have to prepend with domain to make it unique.
     add_custom_target(
