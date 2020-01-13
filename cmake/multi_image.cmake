@@ -60,7 +60,7 @@ function(image_board_selection board_in board_out)
   endif()
 endfunction()
 
-function(add_child_image name sourcedir)
+function(add_sub_image name sourcedir is_domain)
   string(TOUPPER ${name} UPNAME)
 
   if (CONFIG_${UPNAME}_BUILD_STRATEGY_USE_HEX_FILE)
@@ -73,18 +73,27 @@ function(add_child_image name sourcedir)
     message("Skipping building of ${name}")
   else()
     # Build normally
-    add_child_image_from_source(${name} ${sourcedir})
+    add_child_image_from_source(${name} ${sourcedir} ${is_domain})
   endif()
 endfunction()
 
-function(add_child_image_from_source name sourcedir)
-  message("\n=== child image ${name} begin ===")
+function(add_child_image name sourcedir)
+  add_sub_image(${name} ${sourcedir} "False")
+endfunction()
 
-  # Set ${name}_BOARD based on what BOARD is set to if not already set by parent
+function(create_domain_image name sourcedir)
+  add_sub_image(${name} ${sourcedir} "True")
+endfunction()
+
+function(add_child_image_from_source name sourcedir domain_image)
+# Set ${name}_BOARD based on what BOARD is set to if not already set by parent
   if (NOT ${name}_BOARD)
     image_board_selection(${BOARD} ${name}_BOARD)
   endif()
 
+  get_domain(${${name}_BOARD} domain)
+
+  message("\n=== child image ${name} - ${domain} begin ===")
   # Construct a list of variables that, when present in the root
   # image, should be passed on to all child images as well.
   list(APPEND
@@ -97,6 +106,8 @@ function(add_child_image_from_source name sourcedir)
     ZEPHYR_TOOLCHAIN_VARIANT
     GNUARMEMB_TOOLCHAIN_PATH
     EXTRA_KCONFIG_TARGETS
+    PM_DOMAINS
+    PM_${domain}_DYNAMIC_PARTITION
     )
 
   foreach(kconfig_target ${EXTRA_KCONFIG_TARGETS})
@@ -176,7 +187,7 @@ function(add_child_image_from_source name sourcedir)
     message(FATAL_ERROR "CMake generation for ${name} failed, aborting. Command: ${ret}")
   endif()
 
-  message("=== child image ${name} end ===\n")
+  message("=== child image ${name} - ${domain} end ===\n")
 
   # Include some variables from the child image into the parent image
   # namespace
@@ -216,9 +227,11 @@ function(add_child_image_from_source name sourcedir)
       )
   endforeach()
 
-  set_property(
-    GLOBAL APPEND PROPERTY
-    PM_IMAGES
-    "${name}"
-    )
+  if (NOT "${name}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}")
+    set_property(
+      GLOBAL APPEND PROPERTY
+      PM_IMAGES
+      "${name}"
+      )
+  endif()
 endfunction()

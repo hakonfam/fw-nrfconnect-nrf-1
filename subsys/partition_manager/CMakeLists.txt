@@ -38,16 +38,59 @@ set_property(GLOBAL APPEND PROPERTY
   -DUSE_PARTITION_MANAGER=${using_partition_manager}
   )
 
-if((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME)
+get_domain(${BOARD} domain)
+
+if (((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME) OR
+  ("${IMAGE_NAME}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}_"))
   # Only preprocess pm.yml when being built as sub image.
 
-  preprocess_pm_yml(
-    ${CMAKE_SOURCE_DIR}/pm.yml
-    ${PROJECT_BINARY_DIR}/include/generated/pm.yml
-    )
+
+  # Only add ${BOARD} as domain if not already added
+  if (NOT (${BOARD} IN_LIST PM_DOMAINS))
+    set_property(
+      TARGET         zephyr_property_target
+      APPEND_STRING
+      PROPERTY       shared_vars
+      "list(APPEND PM_DOMAINS ${BOARD})\n"
+      )
+
+    set_property(
+      TARGET         zephyr_property_target
+      APPEND_STRING
+      PROPERTY       shared_vars
+      "set(PM_DOMAINS_${BOARD}_FLASH_BASE_ADDRESS ${CONFIG_FLASH_BASE_ADDRESS} CACHE STRING \"\" FORCE)\n"
+      )
+
+    set_property(
+      TARGET         zephyr_property_target
+      APPEND_STRING
+      PROPERTY       shared_vars
+      "set(PM_DOMAINS_${BOARD}_FLASH_SIZE ${CONFIG_FLASH_SIZE} CACHE STRING \"\" FORCE)\n"
+      )
+  endif()
+
+  # Only non-dynamic sub-images will have pm.yml files.
+  # E.g. the main app on a domain will not have a pm.yml file.
+  if (EXISTS ${CMAKE_SOURCE_DIR}/pm.yml)
+    preprocess_pm_yml(
+      ${CMAKE_SOURCE_DIR}/pm.yml
+      ${PROJECT_BINARY_DIR}/include/generated/pm.yml
+      )
+    set_property(
+      GLOBAL APPEND PROPERTY
+      PM_IMAGES_${BOARD}
+      ${IMAGE}
+      )
+  endif()
 endif()
 
-get_property(img_pm_subsys GLOBAL PROPERTY PM_SUBSYS)
+
+get_property(
+  img_pm_subsys
+  GLOBAL PROPERTY
+  ${IMAGE}PM_SUBSYS # ${IMAGE} ends with '_' 
+  )
+
 if (img_pm_subsys)
   foreach (subsys_pm_yml ${img_pm_subsys})
     file(RELATIVE_PATH rel_path_to_yml ${ZEPHYR_BASE} ${subsys_pm_yml})
@@ -57,10 +100,10 @@ if (img_pm_subsys)
       ${subsys_pm_yml}
       ${subsys_pm_preprocessed}
       )
-  set_property(
-    GLOBAL APPEND PROPERTY
-    PM_SUBSYS_PREPROCESSED
+    set_property(
+      GLOBAL APPEND PROPERTY
+      PM_SUBSYS_PREPROCESSED
       ${subsys_pm_preprocessed}
-    )
+      )
   endforeach()
 endif()
