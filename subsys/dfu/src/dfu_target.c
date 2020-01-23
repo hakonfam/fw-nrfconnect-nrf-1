@@ -24,9 +24,9 @@ DEF_DFU_TARGET(modem);
 #include "dfu_target_mcuboot.h"
 DEF_DFU_TARGET(mcuboot);
 #endif
-#ifdef CONFIG_DFU_TARGET_B1
-#include "dfu_target_b1.h"
-DEF_DFU_TARGET(b1);
+#ifdef CONFIG_DFU_TARGET_FLASH
+#include "dfu_target_flash.h"
+DEF_DFU_TARGET(flash);
 #endif
 
 #define MIN_SIZE_IDENTIFY_BUF 0x280
@@ -50,9 +50,11 @@ int dfu_target_img_type(const void *const buf, size_t len)
 		return DFU_TARGET_IMAGE_TYPE_MODEM_DELTA;
 	}
 #endif
-#ifdef CONFIG_DFU_TARGET_B1
-	if (dfu_target_b1_identify(buf)) {
-		return DFU_TARGET_IMAGE_TYPE_B1;
+#ifdef CONFIG_DFU_TARGET_FLASH
+	if (dfu_target_flash_identify(buf)) {
+		return DFU_TARGET_IMAGE_TYPE_FLASH;
+	}
+#endif
 	}
 #endif
 
@@ -74,9 +76,9 @@ int dfu_target_init(int img_type, size_t file_size, dfu_target_callback_t cb)
 		new_target = &dfu_target_modem;
 	}
 #endif
-#ifdef CONFIG_DFU_TARGET_B1
-	if (img_type == DFU_TARGET_IMAGE_TYPE_B1) {
-		new_target = &dfu_target_B1;
+#ifdef CONFIG_DFU_TARGET_FLASH
+	if (img_type == DFU_TARGET_IMAGE_TYPE_FLASH) {
+		new_target = &dfu_target_flash;
 	}
 #endif
 	if (new_target == NULL) {
