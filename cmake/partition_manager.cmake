@@ -65,8 +65,8 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
   if (CONFIG_SOC_NRF9160)
     add_region(
       otp
+      756 # 189 * 4
       0xff8108
-      756
       start_to_end
       )
   endif()
@@ -76,6 +76,13 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     ${ram_size}
     ${CONFIG_SRAM_BASE_ADDRESS}
     end_to_start
+    )
+
+  add_region(
+    flash-primary
+    ${flash-size}
+    ${CONFIG_FLASH_BASE_ADDRESS}
+    complex
     )
 
   set(pm_cmd
@@ -89,6 +96,7 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     ${static_configuration}
     ${region_arguments}
     )
+  print(pm_cmd)
 
   set(pm_output_cmd
     ${PYTHON_EXECUTABLE}

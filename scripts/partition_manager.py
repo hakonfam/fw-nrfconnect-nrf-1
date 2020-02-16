@@ -547,10 +547,14 @@ def get_region_config(pm_config, region_name, region_config, static_conf=None):
 
     # Generate the region partition containing the non-reserved memory
     pm_config[region_name] = dict()
+    pm_config[region_name]['region'] = region_name
+
     if placement_strategy == END_TO_START:
         pm_config[region_name]['address'] = start
         pm_config[region_name]['size'] = address - start
-        pm_config[region_name]['region'] = region_name
+    else:
+        pm_config[region_name]['address'] = start
+        pm_config[region_name]['size'] = (start + size) - address
 
 
 def verify_static_conf(size, start, placement_strategy, static_conf):
