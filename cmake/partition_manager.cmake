@@ -256,12 +256,14 @@ if (is_dynamic_partition_in_domain)  # We are being built as sub image
     "set(PM_DOMAINS_${domain}_IMAGES ${prefixed_images})\n"
     )
 
-  set_property(
-    TARGET         zephyr_property_target
-    APPEND_STRING
-    PROPERTY       shared_vars
-    "set(PM_DOMAINS_${domain}_HEX_FILE ${PROJECT_BINARY_DIR}/merged_${domain}.hex)\n"
-    )
+  if (NOT ("${IMAGE_NAME}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}_"))
+    set_property(
+      TARGET         zephyr_property_target
+      APPEND_STRING
+      PROPERTY       shared_vars
+      "set(PM_DOMAINS_${domain}_HEX_FILE ${PROJECT_BINARY_DIR}/merged_${domain}.hex)\n"
+      )
+  endif()
 else()
   # This is the root image, generate the global pm_config.h files
   list(REMOVE_DUPLICATES PM_DOMAINS)

@@ -234,4 +234,17 @@ function(add_child_image_from_source name sourcedir domain_image)
       "${name}"
       )
   endif()
+
+  if (${domain_image})
+    add_custom_target(${name}_flash
+                      COMMAND
+                      ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/${name} -- flash
+    )
+
+    set_property(TARGET zephyr_property_target
+                 APPEND PROPERTY FLASH_DEPENDENCIES
+                 ${name}_flash
+  )
+  endif()
+
 endfunction()

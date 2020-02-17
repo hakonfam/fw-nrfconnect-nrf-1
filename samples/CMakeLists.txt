@@ -32,5 +32,5 @@ if (CONFIG_HCI_RPMSG)
     message(FATAL_ERROR "Board ${BOARD} not supported for including hci_rpmsg as child image")
   endif()
 
-  add_child_image(hci_rpmsg ${NRF_DIR}/../zephyr/samples/bluetooth/hci_rpmsg)
+  create_domain_image(hci_rpmsg ${ZEPHYR_BASE}/samples/bluetooth/hci_rpmsg)
 endif()
