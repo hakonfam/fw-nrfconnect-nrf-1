@@ -41,7 +41,8 @@ def get_config_lines(pm_config, regions_config, head, split, dest):
                                   key=lambda key_value_tuple: key_value_tuple[1]['address']):
 
         # Add RAM if there exists a partition with 'name'_ram.
-        # If no RAM partition exists, the default RAM partition (named 'ram') will be used in the linker script.
+        # If no RAM partition exists, the default RAM partition (named 'ram', placed in region
+        # 'ram_primary') will be used in the linker script.
         if f'{name}_ram' in pm_config:
             add_line("%s_RAM_ADDRESS" % name.upper(), "0x%x" % pm_config[f'{name}_ram']['address'])
             add_line("%s_RAM_SIZE" % name.upper(), "0x%x" % pm_config[f'{name}_ram']['size'])
@@ -52,9 +53,7 @@ def get_config_lines(pm_config, regions_config, head, split, dest):
         add_line("%d_LABEL" % partition_id, "%s" % name.upper())
 
         if dest is DEST_HEADER:
-            if 'region' not in partition:  # Primary flash region
-                add_line("%s_DEV_NAME" % name.upper(), "\"NRF_FLASH_DRV_NAME\"")
-            elif 'device' in regions_config[partition['region']] and len(regions_config[partition['region']]['device']):
+            if 'device' in regions_config[partition['region']] and regions_config[partition['region']]['device']:
                 add_line("%s_DEV_NAME" % name.upper(), f"\"{regions_config[partition['region']]['device']}\"")
         elif dest is DEST_KCONFIG:
             if 'span' in partition.keys():

@@ -173,21 +173,6 @@ def solve_first_last(reqs, unsolved, solution):
                 unsolved.remove(first_or_last[0])
 
 
-def extract_sub_partitions(reqs):
-    sub_partitions = dict()
-    keys_to_delete = list()
-
-    for key, value in reqs.items():
-        if 'span' in value.keys():
-            sub_partitions[key] = value
-            keys_to_delete.append(key)
-
-    for key in keys_to_delete:
-        del reqs[key]
-
-    return sub_partitions
-
-
 def solve_inside(reqs, sub_partitions):
     for key, value in reqs.items():
         if 'inside' in value.keys():
@@ -240,7 +225,9 @@ def resolve(reqs):
     solution = list(['app'])
 
     remove_irrelevant_requirements(reqs)
-    sub_partitions = extract_sub_partitions(reqs)
+    sub_partitions = {k: v for k, v in reqs.items() if 'span' in v}
+    reqs = {k: v for k, v in reqs.items() if 'span' not in v}
+
     solve_inside(reqs, sub_partitions)
     clean_sub_partitions(reqs, sub_partitions)
 
@@ -575,9 +562,6 @@ def verify_static_conf(size, start, placement_strategy, static_conf):
 
 
 def solve_complex_region(pm_config, start, size, placement_strategy, region_name, device, static_conf):
-    if 'app' not in pm_config:
-        pm_config['app'] = dict()
-
     free_size = size
 
     if static_conf:
@@ -596,7 +580,7 @@ def solve_complex_region(pm_config, start, size, placement_strategy, region_name
 
     if static_conf:
         # Merge the results, take the new 'app' as that has the correct size.
-        pm_config.update({name: config for name, config in static_config.items() if name != 'app'})
+        pm_config.update({name: config for name, config in static_conf.items() if name != 'app'})
 
 
 def write_yaml_out_file(pm_config, out_path):
@@ -706,17 +690,19 @@ def main():
         regions = {x: {k.replace(f'{x}_', ''): v
                        for k, v in vars(args).items() if k.startswith(x)}
                    for x in [y.replace('-', '_') for y in args.regions]}  # Replace - with _ to match namespace
+        solution = dict()  # We need a separate dict to allow deletion of keys inside 'get_region_config'
         for region, region_config in regions.items():
             region_config['name'] = region
             partitions = {k: v for k, v in pm_config.items() if region in v['region']}
             get_region_config(partitions, region_config, static_config)
+            solution.update(partitions)
 
             if vars(args)[f'{region}_dynamic_partition']:
-                pm_config[args.dynamic_partition.strip()] = pm_config['app']
-                del pm_config['app']
-                replace_app_with_dynamic_partition(pm_config, args.dynamic_partition.strip())
+                solution[args.dynamic_partition.strip()] = solution['app']
+                del solution['app']
+                replace_app_with_dynamic_partition(solution, args.dynamic_partition.strip())
 
-        write_yaml_out_file(pm_config, args.output)
+        write_yaml_out_file(solution, args.output)
         write_yaml_out_file(regions, args.output_regions)
     else:
         print("No input, running tests.")
