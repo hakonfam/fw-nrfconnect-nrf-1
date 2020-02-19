@@ -23,7 +23,7 @@ if (CONFIG_SECURE_BOOT)
 endif ()
 
 # TODO check BT_RPMSG_NRF53
-if (CONFIG_HCI_RPMSG)
+if (CONFIG_BT_RPMSG_NRF53)
   if ((BOARD STREQUAL nrf5340_dk_nrf5340_cpuappns) OR
       (BOARD STREQUAL nrf5340_dk_nrf5340_cpuapp))
 

@@ -26,11 +26,11 @@ if(IMAGE_NAME)
   share("set(${IMAGE_NAME}KERNEL_ELF_NAME ${KERNEL_ELF_NAME})")
   share("list(APPEND ${IMAGE_NAME}BUILD_BYPRODUCTS ${PROJECT_BINARY_DIR}/${KERNEL_HEX_NAME})")
   share("list(APPEND ${IMAGE_NAME}BUILD_BYPRODUCTS ${PROJECT_BINARY_DIR}/${KERNEL_ELF_NAME})")
-
-  file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/shared_vars.cmake
-    CONTENT $<TARGET_PROPERTY:zephyr_property_target,shared_vars>
-    )
 endif(IMAGE_NAME)
+
+file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/shared_vars.cmake
+  CONTENT $<TARGET_PROPERTY:zephyr_property_target,shared_vars>
+  )
 
 function(image_board_selection board_in board_out)
   # It is assumed that only the root app will be built as non-secure.
@@ -170,12 +170,7 @@ function(add_child_image_from_source name sourcedir domain_image)
 
   if (IMAGE_NAME)
     # Expose your childrens secrets to your parent
-    set_property(
-      TARGET         zephyr_property_target
-      APPEND_STRING
-      PROPERTY       shared_vars
-      "include(${CMAKE_BINARY_DIR}/${name}/shared_vars.cmake)\n"
-      )
+    share("include(${CMAKE_BINARY_DIR}/${name}/shared_vars.cmake)")
   endif()
 
   set_property(DIRECTORY APPEND PROPERTY
@@ -193,9 +188,13 @@ function(add_child_image_from_source name sourcedir domain_image)
   # namespace
   include(${CMAKE_BINARY_DIR}/${name}/shared_vars.cmake)
 
+  # TODO should we do something like this?
+  share("include(${CMAKE_BINARY_DIR}/${name}/shared_vars.cmake)")
+
   # Increase the scope of this variable to make it more available
   set(${name}_KERNEL_HEX_NAME ${${name}_KERNEL_HEX_NAME} CACHE STRING "" FORCE)
   set(${name}_KERNEL_ELF_NAME ${${name}_KERNEL_ELF_NAME} CACHE STRING "" FORCE)
+  set(PM_DOMAINS ${PM_DOMAINS} CACHE STRING "" FORCE)
 
   if(MULTI_IMAGE_DEBUG_MAKEFILE AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     set(multi_image_build_args "-d" "${MULTI_IMAGE_DEBUG_MAKEFILE}")

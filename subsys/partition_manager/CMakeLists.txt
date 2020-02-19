@@ -44,29 +44,14 @@ if (((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME) OR
   ("${IMAGE_NAME}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}_"))
   # Only preprocess pm.yml when being built as sub image.
 
-
+  message("Checking domain ${BOARD} in ${PM_DOMAINS}")
   # Only add ${BOARD} as domain if not already added
   if (NOT (${BOARD} IN_LIST PM_DOMAINS))
-    set_property(
-      TARGET         zephyr_property_target
-      APPEND_STRING
-      PROPERTY       shared_vars
-      "list(APPEND PM_DOMAINS ${BOARD})\n"
-      )
-
-    set_property(
-      TARGET         zephyr_property_target
-      APPEND_STRING
-      PROPERTY       shared_vars
-      "set(PM_DOMAINS_${BOARD}_FLASH_BASE_ADDRESS ${CONFIG_FLASH_BASE_ADDRESS} CACHE STRING \"\" FORCE)\n"
-      )
-
-    set_property(
-      TARGET         zephyr_property_target
-      APPEND_STRING
-      PROPERTY       shared_vars
-      "set(PM_DOMAINS_${BOARD}_FLASH_SIZE ${CONFIG_FLASH_SIZE} CACHE STRING \"\" FORCE)\n"
-      )
+    share("list(APPEND PM_DOMAINS ${BOARD})")
+    share("set(PM_DOMAINS_${BOARD}_FLASH_BASE_ADDRESS
+              ${CONFIG_FLASH_BASE_ADDRESS} CACHE STRING \"\" FORCE)")
+    share("set(PM_DOMAINS_${BOARD}_FLASH_SIZE ${CONFIG_FLASH_SIZE}
+           CACHE STRING \"\" FORCE)")
   endif()
 
   # Only non-dynamic sub-images will have pm.yml files.
