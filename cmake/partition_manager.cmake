@@ -23,8 +23,6 @@ macro(add_region_with_dev name size base placement_strategy device)
   list(APPEND region_arguments "--${name}-device;${device}")
 endmacro()
 
-# TODO add support for setting dynamic partition for a region through a macro
-
 get_property(PM_IMAGES GLOBAL PROPERTY PM_IMAGES)
 get_property(PM_SUBSYS_PREPROCESSED GLOBAL PROPERTY PM_SUBSYS_PREPROCESSED)
 
@@ -86,7 +84,7 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     ${flash_size}
     ${CONFIG_FLASH_BASE_ADDRESS}
     complex
-    NRF_FLASH_DRV_NAME  # TODO replace with DT symbol
+    NRF_FLASH_DRV_NAME
     )
 
   set(pm_cmd
@@ -94,17 +92,16 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     ${NRF_DIR}/scripts/partition_manager.py
     --input-files ${input_files}
     --regions ${regions}
-    --output ${CMAKE_BINARY_DIR}/partitions.yml
+    --output-partitions ${CMAKE_BINARY_DIR}/partitions.yml
     --output-regions ${CMAKE_BINARY_DIR}/regions.yml
     ${static_configuration}
     ${region_arguments}
     )
-  print(pm_cmd)
 
   set(pm_output_cmd
     ${PYTHON_EXECUTABLE}
     ${NRF_DIR}/scripts/partition_manager_output.py
-    --input ${CMAKE_BINARY_DIR}/partitions.yml
+    --input-partitions ${CMAKE_BINARY_DIR}/partitions.yml
     --input-regions ${CMAKE_BINARY_DIR}/regions.yml
     --config-file ${CMAKE_BINARY_DIR}/pm.config
     --input-names ${images}

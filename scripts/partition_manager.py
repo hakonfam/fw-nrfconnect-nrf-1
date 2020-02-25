@@ -535,9 +535,11 @@ def solve_simple_region(pm_config, start, size, placement_strategy, region_name,
 
         if device:
             pm_config[partition_name]['device'] = device
+
     # Generate the region partition containing the non-reserved memory
     pm_config[region_name] = dict()
     pm_config[region_name]['region'] = region_name
+
     if placement_strategy == END_TO_START:
         pm_config[region_name]['address'] = start
         pm_config[region_name]['size'] = address - start
@@ -547,7 +549,8 @@ def solve_simple_region(pm_config, start, size, placement_strategy, region_name,
 
 
 def verify_static_conf(size, start, placement_strategy, static_conf):
-    # Verify that all statically defined ram has given address, and that they are packed at the end of flash
+    # Verify that all statically defined partitions has given address,
+    # and that they are packed at the end/start of the region.
     starts = {start + size} | {c['address'] for c in static_conf.values() if 'size' in c}
     ends = {start} | {c['address'] + c['size'] for c in static_conf.values() if 'size' in c}
     gaps = list(zip(sorted(ends - starts), sorted(starts - ends)))
@@ -558,7 +561,7 @@ def verify_static_conf(size, start, placement_strategy, static_conf):
         start_end_correct = gaps[0][0] == start
 
     if len(gaps) != 1 or not start_end_correct:
-        raise RuntimeError("Statically defined permanent RAM partitions are not packed at the start/end of RAM region")
+        raise RuntimeError("Statically defined partitions are not packed at the start/end of region")
 
 
 def solve_complex_region(pm_config, start, size, placement_strategy, region_name, device, static_conf):
@@ -607,7 +610,7 @@ This file contains all addresses and sizes of all partitions.
     parser.add_argument("--input-files", required=True, type=str, nargs="+",
                         help="List of paths to input yaml files. ")
 
-    parser.add_argument("--output", required=True, type=str,
+    parser.add_argument("--output-partitions", required=True, type=str,
                         help="Path to output partition configuration file.")
 
     parser.add_argument("--output-regions", required=True, type=str,
@@ -691,6 +694,7 @@ def main():
                        for k, v in vars(args).items() if k.startswith(x)}
                    for x in [y.replace('-', '_') for y in args.regions]}  # Replace - with _ to match namespace
         solution = dict()  # We need a separate dict to allow deletion of keys inside 'get_region_config'
+
         for region, region_config in regions.items():
             region_config['name'] = region
             partitions = {k: v for k, v in pm_config.items() if region in v['region']}
@@ -702,7 +706,7 @@ def main():
                 del solution['app']
                 replace_app_with_dynamic_partition(solution, args.dynamic_partition.strip())
 
-        write_yaml_out_file(solution, args.output)
+        write_yaml_out_file(solution, args.output_partitions)
         write_yaml_out_file(regions, args.output_regions)
     else:
         print("No input, running tests.")
@@ -1019,7 +1023,7 @@ def test():
 
     # Verify that providing a static configuration with nothing unresolved gives a valid configuration with 'app'.
     static_config = {'spm': {'address': 0, 'placement': None, 'before': ['app'], 'size': 400}}
-    test_config = dict()
+    test_config = {'app': dict()}
     flash_region = {
         'name': 'flash_primary',
         'placement_strategy': COMPLEX,
@@ -1298,7 +1302,7 @@ def test():
     s, sub = resolve(td)
     expect_list(['c', 'd', 'app'], s)
     expect_list(['b'], sub)
-    expect_list(['d'], sub['b']['orig_span'])  # Backup must contain edits.
+    expect_list(['d'], sub['b']['orig_span']) # Backup must contain edits.
 
     print("All tests passed!")
 
