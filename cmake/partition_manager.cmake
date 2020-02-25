@@ -11,7 +11,6 @@ Each image's directory will be searched for a pm.yml, and will receive a pm_conf
 Also, the each image's hex file will be automatically associated with its partition.")
 
 macro(add_region name size base placement_strategy)
-  message("Adding redion ${name}")
   list(APPEND regions ${name})
   list(APPEND region_arguments "--${name}-size;${size}")
   list(APPEND region_arguments "--${name}-base-address;${base}")
@@ -98,6 +97,7 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     ${region_arguments}
     )
 
+  message("${pm_cmd}")
   set(pm_output_cmd
     ${PYTHON_EXECUTABLE}
     ${NRF_DIR}/scripts/partition_manager_output.py

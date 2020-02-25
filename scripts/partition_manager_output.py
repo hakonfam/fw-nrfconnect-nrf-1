@@ -34,14 +34,12 @@ def get_config_lines(pm_config, regions_config, head, split, dest):
     def string_of_strings(mlist):
         return '"%s"' % " ".join(["%s" % elem for elem in mlist])
 
-    # TODO do we need to remove the ram partitions here?
-    flash_partition_pm_config = {k: v for k, v in pm_config.items() if 'ram' not in k}
     partition_id = 0
     for name, partition in sorted(pm_config.items(),
                                   key=lambda key_value_tuple: key_value_tuple[1]['address']):
 
-        # Add RAM if there exists a partition with 'name'_ram.
-        # If no RAM partition exists, the default RAM partition (named 'ram', placed in region
+        # Assign specific RAM partition to this partition if there exists a partition with name 'name_of_partition'_ram.
+        # If no such RAM partition exists, the default RAM partition (named 'ram', placed in region
         # 'ram_primary') will be used in the linker script.
         if f'{name}_ram' in pm_config:
             add_line("%s_RAM_ADDRESS" % name.upper(), "0x%x" % pm_config[f'{name}_ram']['address'])
@@ -63,19 +61,13 @@ def get_config_lines(pm_config, regions_config, head, split, dest):
         partition_id += 1
     add_line("NUM", "%d" % partition_id)
 
-    # Add configuration of pure RAM partitions, these does not have a partition ID
-    for name, partition in pm_config.items():
-        if 'address' not in partition:
-            add_line("%s_RAM_ADDRESS" % name.upper(), "0x%x" % partition['ram_address'])
-            add_line("%s_RAM_SIZE" % name.upper(), "0x%x" % partition['ram_size'])
-
     def find_depth(key, depth=0):
         if 'span' in pm_config[key].keys():
             return find_depth(pm_config[key]['span'][0], depth + 1)
         return depth
 
+    flash_partition_pm_config = {k: v for k, v in pm_config.items() if 'ram' not in k}
     all_by_size = list(flash_partition_pm_config.keys())
-
     all_by_size = sorted(all_by_size, key=find_depth)
     all_by_size = sorted(all_by_size, key=lambda key: flash_partition_pm_config[key]['size'])
     add_line("ALL_BY_SIZE", string_of_strings(all_by_size))
@@ -116,7 +108,7 @@ def parse_args():
         description='''Creates files based on Partition Manager results.''',
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument("--input", required=True, type=str,
+    parser.add_argument("--input-partitions", required=True, type=str,
                         help="Path to the input .yml file with partition configuration.")
 
     parser.add_argument("--input-regions", required=True, type=str,
@@ -138,7 +130,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    with open(args.input, 'r') as f:
+    with open(args.input_partitions, 'r') as f:
         pm_config = yaml.safe_load(f)
     with open(args.input_regions, 'r') as f:
         regions_config = yaml.safe_load(f)

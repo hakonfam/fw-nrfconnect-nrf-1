@@ -114,6 +114,10 @@ def remove_irrelevant_requirements(reqs):
             if not v['inside']:
                 del v['inside']
 
+    # Remove empty spans
+    for empty_span in [k for k in reqs if 'span' in reqs[k] and len(reqs[k]['span']) == 0]:
+        del reqs[empty_span]
+
 
 def get_images_which_need_resolving(reqs, sub_partitions):
     # Get candidates which have placement specs.
