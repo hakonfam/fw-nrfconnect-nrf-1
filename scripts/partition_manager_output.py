@@ -46,9 +46,12 @@ def get_config_lines(pm_config, regions_config, head, split, dest):
             add_line("%s_RAM_SIZE" % name.upper(), "0x%x" % pm_config[f'{name}_ram']['size'])
         add_line("%s_ADDRESS" % name.upper(), "0x%x" % partition['address'])
         add_line("%s_SIZE" % name.upper(), "0x%x" % partition['size'])
-        add_line("%s_ID" % name.upper(), "%d" % partition_id)
         add_line("%s_NAME" % name.upper(), "%s" % name)
-        add_line("%d_LABEL" % partition_id, "%s" % name.upper())
+
+        if 'device' in regions_config[partition['region']] and regions_config[partition['region']]['device']:
+            add_line("%s_ID" % name.upper(), "%d" % partition_id)
+            add_line("%d_LABEL" % partition_id, "%s" % name.upper())
+            partition_id += 1
 
         if dest is DEST_HEADER:
             if 'device' in regions_config[partition['region']] and regions_config[partition['region']]['device']:
@@ -57,8 +60,6 @@ def get_config_lines(pm_config, regions_config, head, split, dest):
             if 'span' in partition.keys():
                 add_line("%s_SPAN" % name.upper(), string_of_strings(partition['span']))
 
-        pm_config[name]['partition_id'] = partition_id
-        partition_id += 1
     add_line("NUM", "%d" % partition_id)
 
     def find_depth(key, depth=0):
