@@ -26,11 +26,11 @@ if(IMAGE_NAME)
   share("set(${IMAGE_NAME}KERNEL_ELF_NAME ${KERNEL_ELF_NAME})")
   share("list(APPEND ${IMAGE_NAME}BUILD_BYPRODUCTS ${PROJECT_BINARY_DIR}/${KERNEL_HEX_NAME})")
   share("list(APPEND ${IMAGE_NAME}BUILD_BYPRODUCTS ${PROJECT_BINARY_DIR}/${KERNEL_ELF_NAME})")
-endif(IMAGE_NAME)
 
-file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/shared_vars.cmake
-  CONTENT $<TARGET_PROPERTY:zephyr_property_target,shared_vars>
-  )
+  file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/shared_vars.cmake
+    CONTENT $<TARGET_PROPERTY:zephyr_property_target,shared_vars>
+    )
+endif(IMAGE_NAME)
 
 function(image_board_selection board_in board_out)
   # It is assumed that only the root app will be built as non-secure.

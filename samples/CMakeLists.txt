@@ -22,7 +22,6 @@ if (CONFIG_SECURE_BOOT)
   add_child_image(b0 ${CMAKE_CURRENT_LIST_DIR}/bootloader)
 endif ()
 
-# TODO check BT_RPMSG_NRF53
 if (CONFIG_BT_RPMSG_NRF53)
   if ((BOARD STREQUAL nrf5340_dk_nrf5340_cpuappns) OR
       (BOARD STREQUAL nrf5340_dk_nrf5340_cpuapp))

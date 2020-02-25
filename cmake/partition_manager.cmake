@@ -12,6 +12,7 @@ Also, the each image's hex file will be automatically associated with its partit
 
 get_property(PM_IMAGES GLOBAL PROPERTY PM_IMAGES)
 get_property(PM_SUBSYS_PREPROCESSED GLOBAL PROPERTY PM_SUBSYS_PREPROCESSED)
+get_domain(${BOARD} domain)
 
 if(EXISTS "${PM_STATIC_YML_FILE}" AND NOT IS_DIRECTORY "${PM_STATIC_YML_FILE}")
   set(static_configuration_file ${PM_STATIC_YML_FILE})
