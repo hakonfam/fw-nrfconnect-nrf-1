@@ -21,3 +21,16 @@ endif()
 if (CONFIG_SECURE_BOOT)
   add_child_image(b0 ${CMAKE_CURRENT_LIST_DIR}/bootloader)
 endif ()
+
+if (CONFIG_BT_RPMSG_NRF53)
+  if ((BOARD STREQUAL nrf5340_dk_nrf5340_cpuappns) OR
+      (BOARD STREQUAL nrf5340_dk_nrf5340_cpuapp))
+
+    set(hci_rpmsg_BOARD nrf5340_dk_nrf5340_cpunet)
+    set(PM_${hci_rpmsg_BOARD}_DYNAMIC_PARTITION hci_rpmsg CACHE STRING "" FORCE)
+  else()
+    message(FATAL_ERROR "Board ${BOARD} not supported for including hci_rpmsg as child image")
+  endif()
+
+  create_domain_image(hci_rpmsg ${ZEPHYR_BASE}/samples/bluetooth/hci_rpmsg)
+endif()
