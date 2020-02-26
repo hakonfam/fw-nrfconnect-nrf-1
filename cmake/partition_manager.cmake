@@ -86,6 +86,16 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     NRF_FLASH_DRV_NAME
     )
 
+  if (CONFIG_PM_EXTERNAL_FLASH)
+    add_region_with_dev(
+      external-flash
+      ${CONFIG_PM_EXTERNAL_FLASH_SIZE}
+      ${CONFIG_PM_EXTERNAL_FLASH_BASE}
+      start_to_end
+      ${CONFIG_PM_EXTERNAL_FLASH_DEV_NAME}
+      )
+  endif()
+
   set(pm_cmd
     ${PYTHON_EXECUTABLE}
     ${NRF_DIR}/scripts/partition_manager.py
@@ -97,7 +107,6 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     ${region_arguments}
     )
 
-  message("${pm_cmd}")
   set(pm_output_cmd
     ${PYTHON_EXECUTABLE}
     ${NRF_DIR}/scripts/partition_manager_output.py
