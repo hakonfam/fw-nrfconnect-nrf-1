@@ -7,7 +7,7 @@ b0_image:
     after: start
 
 b0_ram:
-  size: 0x1000
+  size: 0xA000
   region: 'ram_primary'
 
 b0:

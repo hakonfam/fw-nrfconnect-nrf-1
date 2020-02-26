@@ -38,6 +38,9 @@ def get_config_lines(pm_config, regions_config, head, split, dest):
     for name, partition in sorted(pm_config.items(),
                                   key=lambda key_value_tuple: key_value_tuple[1]['address']):
 
+        def partition_has_device():
+            return 'device' in regions_config[partition['region']] and regions_config[partition['region']]['device']
+
         # Assign specific RAM partition to this partition if there exists a partition with name 'name_of_partition'_ram.
         # If no such RAM partition exists, the default RAM partition (named 'ram', placed in region
         # 'ram_primary') will be used in the linker script.
@@ -48,13 +51,13 @@ def get_config_lines(pm_config, regions_config, head, split, dest):
         add_line("%s_SIZE" % name.upper(), "0x%x" % partition['size'])
         add_line("%s_NAME" % name.upper(), "%s" % name)
 
-        if 'device' in regions_config[partition['region']] and regions_config[partition['region']]['device']:
+        if partition_has_device():
             add_line("%s_ID" % name.upper(), "%d" % partition_id)
             add_line("%d_LABEL" % partition_id, "%s" % name.upper())
             partition_id += 1
 
         if dest is DEST_HEADER:
-            if 'device' in regions_config[partition['region']] and regions_config[partition['region']]['device']:
+            if partition_has_device():
                 add_line("%s_DEV_NAME" % name.upper(), f"\"{regions_config[partition['region']]['device']}\"")
         elif dest is DEST_KCONFIG:
             if 'span' in partition.keys():
