@@ -696,7 +696,7 @@ def main():
         # Place region configuration into a dict
         regions = {x: {k.replace(f'{x}_', ''): v
                        for k, v in vars(args).items() if k.startswith(x)}
-                   for x in [y.replace('-', '_') for y in args.regions]}  # Replace - with _ to match namespace
+                   for x in [y.replace('-', '_') for y in args.regions]}  # Replace - with _ to match argparse namespace
         solution = dict()  # We need a separate dict to allow deletion of keys inside 'get_region_config'
 
         for region, region_config in regions.items():

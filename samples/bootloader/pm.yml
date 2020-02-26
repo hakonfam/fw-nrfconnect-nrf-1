@@ -6,10 +6,6 @@ b0_image:
   placement:
     after: start
 
-b0_ram:
-  size: 0xA000
-  region: 'ram_primary'
-
 b0:
   span: [b0_image, provision]
 

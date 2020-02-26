@@ -71,15 +71,32 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
       )
   endif()
 
+  # Since BSDLib has reserved the RAM in 0x20010000 - 0x20020000
+  if (CONFIG_SOC_NRF9160)
+    # TODO get info from DT
+      ram_primary
+      0x20000 # 128 KB
+      0x200020000
+      end_to_start
+      )
+
+    add_region(
+      ram_secure
+      0x10000 # 64 KB
+      0x20000000
+      end_to_start
+      )
+  else()
   add_region(
-    ram-primary
+    ram_primary
     ${ram_size}
     ${CONFIG_SRAM_BASE_ADDRESS}
     end_to_start
     )
+  endif()
 
   add_region_with_dev(
-    flash-primary
+    flash_primary
     ${flash_size}
     ${CONFIG_FLASH_BASE_ADDRESS}
     complex
@@ -88,7 +105,7 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
 
   if (CONFIG_PM_EXTERNAL_FLASH)
     add_region_with_dev(
-      external-flash
+      external_flash
       ${CONFIG_PM_EXTERNAL_FLASH_SIZE}
       ${CONFIG_PM_EXTERNAL_FLASH_BASE}
       start_to_end

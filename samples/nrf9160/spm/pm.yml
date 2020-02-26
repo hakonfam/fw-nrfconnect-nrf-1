@@ -5,3 +5,7 @@ spm:
   placement:
     before: app
   inside: mcuboot_primary_app
+
+spm_ram:
+  region: ram_secure
+  size: 0x10000
