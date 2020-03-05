@@ -1,0 +1,114 @@
+#
+# Copyright (c) 2019 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
+
+config MFU_ENABLE
+	bool "Enable Modem Firmware Updater"
+	select FLASH
+	select DFU_TARGET_MODEM
+	help
+		The modem firmware updater is responsible for validating a modem update
+		package and applying the update to the modem.
+
+if MFU_ENABLE
+
+config MFU_ALLOW_UNSIGNED
+	bool "Allow unsigned modem updates"
+	help
+		Allow updates that does not include an ECDSA signature.
+
+module=MFU
+module-dep=LOG
+module-str=Device Firmware Upgrade
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+config MFU_FLASH_BUF_SIZE
+	int "Flash buffer size"
+	default 512
+	range 64 4096
+	help
+		Size of static buffer used for flash reading.
+
+choice
+	prompt "SHA256 backend"
+	default MFU_SHA256_BACKEND_TINYCRYPT
+
+config MFU_SHA256_BACKEND_MBEDTLS
+	bool "Mbedtls"
+	select NORDIC_SECURITY_BACKEND
+	help
+	  Use SHA256 implementation from mbedtls.
+
+config MFU_SHA256_BACKEND_TINYCRYPT
+	bool "Tinycrypt"
+	select TINYCRYPT
+	select TINYCRYPT_SHA256
+	help
+	  Use SHA256 implementation from Tinycrypt.
+
+endchoice
+
+choice
+	prompt "Signature verification backend"
+	default MFU_ECDSA_BACKEND_TINYCRYPT
+
+config MFU_ECDSA_BACKEND_TINYCRYPT
+	bool "Tinycrypt"
+	select TINYCRYPT
+	select TINYCRYPT_ECC_DSA
+	help
+	  Use ECDSA signature verification implementation from Tinycrypt.
+
+endchoice
+
+choice
+	prompt "Non-volatile state storage backend"
+	default MFU_STATE_SETTINGS
+
+config MFU_STATE_SETTINGS
+	bool "Settings"
+	help
+	  Use zephyr Settings for non-volatile storage.
+
+config MFU_STATE_EXTFLASH
+	bool "External flash"
+	help
+	  Use external flash device for non-volatile storage.
+	  Two flash pages are required for safe read-modify-erase-write cycles.
+
+endchoice
+
+if MFU_STATE_EXTFLASH
+
+config MFU_STATE_ADDR
+	int "Flash address"
+	default 0
+	help
+	  Address to use for state storage.
+
+endif # MFU_STATE_SETTINGS
+
+config MFU_STREAM_VERIFICATION_ENABLE
+	bool "Enable verification of update stream"
+	default y
+	help
+		Stream verification exposes functions to run verification on an
+		update file as it is downloaded.
+		This increases static RAM usage by ~150 bytes.
+
+if MFU_STREAM_VERIFICATION_ENABLE
+
+config MFU_STREAM_READ_OFFSET
+	int "Read offset for incremental verification"
+	default 8192
+	help
+		Stream verification calculates hash incrementally as a new image is
+		downloaded. This offset can be used to make the read pointer
+		"stay behind" the write pointer in case there are re-writes due to
+		download interruptions.
+
+endif # MFU_STREAM_VERIFICATION_ENABLE
+
+endif # MFU_ENABLE
