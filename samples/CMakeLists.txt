@@ -22,11 +22,18 @@ if (CONFIG_SPM)
 endif()
 
 if (CONFIG_SECURE_BOOT)
-  add_child_image(
-    NAME b0
-    SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/bootloader
-    )
-endif ()
+  if (CONFIG_BOARD_NRF5340_DK_NRF5340_CPUNET)
+    add_child_image(
+      NAME b0n
+      SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/nrf5340/boot
+      )
+  else()
+    add_child_image(
+      NAME b0
+      SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/bootloader
+      )
+  endif()
+endif()
 
 # Special handling for the nRF53 when using RPMSG HCI.
 # Automatically include the hci_rpmsg sample as child image, and change
@@ -42,4 +49,4 @@ if (CONFIG_BT_RPMSG_NRF53)
     message(FATAL_ERROR
       "Board ${BOARD} not supported for including hci_rpmsg as child image")
   endif()
-endif()
+endif ()

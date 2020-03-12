@@ -6,6 +6,7 @@
 
 #include <hal/nrf_acl.h>
 #include <hal/nrf_ficr.h>
+#include <assert.h>
 #include <errno.h>
 #include <sys/__assert.h>
 

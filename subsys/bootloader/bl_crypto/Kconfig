@@ -8,7 +8,6 @@ menuconfig SECURE_BOOT_CRYPTO
 	bool
 	prompt "Secure Boot Crypto"
 	select FW_INFO
-	select NRF_OBERON
 
 if (SECURE_BOOT_CRYPTO)
 config SB_ECDSA_SECP256R1
@@ -35,6 +34,7 @@ choice SB_CRYPTO_SIG
 	prompt "Firmware verification Algorithm"
 	default SB_CRYPTO_NO_ECDSA_SECP256R1 if !IS_SECURE_BOOTLOADER
 	default SB_CRYPTO_CC310_ECDSA_SECP256R1 if HAS_HW_NRF_CC310
+        default SB_CRYPTO_NO_ECDSA_SECP256R1 if SB_VALIDATE_FW_HASH
 	default SB_CRYPTO_OBERON_ECDSA_SECP256R1
 	help
 	  Crypto implementation to use for signature verification of firmware in Bootloader.
@@ -90,10 +90,18 @@ choice SB_CRYPTO_HASH
 	  Crypto implementation to use for hash generation in Bootloader.
 
 	config SB_CRYPTO_OBERON_SHA256
-		bool "Software SHA256"
+		bool "Software (oberon lib) SHA256"
 		select SB_SHA256
 		help
-		  Software implementation of SHA256.
+		  Software implementation by oberon of SHA256.
+
+	config SB_CRYPTO_TINYCRYPT_SHA256
+		bool "Software (tinycrypt) SHA256"
+		select SB_SHA256
+		select TINYCRYPT
+		select TINYCRYPT_SHA256
+		help
+		  Software implementation  by tinycrypt of SHA256.
 
 	config SB_CRYPTO_CC310_SHA256
 		bool "Hardware SHA256" if HAS_HW_NRF_CC310

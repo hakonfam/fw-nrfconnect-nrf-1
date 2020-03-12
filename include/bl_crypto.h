@@ -33,6 +33,10 @@ extern "C" {
 	#include <nrf_cc310_bl_hash_sha256.h>
 	#define SHA256_CTX_SIZE sizeof(nrf_cc310_bl_hash_context_sha256_t)
 	typedef nrf_cc310_bl_hash_context_sha256_t bl_sha256_ctx_t;
+#elif CONFIG_SB_CRYPTO_TINYCRYPT_SHA256
+	#include <tinycrypt/sha256.h>
+	#define SHA256_CTX_SIZE sizeof(struct tc_sha256_state_struct)
+	typedef struct tc_sha256_state_struct bl_sha256_ctx_t;
 #else
 	#define SHA256_CTX_SIZE 128
 	// u32_t to make sure it is aligned equally as the other contexts.

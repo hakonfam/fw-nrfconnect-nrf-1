@@ -56,19 +56,35 @@ set(NRF_BOOTLOADER_SCRIPTS ${NRF_SCRIPTS}/bootloader)
 set(PROVISION_HEX_NAME     provision.hex)
 set(PROVISION_HEX          ${PROJECT_BINARY_DIR}/${PROVISION_HEX_NAME})
 
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/debug_keys.cmake)
-include(${CMAKE_CURRENT_LIST_DIR}/../cmake/sign.cmake)
+if (CONFIG_SB_VALIDATION_FW_SIGNATURE)
+  include(${CMAKE_CURRENT_LIST_DIR}/../cmake/debug_keys.cmake)
+  include(${CMAKE_CURRENT_LIST_DIR}/../cmake/sign.cmake)
 
-if (${CONFIG_SB_DEBUG_SIGNATURE_PUBLIC_KEY_LAST})
-  set(ALL_PUBLIC_KEY_FILES "${PUBLIC_KEY_FILES},${SIGNATURE_PUBLIC_KEY_FILE}")
-  message(WARNING
-    "
+  if (${CONFIG_SB_DEBUG_SIGNATURE_PUBLIC_KEY_LAST})
+    set(public_keys_file_arg
+      "--public-key-files ${PUBLIC_KEY_FILES},${SIGNATURE_PUBLIC_KEY_FILE}"
+      )
+    message(WARNING
+      "
       -----------------------------------------------------------------
       --- WARNING: SB_DEBUG_SIGNATURE_PUBLIC_KEY_LAST is enabled.   ---
       --- This config should only be enabled for testing/debugging. ---
       -----------------------------------------------------------------")
+    else()
+      set(public_keys_file_arg
+        "--public-key-files ${SIGNATURE_PUBLIC_KEY_FILE},${PUBLIC_KEY_FILES}"
+        )
+    endif()
+
+  set(PROVISION_DEPENDS signature_public_key_file_target)
+
+endif()
+
+if (CONFIG_BOARD_NRF5340_DK_NRF5340_CPUNET)
+  set(s0_arg --s0-addr $<TARGET_PROPERTY:partition_manager,PM_APP_ADDRESS>)
 else()
-  set(ALL_PUBLIC_KEY_FILES "${SIGNATURE_PUBLIC_KEY_FILE},${PUBLIC_KEY_FILES}")
+  set(s0_arg --s0-addr $<TARGET_PROPERTY:partition_manager,PM_S0_ADDRESS>)
+  set(s1_arg --s1-addr $<TARGET_PROPERTY:partition_manager,PM_S1_ADDRESS>)
 endif()
 
 add_custom_command(
@@ -77,10 +93,10 @@ add_custom_command(
   COMMAND
   ${PYTHON_EXECUTABLE}
   ${NRF_BOOTLOADER_SCRIPTS}/provision.py
-  --s0-addr $<TARGET_PROPERTY:partition_manager,PM_S0_ADDRESS>
-  --s1-addr $<TARGET_PROPERTY:partition_manager,PM_S1_ADDRESS>
+  ${s0_arg}
+  ${s1_arg}
   --provision-addr $<TARGET_PROPERTY:partition_manager,PM_PROVISION_ADDRESS>
-  --public-key-files ${ALL_PUBLIC_KEY_FILES}
+  ${public_keys_file_arg}
   --output ${PROVISION_HEX}
   ${monotonic_counter_arg}
   --max-size ${CONFIG_PM_PARTITION_SIZE_PROVISION}
@@ -97,7 +113,7 @@ add_custom_target(
   provision_target
   DEPENDS
   ${PROVISION_HEX}
-  signature_public_key_file_target
+  ${PROVISION_DEPENDS}
   )
 
 get_property(

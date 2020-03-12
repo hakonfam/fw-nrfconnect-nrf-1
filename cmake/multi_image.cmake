@@ -87,7 +87,7 @@ function(add_child_image_from_source)
 
   if (NOT (${${ACI_NAME}_BOARD} IN_LIST PM_DOMAINS))
     list(APPEND PM_DOMAINS ${${ACI_NAME}_BOARD})
-    share("list(APPEND PM_DOMAINS $${${ACI_NAME}_BOARD})")
+    share("list(APPEND PM_DOMAINS ${${ACI_NAME}_BOARD})")
   endif()
 
 

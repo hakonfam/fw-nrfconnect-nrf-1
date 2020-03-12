@@ -35,6 +35,7 @@ def get_config_lines(gpm_config, greg_config, head, split, dest, current_domain=
 
     for domain, pm_config in gpm_config.items():
         reg_config = greg_config[domain]
+
         def partition_has_device(p):
             return 'region' in p and 'device' in reg_config[p['region']] \
                    and reg_config[p['region']]['device']
@@ -62,6 +63,11 @@ def get_config_lines(gpm_config, greg_config, head, split, dest, current_domain=
                 else:
                     add_line("%d_LABEL" % partition_id, "%s_%s" % (domain, name.upper()))
                 partition_id += 1
+
+            if partition['region'] == 'flash_primary' and reg_config['flash_primary']['dynamic_partition'] == name:
+                # The current partition is the dynamic partition. Create an alias 'app' with the same configuration
+                add_line("APP_ADDRESS", f"{partition['address']:#x}")
+                add_line("APP_SIZE", f"{partition['size']:#x}")
 
             if dest is DEST_HEADER:
                 if partition_has_device(partition):
@@ -97,9 +103,11 @@ def write_gpm_config(gpm_config, regions_config, name, out_path):
     domain, image = name.split(':')
     config_lines = get_config_lines(gpm_config, regions_config, "#define ", " ", DEST_HEADER, domain)
     image_config_lines = list.copy(config_lines)
+    pm_config = gpm_config[domain]
+    dynamic_partition = regions_config[domain]['flash_primary']['dynamic_partition']
 
-    image_config_lines.append("#define PM_ADDRESS 0x{:x}".format(gpm_config[domain][image]['address']))
-    image_config_lines.append("#define PM_SIZE 0x{:x}".format(gpm_config[domain][image]['size']))
+    image_config_lines.append("#define PM_ADDRESS 0x{:x}".format(pm_config[image]['address']))
+    image_config_lines.append("#define PM_SIZE 0x{:x}".format(pm_config[image]['size']))
 
     image_config_lines.insert(0, "#include <autoconf.h>")
     image_config_lines.insert(0, get_header_guard_start(pm_config_file))

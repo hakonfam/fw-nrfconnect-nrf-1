@@ -345,10 +345,8 @@ if (is_dynamic_partition_in_domain)
 else()
   # This is the root image, generate the global pm_config.h
   # First, include the shared_vars.cmake file for all child images.
-  message("And pm_domains are ${PM_DOMAINS}")
   list(REMOVE_DUPLICATES PM_DOMAINS)
   foreach (d ${PM_DOMAINS})
-    message("Loading from ${d}")
     # Don't include shared vars from own domain.
     if (NOT ${domain} STREQUAL ${d})
       set(shared_vars_file
@@ -358,7 +356,6 @@ else()
         message(FATAL_ERROR "Could not find shared vars file: ${shared_vars_file}")
       endif()
       include(${shared_vars_file})
-      message("Included ${shared_vars_file}")
       list(APPEND header_files ${${d}_PM_DOMAIN_HEADER_FILES})
       list(APPEND prefixed_images ${${d}_PM_DOMAIN_IMAGES})
       list(APPEND pm_out_partition_files ${${d}_PM_DOMAIN_PARTITIONS})
@@ -373,8 +370,6 @@ else()
 
   # Now all partition manager configuration from all images and domains are
   # available. Generate the global pm_config.h, and provide it to all images.
-  print(header_files)
-  print(pm_out_partition_files)
   set(pm_global_output_cmd
     ${PYTHON_EXECUTABLE}
     ${NRF_DIR}/scripts/partition_manager_output.py
