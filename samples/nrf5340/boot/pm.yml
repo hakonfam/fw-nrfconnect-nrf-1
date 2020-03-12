@@ -1,0 +1,16 @@
+#include <autoconf.h>
+#include <devicetree_unfixed.h>
+
+b0_image:
+  size: CONFIG_PM_PARTITION_SIZE_B0_IMAGE
+  placement:
+    after: start
+
+b0:
+  span: [b0_image, provision]
+
+provision:
+  size: CONFIG_PM_PARTITION_SIZE_PROVISION
+  placement:
+    after: b0_image
+    align: {start: DT_FLASH_ERASE_BLOCK_SIZE}

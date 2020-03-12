@@ -6,6 +6,11 @@
 
 menu "Bootloader"
 
+config NETCORE_BOOTLOADER
+	bool "Netcore bootloader"
+	depends on SOC_NRF5340_CPUNET
+	select FW_INFO
+
 config BUILD_S1_VARIANT
 	# This can not depend on BOOTLOADER_MCUBOOT, or SECURE_BOOT as this
 	# option has to be set when building MCUBoot (or any other child image
