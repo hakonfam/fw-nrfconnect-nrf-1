@@ -52,6 +52,7 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     ${NRF_DIR}/scripts/partition_manager.py
     --input-files ${input_files}
     --flash-size ${CONFIG_FLASH_SIZE}
+    --flash-start ${CONFIG_FLASH_BASE_ADDRESS}
     --output ${CMAKE_BINARY_DIR}/partitions.yml
     ${static_configuration}
     )
@@ -156,6 +157,7 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
       set(${container}overlap_arg --overlap=replace)
     endif()
 
+    print(${container}hex_files)
     # Add command to merge files.
     add_custom_command(
       OUTPUT ${PROJECT_BINARY_DIR}/${container}.hex

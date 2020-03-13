@@ -21,3 +21,7 @@ endif()
 if (CONFIG_SECURE_BOOT)
   add_child_image(b0 ${CMAKE_CURRENT_LIST_DIR}/bootloader)
 endif ()
+
+if (CONFIG_NETCORE_BOOTLOADER)
+  add_child_image(b0n ${CMAKE_CURRENT_LIST_DIR}/nrf5340/boot)
+endif()

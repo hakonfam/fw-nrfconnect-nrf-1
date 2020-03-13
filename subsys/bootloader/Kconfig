@@ -11,6 +11,17 @@ config NETCORE_BOOTLOADER
 	depends on SOC_NRF5340_CPUNET
 	select FW_INFO
 
+config IS_NETCORE_BOOTLOADER
+	bool "Current image is the Netcore bootloader"
+
+if IS_NETCORE_BOOTLOADER
+module=B0N
+source "${ZEPHYR_BASE}/../nrf/subsys/partition_manager/Kconfig.template.build_strategy"
+partition=B0N
+partition-size=0x4000
+source "${ZEPHYR_BASE}/../nrf/subsys/partition_manager/Kconfig.template.partition_size"
+endif
+
 config BUILD_S1_VARIANT
 	# This can not depend on BOOTLOADER_MCUBOOT, or SECURE_BOOT as this
 	# option has to be set when building MCUBoot (or any other child image

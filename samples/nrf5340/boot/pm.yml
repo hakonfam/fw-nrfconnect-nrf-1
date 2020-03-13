@@ -1,16 +1,16 @@
 #include <autoconf.h>
 #include <devicetree_unfixed.h>
 
-b0_image:
-  size: CONFIG_PM_PARTITION_SIZE_B0_IMAGE
+b0n_image:
+  size: CONFIG_PM_PARTITION_SIZE_B0N
   placement:
     after: start
 
-b0:
-  span: [b0_image, provision]
+b0n:
+  span: [b0n_image, provision]
 
 provision:
-  size: CONFIG_PM_PARTITION_SIZE_PROVISION
+  size: 0x800 # This can be hard coded as this sample only runs on 5340 net core
   placement:
-    after: b0_image
+    after: b0n_image
     align: {start: DT_FLASH_ERASE_BLOCK_SIZE}

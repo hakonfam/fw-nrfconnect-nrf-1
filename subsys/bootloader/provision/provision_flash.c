@@ -20,7 +20,11 @@ typedef struct {
 	u32_t num_public_keys;
 	struct {
 		u32_t valid;
+#ifdef CONFIG_SB_PUBLIC_KEY_HASH_LEN
 		u8_t hash[CONFIG_SB_PUBLIC_KEY_HASH_LEN];
+#else
+		u8_t hash[1];
+#endif
 	} key_data[1];
 } provision_flash_t;
 
@@ -58,6 +62,7 @@ u32_t num_public_keys_read(void)
 /* Value written to the invalidation token when invalidating an entry. */
 #define INVALID_VAL 0xFFFF0000
 
+#ifdef CONFIG_SB_PUBLIC_KEY_HASH_LEN
 int public_key_data_read(u32_t key_idx, u8_t *p_buf, size_t buf_size)
 {
 	const u8_t *p_key;
@@ -99,3 +104,5 @@ void invalidate_public_key(u32_t key_idx)
 		nrfx_nvmc_word_write((u32_t)invalidation_token, INVALID_VAL);
 	}
 }
+
+#endif /* CONFIG_SB_PUBLIC_KEY_HASH_LEN */

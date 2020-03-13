@@ -17,7 +17,7 @@ def generate_provision_hex_file(s0_address, s1_address, hashes, provision_addres
     # Add addresses
     provision_data = struct.pack('III', s0_address, s1_address, len(hashes))
     for mhash in hashes:
-        provision_data += struct.pack('I', 0xFFFFFFFF) # Invalidation token
+        provision_data += struct.pack('I', 0xFFFFFFFF)  # Invalidation token
         provision_data += mhash
 
     ih = IntelHex()
@@ -30,10 +30,10 @@ def parse_args():
         description="Generate provision hex file.",
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--s0-addr", type=lambda x: int(x, 0), required=True, help="Address of image slot s0")
-    parser.add_argument("--s1-addr", type=lambda x: int(x, 0), required=True, help="Address of image slot s1")
+    parser.add_argument("--s1-addr", type=lambda x: int(x, 0), required=False, help="Address of image slot s1")
     parser.add_argument("--provision-addr", type=lambda x: int(x, 0),
                         required=True, help="Set address of provision data")
-    parser.add_argument("--public-key-files", required=True,
+    parser.add_argument("--public-key-files", required=False,
                         help="Semicolon-separated list of public key .pem files.")
     parser.add_argument("-o", "--output", required=False, default="provision.hex",
                         help="Output file name.")
@@ -60,7 +60,7 @@ def main():
     s1_address = args.s1_addr if args.s1_addr is not None else s0_address
     provision_address = args.provision_addr
 
-    hashes = get_hashes(args.public_key_files.split(','))
+    hashes = get_hashes(args.public_key_files.split(',')) if args.public_key_files else list()
     generate_provision_hex_file(s0_address=s0_address,
                                 s1_address=s1_address,
                                 hashes=hashes,
