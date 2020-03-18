@@ -8,7 +8,6 @@ menuconfig SECURE_BOOT_CRYPTO
 	bool
 	prompt "Secure Boot Crypto"
 	select FW_INFO
-	select NRF_OBERON
 
 if (SECURE_BOOT_CRYPTO)
 config SB_ECDSA_SECP256R1

@@ -13,6 +13,8 @@ config NETCORE_BOOTLOADER
 
 config IS_NETCORE_BOOTLOADER
 	bool "Current image is the Netcore bootloader"
+        select SECURE_BOOT_CRYPTO
+        select SECURE_BOOT_VALIDATION
 
 if IS_NETCORE_BOOTLOADER
 module=B0N

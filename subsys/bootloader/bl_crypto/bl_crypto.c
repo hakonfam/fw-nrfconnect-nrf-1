@@ -34,7 +34,6 @@ BUILD_ASSERT_MSG(CONFIG_SB_PUBLIC_KEY_HASH_LEN <= CONFIG_SB_HASH_LEN,
 
 #ifndef CONFIG_BL_ROT_VERIFY_EXT_API_REQUIRED
 #include <assert.h>
-#include <ocrypto_constant_time.h>
 #include "bl_crypto_internal.h"
 
 static int verify_truncated_hash(const u8_t *data, u32_t data_len,
@@ -48,7 +47,7 @@ static int verify_truncated_hash(const u8_t *data, u32_t data_len,
 	if (retval != 0) {
 		return retval;
 	}
-	if (!ocrypto_constant_time_equal(expected, hash, hash_len)) {
+	if (memcmp(expected, hash, hash_len)) {
 		return -EHASHINV;
 	}
 	return 0;
