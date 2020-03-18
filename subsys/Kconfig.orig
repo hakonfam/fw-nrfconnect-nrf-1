@@ -11,10 +11,13 @@ rsource "bluetooth/Kconfig"
 
 rsource "dfu/Kconfig"
 
+<<<<<<< HEAD
 rsource "esb/Kconfig"
-
+=======
 rsource "pcd/Kconfig"
 
+rsource "enhanced_shockburst/Kconfig"
+>>>>>>> e34ba80d... dump
 
 rsource "net/Kconfig"
 
