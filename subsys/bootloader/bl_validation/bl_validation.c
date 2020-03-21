@@ -96,9 +96,8 @@ static bool validation_info_check(const struct fw_validation_info *vinfo)
 }
 
 
-/* Find the validation_info at the end of the firmware. */
-static const struct fw_validation_info *
-validation_info_find(u32_t start_address, u32_t search_distance)
+const struct fw_validation_info *
+bl_validation_info_find(u32_t start_address, u32_t search_distance)
 {
 	const struct fw_validation_info *vinfo;
 
@@ -155,7 +154,7 @@ static bool validate_firmware(u32_t fw_dst_address, u32_t fw_src_address,
 		return false;
 	}
 
-	fw_val_info = validation_info_find(
+	fw_val_info = bl_validation_info_find(
 		fw_src_address + fwinfo->size, 4);
 
 	if (!fw_val_info) {

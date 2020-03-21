@@ -18,15 +18,18 @@
 extern "C" {
 #endif
 
+#define PCD_CMD_MAGIC 0xb5b4b3b6
+
 struct pcd_cmd {
-	const void *const src;
-	size_t src_len;
-	u32_t dst_addr;
+	u32_t magic;
+	const void *src;
+	size_t len; /* Size of image to copy in bytes */
+	void *dst;
 	u8_t buf[CONFIG_PCD_BUF_SIZE];
-	u8_t hash[256/8];
+	u8_t hash[256/8]; /* TODO CONFIG_SB_HASH_LEN? */
 };
 
-int pcd_transfer_and_hash(struct pcd_cmd *config, const char *dev_name);
+int pcd_transfer_and_hash(struct pcd_cmd *cmd, struct device * fdev);
 
 #endif /* PCD_H__ */
 

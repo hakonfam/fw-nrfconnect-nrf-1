@@ -67,6 +67,12 @@ struct bl_validate_fw_ext_api {
 	bl_validate_firmware_t bl_validate_firmware;
 };
 
+/**
+ * @brief Find the validation_info at the end of the firmware.
+ */
+const struct fw_validation_info *
+bl_validation_info_find(u32_t start_address, u32_t search_distance);
+
   /** @} */
 
 #ifdef __cplusplus

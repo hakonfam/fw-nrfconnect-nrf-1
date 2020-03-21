@@ -4,22 +4,23 @@
 # SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
 #
 
-menu "Peripheral CPU DFU"
+menu "Peripheral CPU DFU (PCD)"
 
 menuconfig PCD
 	bool "Peripheral CPU DFU Support"
 	select FLASH_PAGE_LAYOUT
-	select DFU_TARGET_FLASH
+	select FLASH_BUFFERED_WRITE
 	select TINYCRYPT
 	select TINYCRYPT_SHA256
 
 if (PCD)
 
 config PCD_BUF_SIZE
-	int "PCD buffer size"
+	int
+        default 2048 if BOARD_NRF5340_DK_NRF5340_CPUNET
 	default 4096
 	help
-	  Must be >= the page size of the flash device.
+	  Must be <= the page size of the flash device.
 
 module=PCD
 module-dep=LOG

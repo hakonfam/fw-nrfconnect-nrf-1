@@ -99,19 +99,48 @@ static void boot_from(const struct fw_info *fw_info)
 	CODE_UNREACHABLE;
 }
 
+#define CMD_ADDR 0x20080000
+
 void main(void)
 {
+	const struct fw_validation_info *fw_val_info;
+	const struct pcd_cmd *cmd;
 	int err = fprotect_area(PM_B0N_IMAGE_ADDRESS, PM_B0N_IMAGE_SIZE);
 
 	if (err) {
-		printk("Failed to protect B0 flash, cancel startup.\n\r");
+		printk("Failed to protect b0n flash, cancel startup.\n\r");
 		return;
+	}
+
+	cmd = pcd_get_cmd(CMD_ADDR);
+	if (cmd != NULL) {
+		err = pcd_transfer_and_hash(cmd, fdev);
+		if (err != 0) {
+			printk("Failed to transfer image: %d. \n\r", err);
+			return;
+		}
 	}
 
 	u32_t s0_addr = s0_address_read();
 	const struct fw_info *s0_info = fw_info_find(s0_addr);
-	boot_from(s0_info);
+	u32_t s0_end = s0_addr + s0_info->size;
 
-	printk("No bootable image found. Aborting boot.\n\r");
+	if (cmd != NULL) {
+		/* Validate the SHA of the newly copied image */
+		fw_val_info = bl_validation_info_find(s0_end, 4);
+		if (!pcd_validate(&cmd, fw_val_info.hash)) {
+			printk("Invalid hash!");
+			return;
+		}
+	}
+
+	err = fprotect_area(PM_APP_ADDRESS, PM_APP_SIZE);
+	if (err) {
+		printk("Failed to protect app flash, cancel startup.\n\r");
+		return;
+	}
+
+	boot_from(s0_info);
+	
 	return;
 }
