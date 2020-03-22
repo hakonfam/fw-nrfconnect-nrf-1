@@ -22,9 +22,9 @@ extern "C" {
 
 struct pcd_cmd {
 	u32_t magic;
-	void *src;
+	const void *src;
 	size_t len;
-	void *dst;
+	size_t offset;
 	u8_t buf[CONFIG_PCD_BUF_SIZE];
 	u8_t hash[256/8]; /* TODO CONFIG_SB_HASH_LEN? */
 };

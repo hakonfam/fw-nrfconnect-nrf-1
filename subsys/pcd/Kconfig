@@ -17,8 +17,7 @@ if (PCD)
 
 config PCD_BUF_SIZE
 	int
-        default 2048 if BOARD_NRF5340_DK_NRF5340_CPUNET
-	default 4096
+        default 512
 	help
 	  Must be <= the page size of the flash device.
 

@@ -42,7 +42,7 @@ struct pcd_cmd *pcd_get_cmd(void *addr)
 
 bool pcd_validate(struct pcd_cmd *cmd, u8_t *expected_hash)
 {
-	if (memcmp(cmd->hash, expected_hash, sizeof(cmd->hash) == 0)) {
+	if (memcmp(cmd->hash, expected_hash, sizeof(cmd->hash)) != 0) {
 		/* Signal invalid to other party by setting hash to 0 */
 		memset(cmd->hash, 0, sizeof(cmd->hash));
 		return false;
@@ -57,10 +57,10 @@ int pcd_transfer_and_hash(struct pcd_cmd *cmd, struct device * fdev)
 	u8_t buf[CONFIG_PCD_BUF_SIZE];
 	int rc;
 
-	rc = fbw_init(&fbw, fdev, buf, sizeof(buf),
-		     (size_t)cmd->src, (size_t)cmd->dst, data_written_cb);
+	rc = fbw_init(&fbw, fdev, buf, sizeof(buf), cmd->offset, 0,
+		      data_written_cb);
 	if (rc != 0) {
-		LOG_ERR("dfu_target_flash failed: %d", rc);
+		LOG_ERR("fbw_init failed: %d", rc);
 		return rc;
 	}
 

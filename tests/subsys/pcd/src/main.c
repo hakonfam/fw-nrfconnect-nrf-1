@@ -20,6 +20,8 @@
 /* Only 'a' */
 static const u8_t data[BUF_LEN] = {[0 ... BUF_LEN - 1] = 'a'};
 
+static const u8_t zero[256] = {0};
+
 /* As per https://emn178.github.io/online-tools/sha256.html, only reversed */
 static u32_t digest[] = {
 	0x6ae35194, 0x3f16b239, 0x2cf0171b, 0x43fff6e7,
@@ -42,16 +44,26 @@ static void test_pcd_get_cmd(void)
 static void test_pcd_validate(void)
 {
 	bool ret;
-	u8_t hbuf[sizeof(cmd.hash)];
 	struct pcd_cmd cmd;
+	u8_t hbuf[sizeof(cmd.hash)];
 
+	/* Make the hashes differ by one byte */
 	memset(cmd.hash, 0xaa, sizeof(cmd.hash));
 	memset(hbuf, 0xaa, sizeof(cmd.hash));
 	hbuf[0] = 0;
 	ret = pcd_validate(&cmd, hbuf);
 	zassert_false(ret, "should return false since not equal");
-	zassert_equal(0, memcmp(cmd.hash, 0, sizeof(cmd.hash)),
+	zassert_equal(0, memcmp(cmd.hash, zero, sizeof(cmd.hash)),
 		      "hash in cmd should be set to 0 after failed validate");
+
+	/* Now make them equal */
+	memset(cmd.hash, 0xaa, sizeof(cmd.hash));
+	memset(hbuf, 0xaa, sizeof(cmd.hash));
+	ret = pcd_validate(&cmd, hbuf);
+	zassert_true(ret, "should return true since equal");
+	zassert_equal(0, memcmp(cmd.hash, hbuf, sizeof(cmd.hash)),
+		      "hash in cmd should not change after equality");
+
 
 }
 
@@ -59,15 +71,16 @@ static void test_pcd_transfer_and_hash(void)
 {
 	int rc;
 
-	struct pcd_cmd config = {.src = (void *)&data[0],
-				.len = sizeof(data),
-				.dst = (void *)FLASH_BASE};
+	struct pcd_cmd cmd = {.src = (const void *)&data[0],
+				 .len = sizeof(data),
+				 .offset = 0x8000};
 
 	struct device *fdev = device_get_binding(FLASH_NAME);
-	rc = pcd_transfer_and_hash(&config, fdev);
+	zassert_true(fdev != NULL, "fdev is NULL");
+	rc = pcd_transfer_and_hash(&cmd, fdev);
 	zassert_equal(rc, 0, "Unexpected failure");
 
-	zassert_mem_equal(config.hash, digest, sizeof(digest), "wrong hash");
+	zassert_mem_equal(cmd.hash, digest, sizeof(digest), "wrong hash");
 }
 
 void test_main(void)
