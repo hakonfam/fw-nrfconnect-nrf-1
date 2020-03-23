@@ -18,6 +18,28 @@ extern "C" {
  * @{
  */
 
+struct __packed fw_validation_info {
+	/* Magic value to verify that the struct has the correct type. */
+	u32_t magic[MAGIC_LEN_WORDS];
+
+	/* The address of the start (vector table) of the firmware. */
+	u32_t address;
+
+	/* The hash of the firmware.*/
+	u8_t  hash[CONFIG_SB_HASH_LEN];
+
+	/* Public key to be used for signature verification. This must be
+	 * checked against a trusted hash.
+	 */
+	u8_t  public_key[CONFIG_SB_PUBLIC_KEY_LEN];
+
+	/* Signature over the firmware as represented by the address and size in
+	 * the firmware_info.
+	 */
+	u8_t  signature[CONFIG_SB_SIGNATURE_LEN];
+};
+
+
 /** Function for validating firmware.
  *
  * @details This will run a series of checks on the fw_info contents, then

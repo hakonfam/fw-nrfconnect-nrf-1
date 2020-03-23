@@ -16,6 +16,8 @@
 #include <fw_info.h>
 #include <fprotect.h>
 #include <provision.h>
+#include <device.h>
+#include <dfu/pcd.h>
 #ifdef CONFIG_UART_NRFX
 #ifdef CONFIG_UART_0_NRF_UART
 #include <hal/nrf_uart.h>
@@ -104,15 +106,16 @@ static void boot_from(const struct fw_info *fw_info)
 void main(void)
 {
 	const struct fw_validation_info *fw_val_info;
-	const struct pcd_cmd *cmd;
+	struct pcd_cmd *cmd;
 	int err = fprotect_area(PM_B0N_IMAGE_ADDRESS, PM_B0N_IMAGE_SIZE);
+	struct device *fdev = device_get_binding(DT_FLASH_DEV_NAME);
 
 	if (err) {
 		printk("Failed to protect b0n flash, cancel startup.\n\r");
 		return;
 	}
 
-	cmd = pcd_get_cmd(CMD_ADDR);
+	cmd = pcd_get_cmd((void*)CMD_ADDR);
 	if (cmd != NULL) {
 		err = pcd_transfer_and_hash(cmd, fdev);
 		if (err != 0) {
@@ -128,7 +131,7 @@ void main(void)
 	if (cmd != NULL) {
 		/* Validate the SHA of the newly copied image */
 		fw_val_info = bl_validation_info_find(s0_end, 4);
-		if (!pcd_validate(&cmd, fw_val_info.hash)) {
+		if (!pcd_validate(&cmd, fw_val_info->hash)) {
 			printk("Invalid hash!");
 			return;
 		}
