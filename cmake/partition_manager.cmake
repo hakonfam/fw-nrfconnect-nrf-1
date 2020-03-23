@@ -32,7 +32,7 @@ else()
   set(static_configuration_file ${APPLICATION_SOURCE_DIR}/pm_static.yml)
 endif()
 
-if("${IMAGE_NAME}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}_")
+if("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_")
   set(is_dynamic_partition_in_domain TRUE)
 endif()
 
@@ -58,7 +58,7 @@ set(generated_path zephyr/include/generated)
 if (NOT is_dynamic_partition_in_domain)
   set(dynamic_partition "app")
 else()
-  set(dynamic_partition ${PM_${domain}_DYNAMIC_PARTITION})
+  set(dynamic_partition ${${domain}_PM_DOMAIN_DYNAMIC_PARTITION})
   set(dynamic_partition_argument "-d ${dynamic_partition}")
 endif()
 
@@ -81,6 +81,7 @@ foreach (image ${PM_IMAGES})
   list(APPEND header_files ${CMAKE_BINARY_DIR}/${image}/${generated_path}/pm_config.h)
 endforeach()
 
+# Explicitly add the dynamic partition image
 list(APPEND prefixed_images "${domain}:${dynamic_partition}")
 list(APPEND images ${dynamic_partition})
 list(APPEND input_files ${CMAKE_BINARY_DIR}/${generated_path}/pm.yml)
@@ -89,63 +90,66 @@ list(APPEND header_files ${CMAKE_BINARY_DIR}/${generated_path}/pm_config.h)
 # Add subsys defined pm.yml to the input_files
 list(APPEND input_files ${PM_SUBSYS_PREPROCESSED})
 
-set(pm_out ${CMAKE_BINARY_DIR}/partitions_${domain}.yml)
-  if (DEFINED CONFIG_SOC_NRF9160)
-    # See nRF9160 Product Specification, chapter "UICR"
-    set(otp_start_addr "0xff8108")
-    set(otp_size 756) # 189 * 4
-  elseif (DEFINED CONFIG_SOC_NRF5340_CPUAPP)
-    # See nRF5340 Product Specification, chapter Application Core -> ... "UICR"
-    set(otp_start_addr "0xff8100")
-    set(otp_size 764)  # 191 * 4
-  endif()
+if (DEFINED CONFIG_SOC_NRF9160)
+  # See nRF9160 Product Specification, chapter "UICR"
+  set(otp_start_addr "0xff8108")
+  set(otp_size 756) # 189 * 4
+elseif (DEFINED CONFIG_SOC_NRF5340_CPUAPP)
+  # See nRF5340 Product Specification, chapter Application Core -> ... "UICR"
+  set(otp_start_addr "0xff8100")
+  set(otp_size 764)  # 191 * 4
+endif()
 
-  math(EXPR flash_size "${CONFIG_FLASH_SIZE} * 1024" OUTPUT_FORMAT HEXADECIMAL)
+math(EXPR flash_size "${CONFIG_FLASH_SIZE} * 1024" OUTPUT_FORMAT HEXADECIMAL)
 
-  if (CONFIG_SOC_NRF9160 OR CONFIG_SOC_NRF5340_CPUAPP)
-    add_region(
-      otp
-      ${otp_size}
-      ${otp_start_addr}
-      start_to_end
-      )
-  endif()
-  add_region_with_dev(
-    flash_primary
-    ${flash_size}
-    ${CONFIG_FLASH_BASE_ADDRESS}
-    complex
-    NRF_FLASH_DRV_NAME
+if (CONFIG_SOC_NRF9160 OR CONFIG_SOC_NRF5340_CPUAPP)
+  add_region(
+    otp
+    ${otp_size}
+    ${otp_start_addr}
+    start_to_end
     )
+endif()
+add_region_with_dev(
+  flash_primary
+  ${flash_size}
+  ${CONFIG_FLASH_BASE_ADDRESS}
+  complex
+  NRF_FLASH_DRV_NAME
+  )
 
-  if (CONFIG_PM_EXTERNAL_FLASH)
-    add_region_with_dev(
-      external_flash
-      ${CONFIG_PM_EXTERNAL_FLASH_SIZE}
-      ${CONFIG_PM_EXTERNAL_FLASH_BASE}
-      start_to_end
-      ${CONFIG_PM_EXTERNAL_FLASH_DEV_NAME}
-      )
-  endif()
+if (CONFIG_PM_EXTERNAL_FLASH)
+  add_region_with_dev(
+    external_flash
+    ${CONFIG_PM_EXTERNAL_FLASH_SIZE}
+    ${CONFIG_PM_EXTERNAL_FLASH_BASE}
+    start_to_end
+    ${CONFIG_PM_EXTERNAL_FLASH_DEV_NAME}
+    )
+endif()
+
+set(pm_out_partitions ${CMAKE_BINARY_DIR}/partitions_${domain}.yml)
+set(pm_out_regions ${CMAKE_BINARY_DIR}/regions_${domain}.yml)
+set(pm_output_out ${CMAKE_BINARY_DIR}/pm_${domain}.config)
 
 set(pm_cmd
   ${PYTHON_EXECUTABLE}
   ${NRF_DIR}/scripts/partition_manager.py
   --input-files ${input_files}
-    --regions ${regions}
-    --output-partitions ${CMAKE_BINARY_DIR}/partitions.yml
-    --output-regions ${CMAKE_BINARY_DIR}/regions.yml
+  --regions ${regions}
+  --output-partitions ${pm_out_partitions}
+  --output-regions ${pm_out_regions}
   ${dynamic_partition_argument}
   ${static_configuration}
-    ${region_arguments}
+  ${region_arguments}
   )
 
-set(pm_output_out ${CMAKE_BINARY_DIR}/pm_${domain}.config)
 set(pm_output_cmd
   ${PYTHON_EXECUTABLE}
   ${NRF_DIR}/scripts/partition_manager_output.py
-    --input-partitions ${CMAKE_BINARY_DIR}/partitions.yml
-    --input-regions ${CMAKE_BINARY_DIR}/regions.yml
+    --input-partitions ${pm_out_partitions}
+    --input-regions ${pm_out_regions}
+    --config-file ${pm_output_out}
   )
 
 # Run the partition manager algorithm.
@@ -259,7 +263,7 @@ foreach(container ${containers} merged_${domain})
     )
 
   # Wrapper target for the merge command.
-  add_custom_target(${container}_hex ALL DEPENDS ${PROJECT_BINARY_DIR}/${container}.hex)
+  add_custom_target(${container}_hex ALL DEPENDS ${PROJECT_BINARY_DIR}/${container}.hex)	
 endforeach()
 
 
@@ -285,36 +289,16 @@ if (CONFIG_SECURE_BOOT AND CONFIG_BOOTLOADER_MCUBOOT)
     )
 endif()
 
+
 if (is_dynamic_partition_in_domain)  # We are being built as sub image
   # Expose the generated pm_${domain}.config file to root image.
-  set_property(
-    TARGET         zephyr_property_target
-    APPEND_STRING
-    PROPERTY       shared_vars
-    "set(PM_DOMAINS_${domain}_CONFIG ${pm_out})\n"
-    )
+  share("set(${domain}_PM_DOMAIN_PARTITIONS ${pm_out_partitions})")
+  share("set(${domain}_PM_DOMAIN_REGIONS ${pm_out_regions})")
+  share("set(${domain}_PM_DOMAIN_HEADER_FILES ${header_files})")
+  share("set(${domain}_PM_DOMAIN_IMAGES ${prefixed_images})")
 
-  set_property(
-    TARGET         zephyr_property_target
-    APPEND_STRING
-    PROPERTY       shared_vars
-    "set(PM_DOMAINS_${domain}_HEADER_FILES ${header_files})\n"
-    )
-
-  set_property(
-    TARGET         zephyr_property_target
-    APPEND_STRING
-    PROPERTY       shared_vars
-    "set(PM_DOMAINS_${domain}_IMAGES ${prefixed_images})\n"
-    )
-
-  if (NOT ("${IMAGE_NAME}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}_"))
-    set_property(
-      TARGET         zephyr_property_target
-      APPEND_STRING
-      PROPERTY       shared_vars
-      "set(PM_DOMAINS_${domain}_HEX_FILE ${PROJECT_BINARY_DIR}/merged_${domain}.hex)\n"
-      )
+  if (NOT ("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_"))
+    share("set(${domain}_PM_DOMAIN_HEX_FILE ${PROJECT_BINARY_DIR}/merged_${domain}.hex)")
   endif()
 else()
   # This is the root image, generate the global pm_config.h files
@@ -323,18 +307,19 @@ else()
     # Don't include shared vars from own domain.
     if (NOT ${domain} STREQUAL ${d})
       set(shared_vars_file
-        ${CMAKE_BINARY_DIR}/${PM_${d}_DYNAMIC_PARTITION}/shared_vars.cmake
+        ${CMAKE_BINARY_DIR}/${${d}_PM_DOMAIN_DYNAMIC_PARTITION}/shared_vars.cmake
         )
       if (NOT (EXISTS ${shared_vars_file}))
         message(FATAL_ERROR "Could not find shared vars file: ${shared_vars_file}")
       endif()
       include(${shared_vars_file})
-      list(APPEND header_files ${PM_DOMAINS_${d}_HEADER_FILES})
-      list(APPEND prefixed_images ${PM_DOMAINS_${d}_IMAGES})
-      list(APPEND pm_out ${PM_DOMAINS_${d}_CONFIG})
-      list(APPEND domain_hex_files ${PM_DOMAINS_${d}_HEX_FILE})
+      list(APPEND header_files ${${d}_PM_DOMAIN_HEADER_FILES})
+      list(APPEND prefixed_images ${${d}_PM_DOMAIN_IMAGES})
+      list(APPEND pm_out_partitions ${${d}_PM_DOMAIN_PARTITIONS})
+      list(APPEND pm_out_regions ${${d}_PM_DOMAIN_REGIONS})
+      list(APPEND domain_hex_files ${${d}_PM_DOMAIN_HEX_FILE})
       message("APPENDED is now ${domain_hex_files}")
-      list(APPEND domain_hex_depends ${PM_${d}_DYNAMIC_PARTITION}_subimage)
+      list(APPEND domain_hex_depends ${${d}_PM_DOMAIN_DYNAMIC_PARTITION}_subimage)
     endif()
   endforeach()
 

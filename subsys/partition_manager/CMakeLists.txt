@@ -41,7 +41,7 @@ set_property(GLOBAL APPEND PROPERTY
 get_domain(${BOARD} domain)
 
 if (((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME) OR
-  ("${IMAGE_NAME}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}_"))
+  ("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_"))
   # Only preprocess pm.yml when being built as sub image.
 
   message("Checking domain ${BOARD} in ${PM_DOMAINS}")

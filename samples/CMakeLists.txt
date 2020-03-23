@@ -27,7 +27,7 @@ if (CONFIG_BT_RPMSG_NRF53)
       (BOARD STREQUAL nrf5340_dk_nrf5340_cpuapp))
 
     set(hci_rpmsg_BOARD nrf5340_dk_nrf5340_cpunet)
-    set(PM_${hci_rpmsg_BOARD}_DYNAMIC_PARTITION hci_rpmsg CACHE STRING "" FORCE)
+    set(${hci_rpmsg_BOARD}_PM_DOMAIN_DYNAMIC_PARTITION hci_rpmsg CACHE STRING "" FORCE)
   else()
     message(FATAL_ERROR "Board ${BOARD} not supported for including hci_rpmsg as child image")
   endif()

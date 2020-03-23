@@ -100,7 +100,7 @@ function(add_child_image_from_source name sourcedir domain_image)
     GNUARMEMB_TOOLCHAIN_PATH
     EXTRA_KCONFIG_TARGETS
     PM_DOMAINS
-    PM_${domain}_DYNAMIC_PARTITION
+    ${domain}_PM_DOMAIN_DYNAMIC_PARTITION
     )
 
   foreach(kconfig_target ${EXTRA_KCONFIG_TARGETS})
@@ -219,7 +219,7 @@ function(add_child_image_from_source name sourcedir domain_image)
       )
   endforeach()
 
-  if (NOT "${name}" STREQUAL "${PM_${domain}_DYNAMIC_PARTITION}")
+  if (NOT "${name}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}")
     set_property(
       GLOBAL APPEND PROPERTY
       PM_IMAGES
