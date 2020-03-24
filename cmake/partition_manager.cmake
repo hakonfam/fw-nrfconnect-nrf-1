@@ -36,12 +36,23 @@ if("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_")
   set(is_dynamic_partition_in_domain TRUE)
 endif()
 
+message("######### LOCOVARS #########")
+print(PM_IMAGES)
+print(IMAGE_NAME)
+print(is_dynamic_partition_in_domain)
+print(PM_DOMAINS)
+
+# TODO this must be re-evaluated so that PM will be invoked only in the correct
+# cases, IE not always, and also for single domain builds
 if ((IMAGE_NAME AND NOT is_dynamic_partition_in_domain) OR
     (NOT PM_DOMAINS AND (NOT (EXISTS ${static_configuration_file}))))
   # Don't run patition manager for non-dynamic sub-images or if no domains configured and
   # no static configuration is provided.
+  message("NOT Running for ${domain}")
   return()
 endif()
+
+message("Running for ${domain}")
 
 # Partition manager is enabled because we have populated PM_IMAGES,
 # or because the application has specified a static configuration.
@@ -59,7 +70,10 @@ if (NOT is_dynamic_partition_in_domain)
   set(dynamic_partition "app")
 else()
   set(dynamic_partition ${${domain}_PM_DOMAIN_DYNAMIC_PARTITION})
-  set(dynamic_partition_argument "-d ${dynamic_partition}")
+  set(
+    dynamic_partition_argument
+    "--flash_primary-dynamic-partition;${dynamic_partition}"
+    )
 endif()
 
 # Add the dynamic partition as an image partition.
@@ -256,14 +270,20 @@ foreach(container ${containers} merged_${domain})
     DEPENDS
     ${${container}targets}
     ${${container}hex_files}
-      # SES will load symbols from all elf files listed as dependencies to ${PROJECT_BINARY_DIR}/merged.hex.
-      # Therefore we add ${${container}elf_files} as dependency to ensure they are loaded by SES even though
-      # it is unnecessary for building the application.
-      ${${container}elf_files}
+    # SES will load symbols from all elf files listed as dependencies to
+    # ${PROJECT_BINARY_DIR}/merged.hex. Therefore we add
+    # ${${container}elf_files} as dependency to ensure they are loaded by SES
+    # even though it is unnecessary for building the application.
+    ${${container}elf_files}
     )
 
   # Wrapper target for the merge command.
-  add_custom_target(${container}_hex ALL DEPENDS ${PROJECT_BINARY_DIR}/${container}.hex)	
+  add_custom_target(
+    ${container}_hex
+    ALL DEPENDS
+    ${PROJECT_BINARY_DIR}/${container}.hex
+    )
+
 endforeach()
 
 
@@ -297,8 +317,12 @@ if (is_dynamic_partition_in_domain)  # We are being built as sub image
   share("set(${domain}_PM_DOMAIN_HEADER_FILES ${header_files})")
   share("set(${domain}_PM_DOMAIN_IMAGES ${prefixed_images})")
 
+  # TODO can this ever hit? Isn't this the same as NOT is_dynamic_partition_in_domain
   if (NOT ("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_"))
+    message("YEESS WE HIT IT")
     share("set(${domain}_PM_DOMAIN_HEX_FILE ${PROJECT_BINARY_DIR}/merged_${domain}.hex)")
+  else()
+    message("NOO WE DIDNT HIT IT")
   endif()
 else()
   # This is the root image, generate the global pm_config.h files
@@ -314,6 +338,7 @@ else()
       endif()
       include(${shared_vars_file})
       list(APPEND header_files ${${d}_PM_DOMAIN_HEADER_FILES})
+      print(${d}_PM_DOMAIN_IMAGES)
       list(APPEND prefixed_images ${${d}_PM_DOMAIN_IMAGES})
       list(APPEND pm_out_partitions ${${d}_PM_DOMAIN_PARTITIONS})
       list(APPEND pm_out_regions ${${d}_PM_DOMAIN_REGIONS})
@@ -332,7 +357,8 @@ else()
   set(pm_global_output_cmd
     ${PYTHON_EXECUTABLE}
     ${NRF_DIR}/scripts/partition_manager_output.py
-    --input ${pm_out}
+    --input-partitions ${pm_out_partitions}
+    --input-regions ${pm_out_regions}
     --header-files ${header_files}
     --images ${prefixed_images}
     )

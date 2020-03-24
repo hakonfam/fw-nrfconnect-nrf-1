@@ -188,6 +188,7 @@ function(add_child_image_from_source name sourcedir domain_image)
   set(${name}_KERNEL_HEX_NAME ${${name}_KERNEL_HEX_NAME} CACHE STRING "" FORCE)
   set(${name}_KERNEL_ELF_NAME ${${name}_KERNEL_ELF_NAME} CACHE STRING "" FORCE)
   set(PM_DOMAINS ${PM_DOMAINS} CACHE STRING "" FORCE)
+  message("Increased scope of PM_DOMAINS - ${PM_DOMAINS}")
 
   if(MULTI_IMAGE_DEBUG_MAKEFILE AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     set(multi_image_build_args "-d" "${MULTI_IMAGE_DEBUG_MAKEFILE}")

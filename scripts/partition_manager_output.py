@@ -25,7 +25,7 @@ DEST_HEADER = 1
 DEST_KCONFIG = 2
 
 
-def get_config_lines(gpm_config, regions_config, head, split, dest, current_domain=None):
+def get_config_lines(gpm_config, greg_config, head, split, dest, current_domain=None):
     config_lines = list()
 
     def string_of_strings(mlist):
@@ -33,11 +33,11 @@ def get_config_lines(gpm_config, regions_config, head, split, dest, current_doma
 
     partition_id = 0
 
-    def partition_has_device(p):
-        return 'region' in p and 'device' in regions_config[p['region']] and regions_config[p['region']]['device']
-
-
     for domain, pm_config in gpm_config.items():
+        def partition_has_device(p):
+            return 'region' in p and 'device' in greg_config[domain][p['region']] \
+                   and greg_config[domain][p['region']]['device']
+
         def add_line(a, b):
             if current_domain is None or domain == current_domain or "LABEL" in a:
                 # Don't prefix with domain for the current domain
@@ -60,7 +60,7 @@ def get_config_lines(gpm_config, regions_config, head, split, dest, current_doma
 
             if dest is DEST_HEADER:
                 if partition_has_device(partition):
-                    add_line("%s_DEV_NAME" % name.upper(), f"\"{regions_config[partition['region']]['device']}\"")
+                    add_line("%s_DEV_NAME" % name.upper(), f"\"{greg_config[domain][partition['region']]['device']}\"")
             elif dest is DEST_KCONFIG:
                 if 'span' in partition.keys():
                     add_line("%s_SPAN" % name.upper(), string_of_strings(partition['span']))
@@ -117,7 +117,7 @@ def parse_args():
     parser.add_argument("--input-partitions", required=True, type=str, nargs="+",
                         help="Path to the input .yml files, one per domain.")
 
-    parser.add_argument("--input-regions", required=True, type=str,
+    parser.add_argument("--input-regions", required=True, type=str, nargs="+",
                         help="Path to the input .yml file with region configuration.")
 
     parser.add_argument("--config-file", required=False, type=str,
@@ -157,6 +157,7 @@ def main():
     if args.header_files:
         for name, header_file in zip(args.images, args.header_files):
             write_gpm_config(gpm_config, greg_config, name, header_file)
+
 
 if __name__ == "__main__":
     main()
