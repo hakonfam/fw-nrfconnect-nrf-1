@@ -1,18 +1,8 @@
-# Included by zephyr/cmake/extensions.cmake
-
-# Usage:
-#   add_partition_manager_config(pm.yml)
 #
-# Will add all configurations defined in pm.yml to the global list of partition
-# manager configurations.
-function(add_partition_manager_config config_file)
-  get_filename_component(pm_path ${config_file} REALPATH)
-  set_property(
-    GLOBAL APPEND PROPERTY
-    ${BOARD}_${IMAGE}PM_SUBSYS #TODO I don't think this will work
-    ${pm_path}
-    )
-endfunction()
+# Copyright (c) 2020 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
 
 # Set 'domain_out' to domain for given board
 function(get_domain board domain_out)

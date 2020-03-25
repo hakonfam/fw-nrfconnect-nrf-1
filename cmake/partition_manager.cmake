@@ -16,6 +16,7 @@ macro(add_region_with_dev name size base placement_strategy device)
   list(APPEND region_arguments "--${name}-device;${device}")
 endmacro()
 
+include(${ZEPHYR_BASE}/../nrf/cmake/extensions.cmake)
 get_domain(${BOARD} domain)
 
 # Load static configuration if found.

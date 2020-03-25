@@ -41,11 +41,11 @@ set_property(GLOBAL APPEND PROPERTY
 if((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME)
   # Only preprocess pm.yml when being built as sub image.
 
-    preprocess_pm_yml(
-      ${CMAKE_SOURCE_DIR}/pm.yml
-      ${PROJECT_BINARY_DIR}/include/generated/pm.yml
-      )
-  endif()
+  preprocess_pm_yml(
+    ${CMAKE_SOURCE_DIR}/pm.yml
+    ${PROJECT_BINARY_DIR}/include/generated/pm.yml
+    )
+endif()
 
 get_property(img_pm_subsys GLOBAL PROPERTY PM_SUBSYS)
 if (img_pm_subsys)
@@ -57,10 +57,10 @@ if (img_pm_subsys)
       ${subsys_pm_yml}
       ${subsys_pm_preprocessed}
       )
-    set_property(
-      GLOBAL APPEND PROPERTY
-      PM_SUBSYS_PREPROCESSED
+  set_property(
+    GLOBAL APPEND PROPERTY
+    PM_SUBSYS_PREPROCESSED
       ${subsys_pm_preprocessed}
-      )
+    )
   endforeach()
 endif()

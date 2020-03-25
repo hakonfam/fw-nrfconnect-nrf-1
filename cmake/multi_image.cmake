@@ -84,6 +84,7 @@ function(add_child_image_from_source name sourcedir domain_image)
     image_board_selection(${BOARD} ${name}_BOARD)
   endif()
 
+  include(${ZEPHYR_BASE}/../nrf/cmake/extensions.cmake)
   get_domain(${${name}_BOARD} domain)
 
   if (NOT (${domain} IN_LIST PM_DOMAINS))
