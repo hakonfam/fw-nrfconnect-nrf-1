@@ -38,38 +38,16 @@ set_property(GLOBAL APPEND PROPERTY
   -DUSE_PARTITION_MANAGER=${using_partition_manager}
   )
 
-get_domain(${BOARD} domain)
+if((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME)
+  # Only preprocess pm.yml when being built as sub image.
 
-# Only preprocess pm.yml when being built as sub image.
-if (((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME) OR
-  ("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_"))
-
-  # Only add ${BOARD} as domain if not already added
-  if (NOT (${domain} IN_LIST PM_DOMAINS))
-    # Update PM_DOMAINS both in parent image and in global scope for this image.
-    share("list(APPEND PM_DOMAINS ${domain})")
-  endif()
-
-  # Only non-dynamic sub-images will have pm.yml files.
-  # E.g. the main app on a domain will not have a pm.yml file.
-  if (EXISTS ${CMAKE_SOURCE_DIR}/pm.yml)
     preprocess_pm_yml(
       ${CMAKE_SOURCE_DIR}/pm.yml
       ${PROJECT_BINARY_DIR}/include/generated/pm.yml
       )
-    set_property(
-      GLOBAL APPEND PROPERTY
-      PM_IMAGES
-      ${IMAGE}
-      )
   endif()
 
-get_property(
-  img_pm_subsys
-  GLOBAL PROPERTY
-  ${IMAGE}PM_SUBSYS # ${IMAGE} ends with '_' 
-  )
-
+get_property(img_pm_subsys GLOBAL PROPERTY PM_SUBSYS)
 if (img_pm_subsys)
   foreach (subsys_pm_yml ${img_pm_subsys})
     file(RELATIVE_PATH rel_path_to_yml ${ZEPHYR_BASE} ${subsys_pm_yml})

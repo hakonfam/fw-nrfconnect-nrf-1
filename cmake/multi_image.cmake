@@ -86,6 +86,11 @@ function(add_child_image_from_source name sourcedir domain_image)
 
   get_domain(${${name}_BOARD} domain)
 
+  if (NOT (${domain} IN_LIST PM_DOMAINS))
+    list(APPEND PM_DOMAINS ${domain})
+    share("list(APPEND PM_DOMAINS ${domain})")
+  endif()
+
   message("\n=== child image ${name} - ${domain} begin ===")
   # Construct a list of variables that, when present in the root
   # image, should be passed on to all child images as well.
@@ -181,14 +186,10 @@ function(add_child_image_from_source name sourcedir domain_image)
   # namespace
   include(${CMAKE_BINARY_DIR}/${name}/shared_vars.cmake)
 
-  # TODO should we do something like this?
-  share("include(${CMAKE_BINARY_DIR}/${name}/shared_vars.cmake)")
-
   # Increase the scope of this variable to make it more available
   set(${name}_KERNEL_HEX_NAME ${${name}_KERNEL_HEX_NAME} CACHE STRING "" FORCE)
   set(${name}_KERNEL_ELF_NAME ${${name}_KERNEL_ELF_NAME} CACHE STRING "" FORCE)
   set(PM_DOMAINS ${PM_DOMAINS} CACHE STRING "" FORCE)
-  message("Increased scope of PM_DOMAINS - ${PM_DOMAINS}")
 
   if(MULTI_IMAGE_DEBUG_MAKEFILE AND "${CMAKE_GENERATOR}" STREQUAL "Ninja")
     set(multi_image_build_args "-d" "${MULTI_IMAGE_DEBUG_MAKEFILE}")

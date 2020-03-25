@@ -235,7 +235,6 @@ foreach(container ${containers} merged_${domain})
   string(TOUPPER ${container} CONTAINER)
 
   # Prepare the list of hex files and list of dependencies for the merge command.
-  message("Checking PM_${CONTAINER}_SPAN -> ${PM_${CONTAINER}_SPAN}")
   foreach(part ${PM_${CONTAINER}_SPAN})
     string(TOUPPER ${part} PART)
     list(APPEND ${container}hex_files ${${part}_PM_HEX_FILE})
