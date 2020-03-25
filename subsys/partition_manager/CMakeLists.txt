@@ -40,14 +40,14 @@ set_property(GLOBAL APPEND PROPERTY
 
 get_domain(${BOARD} domain)
 
+# Only preprocess pm.yml when being built as sub image.
 if (((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME) OR
   ("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_"))
-  # Only preprocess pm.yml when being built as sub image.
 
-  message("Checking domain ${BOARD} in ${PM_DOMAINS}")
   # Only add ${BOARD} as domain if not already added
-  if (NOT (${BOARD} IN_LIST PM_DOMAINS))
-    share("list(APPEND PM_DOMAINS ${BOARD})")
+  if (NOT (${domain} IN_LIST PM_DOMAINS))
+    # Update PM_DOMAINS both in parent image and in global scope for this image.
+    share("list(APPEND PM_DOMAINS ${domain})")
   endif()
 
   # Only non-dynamic sub-images will have pm.yml files.
@@ -59,12 +59,10 @@ if (((EXISTS ${CMAKE_SOURCE_DIR}/pm.yml) AND IMAGE_NAME) OR
       )
     set_property(
       GLOBAL APPEND PROPERTY
-      PM_IMAGES_${BOARD}
+      PM_IMAGES
       ${IMAGE}
       )
   endif()
-endif()
-
 
 get_property(
   img_pm_subsys

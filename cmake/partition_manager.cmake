@@ -4,12 +4,6 @@
 # SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
 #
 
-define_property(GLOBAL PROPERTY PM_IMAGES
-  BRIEF_DOCS "A list of all images that should be processed by the Partition Manager."
-  FULL_DOCS "A list of all images that should be processed by the Partition Manager.
-Each image's directory will be searched for a pm.yml, and will receive a pm_config.h header file with the result.
-Also, the each image's hex file will be automatically associated with its partition.")
-
 macro(add_region name size base placement_strategy)
   list(APPEND regions ${name})
   list(APPEND region_arguments "--${name}-size;${size}")
@@ -22,45 +16,39 @@ macro(add_region_with_dev name size base placement_strategy device)
   list(APPEND region_arguments "--${name}-device;${device}")
 endmacro()
 
-get_property(PM_IMAGES GLOBAL PROPERTY PM_IMAGES)
-get_property(PM_SUBSYS_PREPROCESSED GLOBAL PROPERTY PM_SUBSYS_PREPROCESSED)
 get_domain(${BOARD} domain)
 
+# Load static configuration if found.
 if(EXISTS "${PM_STATIC_YML_FILE}" AND NOT IS_DIRECTORY "${PM_STATIC_YML_FILE}")
   set(static_configuration_file ${PM_STATIC_YML_FILE})
 else()
   set(static_configuration_file ${APPLICATION_SOURCE_DIR}/pm_static.yml)
 endif()
-
-if("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_")
-  set(is_dynamic_partition_in_domain TRUE)
-endif()
-
-message("######### LOCOVARS #########")
-print(PM_IMAGES)
-print(IMAGE_NAME)
-print(is_dynamic_partition_in_domain)
-print(PM_DOMAINS)
-
-# TODO this must be re-evaluated so that PM will be invoked only in the correct
-# cases, IE not always, and also for single domain builds
-if ((IMAGE_NAME AND NOT is_dynamic_partition_in_domain) OR
-    (NOT PM_DOMAINS AND (NOT (EXISTS ${static_configuration_file}))))
-  # Don't run patition manager for non-dynamic sub-images or if no domains configured and
-  # no static configuration is provided.
-  message("NOT Running for ${domain}")
-  return()
-endif()
-
-message("Running for ${domain}")
-
-# Partition manager is enabled because we have populated PM_IMAGES,
-# or because the application has specified a static configuration.
 if (EXISTS ${static_configuration_file})
   set(static_configuration --static-config ${static_configuration_file})
 endif()
 
-set(generated_path zephyr/include/generated)
+# Check if current image is the dynamic partition in its domain.
+if("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_")
+  set(is_dynamic_partition_in_domain TRUE)
+endif()
+
+get_property(PM_IMAGES GLOBAL PROPERTY PM_IMAGES)
+
+# This file should be executed if one of the following criteria is true:
+# - Its a child image, and is the dynamic partition in the domain
+# - Its the root image, and a static configuration has been provided
+# - Its the root image, and PM_IMAGES is populated.
+# - Its the root image, and other domains exists
+# Otherwise, return here
+if (NOT (
+  (IMAGE_NAME AND is_dynamic_partition_in_domain) OR
+  (NOT IMAGE_NAME AND static_configuration) OR
+  (NOT IMAGE_NAME AND PM_IMAGES) OR
+  (NOT IMAGE_NAME AND PM_DOMAINS) # TODO is this correct? Or should len > 1?
+  ))
+  return()
+endif()
 
 # Set the dynamic partition. This is the only partition which does not
 # have a statically defined size. There is only one dynamic partition per
@@ -88,6 +76,7 @@ set_property(GLOBAL PROPERTY
   )
 
 # Prepare the input_files, header_files, and images lists
+set(generated_path zephyr/include/generated)
 foreach (image ${PM_IMAGES})
   list(APPEND prefixed_images ${domain}:${image})
   list(APPEND images ${image})
@@ -102,6 +91,7 @@ list(APPEND input_files ${CMAKE_BINARY_DIR}/${generated_path}/pm.yml)
 list(APPEND header_files ${CMAKE_BINARY_DIR}/${generated_path}/pm_config.h)
 
 # Add subsys defined pm.yml to the input_files
+get_property(PM_SUBSYS_PREPROCESSED GLOBAL PROPERTY PM_SUBSYS_PREPROCESSED)
 list(APPEND input_files ${PM_SUBSYS_PREPROCESSED})
 
 if (DEFINED CONFIG_SOC_NRF9160)
@@ -286,7 +276,6 @@ foreach(container ${containers} merged_${domain})
 
 endforeach()
 
-
 if (CONFIG_SECURE_BOOT AND CONFIG_BOOTLOADER_MCUBOOT)
   # Create symbols for the offsets required for moving test update hex files
   # to MCUBoots secondary slot. This is needed because objcopy does not
@@ -309,23 +298,18 @@ if (CONFIG_SECURE_BOOT AND CONFIG_BOOTLOADER_MCUBOOT)
     )
 endif()
 
-
-if (is_dynamic_partition_in_domain)  # We are being built as sub image
-  # Expose the generated pm_${domain}.config file to root image.
+if (is_dynamic_partition_in_domain)
+  # We are being built as sub image.
+  # Expose the generated partition manager configuration files to parent image.
+  # This is used by the root image to create the global configuration in
+  # pm_config.h.
   share("set(${domain}_PM_DOMAIN_PARTITIONS ${pm_out_partitions})")
   share("set(${domain}_PM_DOMAIN_REGIONS ${pm_out_regions})")
   share("set(${domain}_PM_DOMAIN_HEADER_FILES ${header_files})")
   share("set(${domain}_PM_DOMAIN_IMAGES ${prefixed_images})")
-
-  # TODO can this ever hit? Isn't this the same as NOT is_dynamic_partition_in_domain
-  if (NOT ("${IMAGE_NAME}" STREQUAL "${${domain}_PM_DOMAIN_DYNAMIC_PARTITION}_"))
-    message("YEESS WE HIT IT")
-    share("set(${domain}_PM_DOMAIN_HEX_FILE ${PROJECT_BINARY_DIR}/merged_${domain}.hex)")
-  else()
-    message("NOO WE DIDNT HIT IT")
-  endif()
 else()
-  # This is the root image, generate the global pm_config.h files
+  # This is the root image, generate the global pm_config.h
+  # First, include the shared_vars.cmake file for all child images.
   list(REMOVE_DUPLICATES PM_DOMAINS)
   foreach (d ${PM_DOMAINS})
     # Don't include shared vars from own domain.
@@ -338,22 +322,19 @@ else()
       endif()
       include(${shared_vars_file})
       list(APPEND header_files ${${d}_PM_DOMAIN_HEADER_FILES})
-      print(${d}_PM_DOMAIN_IMAGES)
       list(APPEND prefixed_images ${${d}_PM_DOMAIN_IMAGES})
       list(APPEND pm_out_partitions ${${d}_PM_DOMAIN_PARTITIONS})
       list(APPEND pm_out_regions ${${d}_PM_DOMAIN_REGIONS})
-      list(APPEND domain_hex_files ${${d}_PM_DOMAIN_HEX_FILE})
-      message("APPENDED is now ${domain_hex_files}")
       list(APPEND domain_hex_depends ${${d}_PM_DOMAIN_DYNAMIC_PARTITION}_subimage)
     endif()
   endforeach()
 
-  # Add the root domains hex file to the list
+  # Explicitly add the root image domain hex file to the list
   list(APPEND domain_hex_files ${PROJECT_BINARY_DIR}/merged_${domain}.hex)
   list(APPEND domain_hex_depends merged_${domain}_hex)
 
-  print(prefixed_images)
-  print(header_files)
+  # Now all partition manager configuration from all images and domains are
+  # available. Generate the global pm_config.h, and provide it to all images.
   set(pm_global_output_cmd
     ${PYTHON_EXECUTABLE}
     ${NRF_DIR}/scripts/partition_manager_output.py
@@ -363,7 +344,6 @@ else()
     --images ${prefixed_images}
     )
 
-  # Produce header files and config file.
   execute_process(
     COMMAND
     ${pm_global_output_cmd}
@@ -375,8 +355,8 @@ else()
     aborting. Command: ${pm_global_output_cmd}")
   endif()
 
+  # For convenience, generate global hex file containing all domains' hex files.
   set(final_merged ${PROJECT_BINARY_DIR}/merged.hex)
-  print(domain_hex_files)
 
   # Add command to merge files.
   add_custom_command(
