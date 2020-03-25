@@ -51,6 +51,22 @@ config SB_VALIDATION_METADATA_OFFSET
 
 if SECURE_BOOT_VALIDATION
 
+choice SB_VALIDATE_FW
+	prompt "Firmware validation scheme"
+	default SB_VALIDATE_FW_SIGNATURE if IS_SECURE_BOOTLOADER
+	default SB_VALIDATE_FW_HASH# if NETCORE_BOOTLOADER
+	default SB_VALIDATE_FW_NA
+
+	config SB_VALIDATE_FW_SIGNATURE
+		bool "Signature validation (Recommended)"
+
+	config SB_VALIDATE_FW_HASH
+		bool "Hash validation (not secure)"
+
+	config SB_VALIDATE_FW_NA
+		bool "Not applicable"
+endchoice
+
 EXT_API = BL_VALIDATE_FW
 id = 0x1101
 flags = 3
