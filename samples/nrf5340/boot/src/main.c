@@ -116,7 +116,7 @@ void main(void)
 
 	cmd = pcd_get_cmd((void*)CMD_ADDR);
 	if (cmd != NULL) {
-		err = pcd_transfer_and_hash(cmd, fdev);
+		err = pcd_transfer(cmd, fdev);
 		if (err != 0) {
 			printk("Failed to transfer image: %d. \n\r", err);
 			return;

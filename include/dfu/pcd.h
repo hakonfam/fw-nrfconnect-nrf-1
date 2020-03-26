@@ -18,7 +18,8 @@
 extern "C" {
 #endif
 
-#define PCD_CMD_MAGIC 0xb5b4b3b6
+#define PCD_CMD_MAGIC_COPY 0xb5b4b3b6
+#define PCD_CMD_MAGIC_FAIL 0x25bafc15
 
 struct pcd_cmd {
 	u32_t magic;
@@ -26,14 +27,13 @@ struct pcd_cmd {
 	size_t len;
 	size_t offset;
 	u8_t buf[CONFIG_PCD_BUF_SIZE];
-	u8_t hash[256/8]; /* TODO CONFIG_SB_HASH_LEN? */
 };
 
 struct pcd_cmd *pcd_get_cmd(void *addr);
 
 int pcd_invalidate(struct pcd_cmd *cmd);
 
-int pcd_transfer_and_hash(struct pcd_cmd *cmd, struct device * fdev);
+int pcd_transfer(struct pcd_cmd *cmd, struct device * fdev);
 
 #endif /* PCD_H__ */
 
