@@ -40,15 +40,11 @@ struct pcd_cmd *pcd_get_cmd(void *addr)
 	return cmd;
 }
 
-bool pcd_validate(struct pcd_cmd *cmd, u8_t *expected_hash)
+int pcd_invalidate(struct pcd_cmd *cmd)
 {
-	if (memcmp(cmd->hash, expected_hash, sizeof(cmd->hash)) != 0) {
-		/* Signal invalid to other party by setting hash to 0 */
-		memset(cmd->hash, 0, sizeof(cmd->hash));
-		return false;
-	}
-
-	return true;
+	/* TODO add null checks here and elsewhere */
+	memset(cmd->hash, 0, sizeof(cmd->hash));
+	return 0;
 }
 
 int pcd_transfer_and_hash(struct pcd_cmd *cmd, struct device * fdev)

@@ -2,7 +2,7 @@
 #include <devicetree_unfixed.h>
 
 b0n_image:
-  size: CONFIG_PM_PARTITION_SIZE_B0N
+  size: 0x10000
   placement:
     after: start
 

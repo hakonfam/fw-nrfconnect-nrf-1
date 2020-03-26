@@ -6,7 +6,7 @@
 
 zephyr_library()
 zephyr_library_sources(bl_crypto.c)
-if (NOT CONFIG_SB_CRYPTO_NO_SHA256)
+if (NOT CONFIG_SB_CRYPTO_NO_SHA256 AND NOT CONFIG_SB_CRYPTO_TINYCRYPT_SHA256)
   zephyr_library_link_libraries(nrfxlib_crypto)
   zephyr_link_libraries(nrfxlib_crypto)
 endif()
@@ -35,6 +35,8 @@ elseif (CONFIG_SB_CRYPTO_CC310_SHA256)
     )
 elseif (CONFIG_SB_CRYPTO_CLIENT_SHA256)
   zephyr_library_sources(../bl_crypto_client/bl_crypto_client.c)
+elseif (CONFIG_SB_CRYPTO_TINYCRYPT_SHA256)
+  zephyr_library_sources(bl_crypto_tinycrypt_hash.c)
 elseif (CONFIG_SB_CRYPTO_NO_SHA256)
   # Do nothing
 else()

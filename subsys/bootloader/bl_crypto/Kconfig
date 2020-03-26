@@ -89,10 +89,18 @@ choice SB_CRYPTO_HASH
 	  Crypto implementation to use for hash generation in Bootloader.
 
 	config SB_CRYPTO_OBERON_SHA256
-		bool "Software SHA256"
+		bool "Software (oberon lib) SHA256"
 		select SB_SHA256
 		help
-		  Software implementation of SHA256.
+		  Software implementation by oberon of SHA256.
+
+	config SB_CRYPTO_TINYCRYPT_SHA256
+		bool "Software (tinycrypt) SHA256"
+		select SB_SHA256
+		select TINYCRYPT
+		select TINYCRYPT_SHA256
+		help
+		  Software implementation  by tinycrypt of SHA256.
 
 	config SB_CRYPTO_CC310_SHA256
 		bool "Hardware SHA256" if HAS_HW_NRF_CC310

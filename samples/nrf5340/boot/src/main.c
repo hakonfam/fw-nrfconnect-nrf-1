@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 Nordic Semiconductor ASA
+ * Copyright (c) 2020 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
@@ -105,7 +105,6 @@ static void boot_from(const struct fw_info *fw_info)
 
 void main(void)
 {
-	const struct fw_validation_info *fw_val_info;
 	struct pcd_cmd *cmd;
 	int err = fprotect_area(PM_B0N_IMAGE_ADDRESS, PM_B0N_IMAGE_SIZE);
 	struct device *fdev = device_get_binding(DT_FLASH_DEV_NAME);
@@ -125,24 +124,24 @@ void main(void)
 	}
 
 	u32_t s0_addr = s0_address_read();
-	const struct fw_info *s0_info = fw_info_find(s0_addr);
-	u32_t s0_end = s0_addr + s0_info->size;
 
 	if (cmd != NULL) {
-		/* Validate the SHA of the newly copied image */
-		fw_val_info = bl_validation_info_find(s0_end, 4);
-		if (!pcd_validate(&cmd, fw_val_info->hash)) {
-			printk("Invalid hash!");
-			return;
+		if (!bl_validate_firmware(s0_addr, s0_addr)) {
+			ret = pcd_invalidate(&cmd);
+			if (ret != 0) {
+				printk("Failed invalidation: %d. \n\r", err);
+				return;
+			}
 		}
 	}
 
 	err = fprotect_area(PM_APP_ADDRESS, PM_APP_SIZE);
 	if (err) {
-		printk("Failed to protect app flash, cancel startup.\n\r");
+		printk("Failed to protect app flash: %d. \n\r", err);
 		return;
 	}
 
+	const struct fw_info *s0_info = fw_info_find(s0_addr);
 	boot_from(s0_info);
 	
 	return;

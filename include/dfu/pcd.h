@@ -31,7 +31,7 @@ struct pcd_cmd {
 
 struct pcd_cmd *pcd_get_cmd(void *addr);
 
-bool pcd_validate(struct pcd_cmd *cmd, u8_t *expected_hash);
+int pcd_invalidate(struct pcd_cmd *cmd);
 
 int pcd_transfer_and_hash(struct pcd_cmd *cmd, struct device * fdev);
 

@@ -10,8 +10,6 @@ menuconfig PCD
 	bool "Peripheral CPU DFU Support"
 	select FLASH_PAGE_LAYOUT
 	select FLASH_BUFFERED_WRITE
-	select TINYCRYPT
-	select TINYCRYPT_SHA256
 
 if (PCD)
 
