@@ -668,14 +668,14 @@ def replace_app_with_dynamic_partition(d, dynamic_partition_name):
             v = dynamic_partition_name
 
 
-def set_flash_primary_region(pm_config):
-    for v in pm_config.values():
-        if 'region' not in v:
-            v['region'] = 'flash_primary'
-
-
 def fix_syntactic_sugar(pm_config):
-    set_flash_primary_region(pm_config)
+    for k, v in pm_config.items():
+        # Set FLASH primary region
+        if 'region' not in v and not k.endswith('_ram'):
+            v['region'] = 'flash_primary'
+        # Set RAM primary region
+        elif k.endswith('_ram'):
+            v['region'] = 'ram_primary'
 
 
 def get_region_config_from_args(args, ranges_configuration):

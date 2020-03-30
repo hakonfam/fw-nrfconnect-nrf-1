@@ -85,6 +85,15 @@ def write_pm_config(pm_config, regions_config, name, out_path):
     image_config_lines = list.copy(config_lines)
     image_config_lines.append("#define PM_ADDRESS 0x%x" % pm_config[name]['address'])
     image_config_lines.append("#define PM_SIZE 0x%x" % pm_config[name]['size'])
+
+    image_ram_partition = f'{name}_ram'
+    image_has_custom_ram = image_ram_partition in pm_config
+    if image_has_custom_ram:
+        image_config_lines.append("#define PM_RAM_ADDRESS 0x%x" % pm_config[image_ram_partition]['address'])
+        image_config_lines.append("#define PM_RAM_SIZE 0x%x" % pm_config[image_ram_partition]['size'])
+    else:
+        image_config_lines.append("#define PM_RAM_ADDRESS 0x%x" % pm_config['ram_primary']['address'])
+        image_config_lines.append("#define PM_RAM_SIZE 0x%x" % pm_config['ram_primary']['size'])
     image_config_lines.insert(0, get_header_guard_start(pm_config_file))
     image_config_lines.append(get_header_guard_end(pm_config_file))
     write_config_lines_to_file(out_path, image_config_lines)

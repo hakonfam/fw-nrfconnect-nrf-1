@@ -71,6 +71,7 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
   endif()
 
   math(EXPR flash_size "${CONFIG_FLASH_SIZE} * 1024" OUTPUT_FORMAT HEXADECIMAL)
+  math(EXPR ram_size "${CONFIG_SRAM_SIZE} * 1024" OUTPUT_FORMAT HEXADECIMAL)
 
   if (CONFIG_SOC_NRF9160 OR CONFIG_SOC_NRF5340_CPUAPP)
     add_region(
@@ -87,7 +88,12 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     complex
     NRF_FLASH_DRV_NAME
     )
-
+  add_region(
+    ram_primary
+    ${ram_size}
+    ${CONFIG_SRAM_BASE_ADDRESS}
+    end_to_start
+    )
   if (CONFIG_PM_EXTERNAL_FLASH)
     add_region_with_dev(
       external_flash
