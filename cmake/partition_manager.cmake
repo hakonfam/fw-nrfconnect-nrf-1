@@ -84,25 +84,13 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
   # RAM is configured by DTS, but there are no symbols exposing the actual size
   # and base of RAM as seen in HW, hence we create our own definitions here.
   set(ram_base 0x20000000)
+
   math(EXPR
     ram_size
     "(${CONFIG_SRAM_BASE_ADDRESS} - ${ram_base}) + (${CONFIG_SRAM_SIZE} * 1024)"
     OUTPUT_FORMAT HEXADECIMAL)
 
-  if (CONFIG_SPM AND NOT CONFIG_SOC_NRF9160)
-    # SPM is included, but not BSDlib. Place the secure RAM region at the end
-    # of the available RAM
-
-    math(EXPR
-      ram_primary_base
-      "${ram_base} + ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}"
-      OUTPUT_FORMAT HEXADECIMAL)
-
-    math(EXPR
-      ram_primary_size
-      "${ram_size} - ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}"
-      OUTPUT_FORMAT HEXADECIMAL)
-
+  if (CONFIG_SPM)
     add_region(
       ram_secure
       ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}
@@ -110,38 +98,42 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
       end_to_start
       )
 
-    add_region(
-      ram_primary
-      ${ram_primary_size}
-      ${ram_primary_base}
-      end_to_start
-      )
+    math(EXPR
+      ram_size
+      "${ram_size} - ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}"
+      OUTPUT_FORMAT HEXADECIMAL)
 
-  elseif (CONFIG_SPM AND CONFIG_SOC_NRF9160)
-    # SPM and BSDlib is included, follow the RAM scheme imposed by BSDlib
-    add_region(
-      ram_secure
-      0x10000
-      0x2000000
-      start_to_end
-      )
+    math(EXPR
+      ram_base
+      "${ram_base} + ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}"
+      OUTPUT_FORMAT HEXADECIMAL)
 
-    # BSDLib is from 0x20010000 to 0x20020000
+    if (CONFIG_SOC_NRF9160)
+      add_region(
+        ram_bsdlib
+        ${CONFIG_PM_PARTITION_SIZE_BSDLIB_RAM}
+        ${ram_base}
+        end_to_start
+        )
 
-    add_region(
-      ram_primary
-      0x20000
-      0x20020000
-      end_to_start
-      )
-  else()
-    add_region(
-      ram_primary
-      0x20000
-      0x20020000
-      end_to_start
-      )
+      math(EXPR
+        ram_size
+        "${ram_size} - ${CONFIG_PM_PARTITION_SIZE_BSDLIB_RAM}"
+        OUTPUT_FORMAT HEXADECIMAL)
+
+      math(EXPR
+        ram_base
+        "${ram_base} + ${CONFIG_PM_PARTITION_SIZE_BSDLIB_RAM}"
+        OUTPUT_FORMAT HEXADECIMAL)
+    endif()
   endif()
+
+  add_region(
+    ram_primary
+    ${ram_size}
+    ${ram_base}
+    end_to_start
+    )
 
   add_region_with_dev(
     flash_primary

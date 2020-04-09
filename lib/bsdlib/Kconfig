@@ -5,6 +5,12 @@
 
 menu "BSD Library for nrf91"
 
+config PM_PARTITION_SIZE_BSDLIB_RAM
+	hex
+        default 0x10000
+	help
+	  RAM area set aside for the BSD library.
+
 config BSD_LIBRARY
 	bool
 	prompt "Use BSD Socket library for IP/TLS/DTLS"
@@ -16,6 +22,7 @@ config BSD_LIBRARY
 	  Use Nordic BSD Socket library.
 
 if BSD_LIBRARY
+
 
 config BSD_LIBRARY_SYS_INIT
 	bool "Initialize during SYS_INIT"

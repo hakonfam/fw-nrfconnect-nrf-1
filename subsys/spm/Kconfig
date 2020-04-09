@@ -25,6 +25,7 @@ menuconfig IS_SPM
 
 config PM_PARTITION_SIZE_SPM_RAM
 	hex "RAM reserved for SPM"
+        default 0x10000 if SOC_NRF9160
 	default 0x8000
 	help
 	  RAM area set aside for the SPM.
