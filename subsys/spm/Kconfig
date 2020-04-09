@@ -23,6 +23,12 @@ menuconfig IS_SPM
 	default n
 	select TRUSTED_EXECUTION_SECURE
 
+config PM_PARTITION_SIZE_SPM_RAM
+	hex "RAM reserved for SPM"
+	default 0x8000
+	help
+	  RAM area set aside for the SPM.
+
 if IS_SPM
 # Define used by partition_manager.py to deduce size of partition.
 # Unable to use the size template due to non-trivial defaults.
@@ -34,6 +40,7 @@ config PM_PARTITION_SIZE_SPM
 	  Flash space set aside for the SPM. Note, the name
 	  of this configuration needs to match the requirements set by the
 	  script 'partition_manager.py'. See pm.yml.
+
 
 config SPM_BOOT_SILENTLY
 	bool "Boot silently"

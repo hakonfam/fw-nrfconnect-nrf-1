@@ -71,7 +71,6 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
   endif()
 
   math(EXPR flash_size "${CONFIG_FLASH_SIZE} * 1024" OUTPUT_FORMAT HEXADECIMAL)
-  math(EXPR ram_size "${CONFIG_SRAM_SIZE} * 1024" OUTPUT_FORMAT HEXADECIMAL)
 
   if (CONFIG_SOC_NRF9160 OR CONFIG_SOC_NRF5340_CPUAPP)
     add_region(
@@ -81,18 +80,75 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
       start_to_end
       )
   endif()
+
+  # RAM is configured by DTS, but there are no symbols exposing the actual size
+  # and base of RAM as seen in HW, hence we create our own definitions here.
+  set(ram_base 0x20000000)
+  math(EXPR
+    ram_size
+    "(${CONFIG_SRAM_BASE_ADDRESS} - ${ram_base}) + (${CONFIG_SRAM_SIZE} * 1024)"
+    OUTPUT_FORMAT HEXADECIMAL)
+
+  if (CONFIG_SPM AND NOT CONFIG_SOC_NRF9160)
+    # SPM is included, but not BSDlib. Place the secure RAM region at the end
+    # of the available RAM
+
+    math(EXPR
+      ram_primary_base
+      "${ram_base} + ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}"
+      OUTPUT_FORMAT HEXADECIMAL)
+
+    math(EXPR
+      ram_primary_size
+      "${ram_size} - ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}"
+      OUTPUT_FORMAT HEXADECIMAL)
+
+    add_region(
+      ram_secure
+      ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}
+      ${ram_base}
+      end_to_start
+      )
+
+    add_region(
+      ram_primary
+      ${ram_primary_size}
+      ${ram_primary_base}
+      end_to_start
+      )
+
+  elseif (CONFIG_SPM AND CONFIG_SOC_NRF9160)
+    # SPM and BSDlib is included, follow the RAM scheme imposed by BSDlib
+    add_region(
+      ram_secure
+      0x10000
+      0x2000000
+      start_to_end
+      )
+
+    # BSDLib is from 0x20010000 to 0x20020000
+
+    add_region(
+      ram_primary
+      0x20000
+      0x20020000
+      end_to_start
+      )
+  else()
+    add_region(
+      ram_primary
+      0x20000
+      0x20020000
+      end_to_start
+      )
+  endif()
+
   add_region_with_dev(
     flash_primary
     ${flash_size}
     ${CONFIG_FLASH_BASE_ADDRESS}
     complex
     NRF_FLASH_DRV_NAME
-    )
-  add_region(
-    ram_primary
-    ${ram_size}
-    ${CONFIG_SRAM_BASE_ADDRESS}
-    end_to_start
     )
   if (CONFIG_PM_EXTERNAL_FLASH)
     add_region_with_dev(
@@ -114,6 +170,8 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     ${static_configuration}
     ${region_arguments}
     )
+
+  print(pm_cmd)
 
   set(pm_output_cmd
     ${PYTHON_EXECUTABLE}
