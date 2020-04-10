@@ -6,8 +6,6 @@
 
 add_subdirectory(bin)
 
-message("Checking for ${IMAGE_NAME}")
-print(CONFIG_BSD_LIBRARY)
 add_subdirectory_ifdef(CONFIG_BSD_LIBRARY bsdlib)
 add_subdirectory_ifdef(CONFIG_DK_LIBRARY dk_buttons_and_leds)
 add_subdirectory_ifdef(CONFIG_AT_CMD at_cmd)

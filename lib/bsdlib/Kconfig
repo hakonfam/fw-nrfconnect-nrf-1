@@ -23,7 +23,6 @@ config BSD_LIBRARY
 
 if BSD_LIBRARY
 
-
 config BSD_LIBRARY_SYS_INIT
 	bool "Initialize during SYS_INIT"
 	default y
