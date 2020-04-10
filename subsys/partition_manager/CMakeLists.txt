@@ -50,11 +50,11 @@ endif()
 get_property(img_pm_subsys GLOBAL PROPERTY PM_SUBSYS)
 if (img_pm_subsys)
   foreach (subsys_pm_yml ${img_pm_subsys})
-    file(RELATIVE_PATH rel_path_to_yml ${ZEPHYR_BASE} ${subsys_pm_yml})
+    file(RELATIVE_PATH rel_path_to_yml ${ZEPHYR_BASE}/../ ${subsys_pm_yml})
     print(subsys_pm_yml)
     print(rel_path_to_yml)
     set(subsys_pm_preprocessed
-      ${PROJECT_BINARY_DIR}/${rel_path_to_yml})
+      ${PROJECT_BINARY_DIR}/../modules/${rel_path_to_yml})
     print(subsys_pm_preprocessed)
     preprocess_pm_yml(
       ${subsys_pm_yml}

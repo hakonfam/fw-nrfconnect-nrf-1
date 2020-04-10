@@ -580,6 +580,8 @@ def verify_static_conf(size, start, placement_strategy, static_conf):
 def solve_complex_region(pm_config, start, size, placement_strategy, region_name, device, static_conf):
     free_size = size
 
+    pm_config['app'] = dict()
+
     if static_conf:
         start, free_size = get_dynamic_area_start_and_size(static_conf, free_size)
 
@@ -721,7 +723,7 @@ def main():
     args, ranges_configuration = parse_args()
     pm_config = load_reqs(args.input_files)
     static_config = load_static_configuration(args, pm_config) if args.static_config else dict()
-    pm_config['app'] = dict()
+
     fix_syntactic_sugar(pm_config)
 
     regions = get_region_config_from_args(args, ranges_configuration)

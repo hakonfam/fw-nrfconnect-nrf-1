@@ -1,0 +1,6 @@
+#include <autoconf.h>
+
+bsdlib_ram:
+  placement: {after: spm_ram}
+  size: CONFIG_PM_PARTITION_SIZE_BSDLIB_RAM
+  region: ram_primary
