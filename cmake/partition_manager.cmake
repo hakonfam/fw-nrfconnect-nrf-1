@@ -90,49 +90,11 @@ if(PM_IMAGES OR (EXISTS ${static_configuration_file}))
     "(${CONFIG_SRAM_BASE_ADDRESS} - ${ram_base}) + (${CONFIG_SRAM_SIZE} * 1024)"
     OUTPUT_FORMAT HEXADECIMAL)
 
-  if (CONFIG_SPM)
-    add_region(
-      ram_secure
-      ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}
-      ${ram_base}
-      end_to_start
-      )
-
-    math(EXPR
-      ram_size
-      "${ram_size} - ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}"
-      OUTPUT_FORMAT HEXADECIMAL)
-
-    math(EXPR
-      ram_base
-      "${ram_base} + ${CONFIG_PM_PARTITION_SIZE_SPM_RAM}"
-      OUTPUT_FORMAT HEXADECIMAL)
-
-    if (CONFIG_SOC_NRF9160)
-      add_region(
-        ram_bsdlib
-        ${CONFIG_PM_PARTITION_SIZE_BSDLIB_RAM}
-        ${ram_base}
-        end_to_start
-        )
-
-      math(EXPR
-        ram_size
-        "${ram_size} - ${CONFIG_PM_PARTITION_SIZE_BSDLIB_RAM}"
-        OUTPUT_FORMAT HEXADECIMAL)
-
-      math(EXPR
-        ram_base
-        "${ram_base} + ${CONFIG_PM_PARTITION_SIZE_BSDLIB_RAM}"
-        OUTPUT_FORMAT HEXADECIMAL)
-    endif()
-  endif()
-
   add_region(
     ram_primary
     ${ram_size}
     ${ram_base}
-    end_to_start
+   end_to_start 
     )
 
   add_region_with_dev(

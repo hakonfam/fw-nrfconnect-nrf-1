@@ -6,6 +6,9 @@ spm:
     before: app
   inside: mcuboot_primary_app
 
+  #if 0
 spm_ram:
   size: CONFIG_PM_PARTITION_SIZE_SPM_RAM
-  region: ram_secure
+  placement: {after: start}
+  inside: ram_span_secure
+  #endif
