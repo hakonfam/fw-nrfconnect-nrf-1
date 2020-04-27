@@ -607,6 +607,13 @@ def solve_complex_region(pm_config, start, size, placement_strategy, region_name
             return
 
     solution, sub_partitions = resolve(pm_config)
+
+    # Create a span 'app' which spans the dynamic partition. This creates a generic way of addressing the
+    # dynamic partition. This is useful for bootloaders which does not have to know the name of the image
+    # they are booting, and for build scripts, which does not have to know the name of the image to be signed.
+    if dynamic_partition != 'app':
+        pm_config['app']['span'] = [dynamic_partition]
+
     set_addresses_and_align(pm_config, sub_partitions, solution, free_size, start)
     set_sub_partition_address_and_size(pm_config, sub_partitions)
 
@@ -820,6 +827,17 @@ def test():
     expect_addr_size(td, 'a', 0, 100)
     expect_addr_size(td, 'app', 100, 700)
     expect_addr_size(td, 'b', 800, 200)
+
+    # Verify that 'app' spans the dynamic partition when a dynamic partition is set
+    td = {'a': {'size': 100, 'region': 'flash', 'placement': {'after': 'start'}}, 'app': {}}
+    test_region = {'name': 'flash',
+                   'size': 1000,
+                   'base_address': 0,
+                   'placement_strategy': COMPLEX,
+                   'device': 'some-driver-device',
+                   'dynamic_partition': 'the_dynamic_partition'}
+    get_region_config(td, test_region)
+    assert td['app']['span'][0] ==  'the_dynamic_partition'
 
     # Verify that START_TO_END region configuration is correct
     td = {'b': {'size': 100, 'region': 'extflash'}}
