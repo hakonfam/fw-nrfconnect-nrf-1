@@ -169,6 +169,8 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
       # pm_domain.config file, and then the parent can import this with the
       # correct pref
 
+      #import_kconfig(NET_CORE_PM ${net_core_pm_config))
+
 
   endif()
 

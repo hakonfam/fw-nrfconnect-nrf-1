@@ -402,6 +402,7 @@ def align_partition(current, reqs, move_up, dynamic_partitions):
     e = 'EMPTY_{}'.format(len([x for x in reqs.keys() if 'EMPTY' in x]))
     reqs[e] = {'address': empty_partition_address,
                'size': empty_partition_size,
+               'region': reqs[dynamic_partitions[0]]['region'],
                'placement': {'before' if move_up else 'after': [current]}}
 
     if current not in dynamic_partitions:
