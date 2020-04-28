@@ -144,33 +144,28 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
     "version_MCUBOOT=${CONFIG_MCUBOOT_IMAGE_VERSION}"
     )
 
-  if (CONFIG_PCD_HOST AND ((BOARD STREQUAL nrf5340_dk_nrf5340_cpuappns) OR
-      (BOARD STREQUAL nrf5340_dk_nrf5340_cpuapp)))
-      # The bootloader on the network core is enabled. The validation of this
-      # bootloader is performed by MCUBoot on the application core. Hence we
-      # need a target for creating the signed binary of the network core
-      # application.
+  if (CONFIG_BT_RPMSG_NRF53 AND ((BOARD STREQUAL nrf5340_dk_nrf5340_cpuappns) OR
+    (BOARD STREQUAL nrf5340_dk_nrf5340_cpuapp)))
+    message("Adding stuffo")
+    # The bootloader on the network core is enabled. The validation of this
+    # bootloader is performed by MCUBoot on the application core. Hence we
+    # need a target for creating the signed binary of the network core
+    # application.
 
-      # The only thing we can depend on, is the completion of the child image
-      # build, which is easy enough
-      # - depends(hci_rpmsg_subimage)
-      # Then we need the name of the binary file which we are going to sign.
-      # This is available through the variable PM_HCI_RPMSG_HEX_FILE, but can
-      # we make it a span inside 'app' ?
+    include(${CMAKE_BINARY_DIR}/hci_rpmsg/shared_vars.cmake)
 
-      # Maybe that is a much better way of dealing with the dynamic image
-      # partition? Simply create a span over the new dynamic image partition
-      # called 'app'. This way you can use the merged hex file for signing etc.
+    sign(${nrf5340_dk_nrf5340_cpunet_PM_APP_HEX}
+      ${PROJECT_BINARY_DIR}/net_core_app
+      ${app_offset}
+      hci_rpmsg_subimage
+      net_core_app_signed_hex
+      )
 
-      # So we need to share the app_PM_HEX_FILE variable, but this has aliasing
-      # issues with the parent image. We need to either hard-code the sharing
-      # of the app. What if we can import pm_configs with a prefix? - well we
-      # can aready provide the prefix "PM", what if we share the path to the
-      # pm_domain.config file, and then the parent can import this with the
-      # correct pref
-
-      #import_kconfig(NET_CORE_PM ${net_core_pm_config))
-
+    add_custom_target(
+      net_core_app_sign_target
+      ALL
+      DEPENDS ${net_core_app_signed_hex}
+      )
 
   endif()
 

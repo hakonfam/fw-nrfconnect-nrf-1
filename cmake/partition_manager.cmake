@@ -172,7 +172,6 @@ set(pm_cmd
   ${static_configuration}
   ${region_arguments}
   )
-print(pm_cmd)
 
 set(pm_output_cmd
   ${PYTHON_EXECUTABLE}
@@ -343,7 +342,8 @@ if (is_dynamic_partition_in_domain)
   share("set(${domain}_PM_DOMAIN_REGIONS ${pm_out_region_files})")
   share("set(${domain}_PM_DOMAIN_HEADER_FILES ${header_files})")
   share("set(${domain}_PM_DOMAIN_IMAGES ${prefixed_images})")
-  share("set(${domain}_PM_APP_HEX ${PM_APP_HEX_FILE})")
+  # The partition manager script ensures that the 'app' hex always exists.
+  share("set(${domain}_PM_APP_HEX ${PROJECT_BINARY_DIR}/app.hex)")
 else()
   # This is the root image, generate the global pm_config.h
   # First, include the shared_vars.cmake file for all child images.

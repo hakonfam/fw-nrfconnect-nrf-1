@@ -533,9 +533,10 @@ def get_region_config(pm_config, region_config, static_conf=None):
 
             # Create a span over the dynamic partition so that 'app' can be used as a reference for the dynamic
             # partition in build system and code.
-            pm_config['app'] = {'span': [dp]}
+            pm_config['app'] = {'span': [dp], 'region': region_config['name']}
 
         pm_config[dp] = dict()
+        pm_config[dp]['region'] = region_config['name']
 
         solve_complex_region(pm_config, start, size, placement_strategy, region_name, device, static_conf, dp)
 
