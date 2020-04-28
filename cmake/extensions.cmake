@@ -19,3 +19,14 @@ function(get_board_without_ns_suffix board_in board_out)
     set(${board_out} ${board_in} PARENT_SCOPE)
   endif()
 endfunction()
+
+function(add_overlay_config image overlay_file)
+  set(old_conf ${${image}OVERLAY_CONFIG})
+  string(FIND "${old_conf}" "${overlay_file}" found)
+  if (${found} EQUAL -1)
+    set(${image}OVERLAY_CONFIG
+      "${old_conf} ${overlay_file}"
+      CACHE STRING "" FORCE)
+  endif()
+endfunction()
+

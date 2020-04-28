@@ -230,11 +230,13 @@ function(add_child_image_from_source)
       )
   endif()
 
-  if (${ACI_DOMAIN})
+  if (ACI_DOMAIN)
     add_custom_target(${ACI_NAME}_flash
                       COMMAND
                       ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}/${ACI_NAME}
                       --target flash
+                      DEPENDS
+                      ${ACI_NAME}_subimage
     )
 
     set_property(TARGET zephyr_property_target

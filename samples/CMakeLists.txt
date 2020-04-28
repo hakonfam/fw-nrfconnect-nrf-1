@@ -41,6 +41,17 @@ endif()
 if (CONFIG_BT_RPMSG_NRF53)
   if ((BOARD STREQUAL nrf5340_dk_nrf5340_cpuappns) OR
       (BOARD STREQUAL nrf5340_dk_nrf5340_cpuapp))
+
+      if (CONFIG_BOOTLOADER_MCUBOOT)
+        # Inject this configuration from parent image hci_rpmsg to enable
+        # secure bootloader on the network core.
+        add_overlay_config(
+          hci_rpmsg_
+          "${ZEPHYR_NRF_MODULE_DIR}/subsys/bootloader/image/secure_boot.conf"
+          )
+
+      endif()
+
     add_child_image(
       NAME hci_rpmsg
       SOURCE_DIR ${ZEPHYR_BASE}/samples/bluetooth/hci_rpmsg

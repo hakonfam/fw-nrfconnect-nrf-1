@@ -4,16 +4,6 @@
 # SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
 #
 
-function(add_overlay_config image overlay_file)
-  set(old_conf ${${image}OVERLAY_CONFIG})
-  string(FIND "${old_conf}" "${overlay_file}" found)
-  if (${found} EQUAL -1)
-    set(${image}OVERLAY_CONFIG
-      "${old_conf} ${overlay_file}"
-      CACHE STRING "" FORCE)
-  endif()
-endfunction()
-
 # This CMakeLists.txt is executed by the root application only when
 # B0 (SECURE_BOOT) is enabled. First, figure out what image will be
 # booted by B0, and set the required properties for that image to be
