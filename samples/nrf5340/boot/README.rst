@@ -1,31 +1,24 @@
-.. _bootloader:
+.. _nc_bootloader:
 
-Immutable bootloader
-####################
+nRF5340 Network core  bootloader
+################################
 
-The bootloader sample implements an immutable first stage bootloader that has the capability to verify and boot a second stage bootloader.
-If the second stage bootloader is upgradable, it can reside in one of two slots.
-In this case, the sample chooses the second stage bootloader with the highest version number.
-
-See :ref:`ug_bootloader` for more information about the full bootloader chain.
-For information about creating a second stage bootloader, see :doc:`mcuboot:index`.
+This bootloader sample implements an immutable first stage bootloader that has the capability to download update the application firmware on the network core.
+It also performs flash protection of both itself an the application.
 
 Overview
 ********
 
-The bootloader sample provides a simple root of trust (RoT) as well as support for an upgradable second stage bootloader.
+The network core bootloader sample provides a scheme for transporting an
+already verified and authenticated firmware upgrade from the application core
+flash to the network core flash, as well as performing flash protection.
 
 This is accomplished by the following steps:
 
 1. Lock the flash.
-     To enable the RoT, the bootloader sample locks the flash that contains the sample bootloader and its configuration.
-     Locking is done using the hardware that is available on the given architecture.
+     The bootloader sample locks the flash that contains the sample bootloader and its configuration.
+     Locking is done using the ACL peripheral.
      For details on locking, see the :ref:`fprotect_readme` driver.
-
-#. Select the next stage in the boot chain.
-     The next stage in the boot chain can be another bootloader or the application.
-     When the bootloader sample is enabled and MCUboot is used as second stage bootloader, there are two slots in which the second stage bootloader can reside.
-     The second stage bootloader in each slot has a version number associated with it, and the bootloader sample selects the second stage bootloader that has the highest version number.
 
 #. Verify the next stage in the boot chain.
      After selecting the image to be booted next, the bootloader sample verifies its validity using one of the provisioned public keys hashes.
@@ -39,25 +32,8 @@ This is accomplished by the following steps:
      This mechanism can be used to decommission broken keys.
      If the public key does not match any of the still valid provisioned hashes, validation fails.
 
-#. Boot the next stage in the boot chain.
-    After verifying the next boot stage, the bootloader sample uninitializes all peripherals that it used and boots the next boot stage.
-
-#. Share the cryptographic library over EXT_API.
-     The bootloader shares some of its functionality through an external API (EXT_API, see :ref:`doc_fw_info_ext_api`).
-     For more information, see :file:`bl_crypto.h`.
-
-
-Flash layout
-============
-
-The flash layout is defined by :file:`samples/bootloader/pm.yml`.
-
-The bootloader sample defines four main areas:
-
-1. **B0** - Contains the bootloader sample.
-#. **Provision** - Stores the provisioned data.
-#. **S0** - One of two potential storage areas for the second stage bootloader.
-#. **S1** - One of two potential storage areas for the second stage bootloader.
+  #. Boot the application in the network core.
+       After possibly performing a firmware update, and enabling flash protection, the network core bootloader uninitializes all peripherals that it used and boots the application.
 
 Provisioning
 ============
@@ -81,82 +57,35 @@ If you choose to do so, use the Python scripts in ``scripts\bootloader`` to crea
 Requirements
 ************
 
-* One of the following development boards:
 
-  * |nRF9160DK|
-  * |nRF52840DK|
-  * |nRF52DK|
-  * |nRF51DK|
+  * |nRF5340DK|
 
 .. _bootloader_build_and_run:
 
 Building and running
 ********************
 
-The source code of the sample can be found under :file:`samples/bootloader/` in the |NCS| folder structure.
+The source code of the sample can be found under :file:`samples/nrf5340/netboot/` in the |NCS| folder structure.
 
 The most common use case for the bootloader sample is to be included as a child image in a multi-image build, rather than being built stand-alone.
-Complete the following steps to add the bootloader sample as child image to your application:
-
-1. Create a private key in PEM format.
-   To do so, run the following command, which stores your private key in a file name ``priv.pem`` in the current folder::
-
-       openssl ecparam -name prime256v1 -genkey -noout -out priv.pem
-
-   OpenSSL is installed with GIT, so it should be available in your GIT bash.
-   See `openSSL`_ for more information.
-
-   .. note::
-      This step is optional for testing the bootloader chain.
-      If you do not provide your own keys, debug keys are created automatically.
-      However, you should never go into production with an application that is not protected by secure keys.
-
-#. Run ``menuconfig`` on your application to enable Secure Boot:
-
-   a. Select **Project** > **Configure nRF Connect SDK project**.
-   #. Go to **Modules** > **Nordic nRF Connect** and select **Use Secure Bootloader** to enable :option:`CONFIG_SECURE_BOOT`.
-   #. Under **Private key PEM file** (:option:`CONFIG_SB_SIGNING_KEY_FILE`), enter the path to the private key that you created.
-      If you choose to run the sample with default debug keys, you can skip this step.
-
-      There are additional configuration options that you can modify, but it is not recommended to do so.
-      The default settings are suitable for most use cases.
-
-      .. note::
-         If you need more flexibility with signing, or if you do not want the build system to handle your private key, choose :option:`CONFIG_SB_SIGNING_CUSTOM`.
-         This option allows you to define the signing command.
-         In this case, you must also specify :option:`CONFIG_SB_SIGNING_COMMAND` and :option:`CONFIG_SB_SIGNING_PUBLIC_KEY`.
-
-   #. Click **Configure**.
-
-#. Select **Build** > **Build Solution** to compile your application.
-   The build process creates two images, one for the bootloader and one for the application, and merges them together.
-#.  Select **Build** > **Build and Run** to program the resulting image to your device.
-
+TODO explain that you can set SECURE_BOOT=y for the network core application.
+This sample is included automatically if the application in the nrf5340 application core has the :option:`CONFIG_BOOTLOADER_MCUBOOT` option set.
 
 Testing
 =======
 
-To test the bootloader sample, add it to any other sample and build and program that sample it as described above.
+To test the network core bootloader sample, enable :option:`CONFIG_BOOTLOADER_MCUBOOT` in the application core :file:`prj.conf`.
 Then test it by performing the following steps:
 
 #. |connect_terminal|
 #. Reset the board.
-#. Observe that the kit prints the following information::
-
-      Attempting to boot from address 0x8000.
-
-      Verifying signature against key 0.
-
-      Signature verified.
-
-      Booting (0x8000).
+#. Observe that the application starts as expected.
 
 Dependencies
 ************
 
 This sample uses the following |NCS| libraries:
 
-* :ref:`partition_manager`
 * :ref:`doc_fw_info`
 * :ref:`fprotect_readme`
 * ``include/bl_validation.h``
