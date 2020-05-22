@@ -59,11 +59,80 @@ int spm_secure_services_init(void)
 #define FICR_RESTRICTED_ADDR    (FICR_BASE + 0x130)
 #define FICR_RESTRICTED_SIZE    0x8
 
+#ifdef CONFIG_SPM_SERVICE_ERASE
+__TZ_NONSECURE_ENTRY_FUNC
+int spm_page_erase(u32_t addr)
+{
+	bool s0_active;
+	int err = spm_s0_active(PM_S0_ADDRESS, PM_S1_ADDRESS, &s0_active);
+
+	if (err != 0) {
+		return err;
+	}
+
+	if ((s0_active && !(addr >= PM_S0_ADDRESS &&
+	    addr < PM_S0_ADDRESS + PM_S0_LENGTH)) ||
+	    (s1_active && !(addr >= PM_S1_ADDRESS &&
+	    addr < PM_S1_ADDRESS + PM_S1_LENGTH))) {
+		return -EPERM;
+	}
+
+	(void)nrfx_nvmc_page_erase(addr);
+
+	return 0;
+}
+
+
+#ifdef CONFIG_SPM_SERVICE_WRITE
+__TZ_NONSECURE_ENTRY_FUNC
+int spm_bytes_write(u32_t addr, void const *src, size_t len)
+{
+	bool s0_active;
+	int err = spm_s0_active(PM_S0_ADDRESS, PM_S1_ADDRESS, &s0_active);
+
+	if (err != 0) {
+		return err;
+	}
+
+	if ((s0_active && !(addr >= PM_S0_ADDRESS &&
+	    addr < PM_S0_ADDRESS + PM_S0_LENGTH)) ||
+	    (s1_active && !(addr >= PM_S1_ADDRESS &&
+	    addr < PM_S1_ADDRESS + PM_S1_LENGTH))) {
+		return -EPERM;
+	}
+
+	nrfx_nvmc_bytes_write(addr, src, len);
+
+	return 0;
+}
+
+__TZ_NONSECURE_ENTRY_FUNC
+int spm_word_write(u32_t addr, u32_t value)
+{
+	bool s0_active;
+	int err;
+
+	err = spm_s0_active(PM_S0_ADDRESS, PM_S1_ADDRESS, &s0_active);
+	if (err != 0) {
+		return err;
+	}
+
+	if ((s0_active && !(addr >= PM_S0_ADDRESS &&
+	    addr < PM_S0_ADDRESS + PM_S0_LENGTH)) ||
+	    (s1_active && !(addr >= PM_S1_ADDRESS &&
+	    addr < PM_S1_ADDRESS + PM_S1_LENGTH))) {
+		return -EPERM;
+	}
+	nrfx_nvmc_word_write(addr, value);
+
+	return 0;
+}
+#endif /* CONFIG_SPM_SERVICE_WRITE */
+
 struct read_range {
 	u32_t start;
 	size_t size;
 };
-
 
 __TZ_NONSECURE_ENTRY_FUNC
 int spm_request_read(void *destination, u32_t addr, size_t len)

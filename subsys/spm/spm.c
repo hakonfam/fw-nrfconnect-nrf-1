@@ -12,6 +12,9 @@
 #include <drivers/gpio.h>
 #include <hal/nrf_spu.h>
 #include "spm_internal.h"
+#ifdef PM_S1_ADDRESS
+#include "fw_info.h"
+#endif
 
 #if !defined(CONFIG_ARM_SECURE_FIRMWARE)
 #error "Module requires compiling for Secure ARM Firmware"
@@ -145,6 +148,49 @@ static void spm_config_nsc_flash(void)
 }
 #endif /* CONFIG_ARM_FIRMWARE_HAS_SECURE_ENTRY_FUNCS */
 
+#ifdef PM_S1_ADDRESS
+static void set_secure_flash(size_t start, size_t end, u32_t perm)
+{
+	size_t b1_start_addr;
+	size_t b1_end_addr;
+	const struct fw_info *s0;
+	const struct fw_info *s1;
+
+	s0 = fw_info_find(PM_S0_ADDRESS);
+	__ASSERT(s0 != NULL, "Unable to find s0 info");
+
+	s1 = fw_info_find(PM_S1_ADDRESS);
+	__ASSERT(s0 != NULL, "Unable to find s1 info");
+
+	if (s0->version >= s1->version &&
+	    s0->valid == CONFIG_FW_INFO_VALID_VAL) {
+		/* S0 is active, point b1 to S1 */
+		b1_start_addr = PM_S1_ADDRESS;
+		b1_end_addr = PM_S1_ADDRESS + PM_S1_SIZE;
+	} else {
+		/* S1 is active, point b1 to S0 */
+		b1_start_addr = PM_S0_ADDRESS;
+		b1_end_addr = PM_S0_ADDRESS + PM_S0_SIZE;
+	}
+
+	for (size_t i = start; i < end; i++) {
+		size_t addr = i * FLASH_SECURE_ATTRIBUTION_REGION_SIZE;
+
+		if (addr < b1_start_addr || addr >= b1_end_addr) {
+			/* The address is outside non-active B1 slot,
+			 * set it to whatever is requested */
+			NRF_SPU->FLASHREGION[i].PERM = perm;
+
+		} else {
+			u32_t nonsec_perm =
+			     perm & ~(1UL << SPU_FLASHREGION_PERM_SECATTR_Pos);
+			/* The address is inside non-active B1 slot,
+			 * set it to non-secure. 0 indicates non-secure. */
+			NRF_SPU->FLASHREGION[i].PERM = nonsec_perm;
+		}
+	}
+}
+#endif /* PM_S1_ADDRESS */
 
 static void config_regions(bool ram, size_t start, size_t end, u32_t perm)
 {
@@ -155,7 +201,15 @@ static void config_regions(bool ram, size_t start, size_t end, u32_t perm)
 		if (ram) {
 			NRF_SPU->RAMREGION[i].PERM = perm;
 		} else {
+#ifdef PM_S1_ADDRESS
+			if (perm & FLASH_SECURE) {
+				set_secure_flash(start, end, perm);
+			} else {
+				NRF_SPU->FLASHREGION[i].PERM = perm;
+			}
+#else
 			NRF_SPU->FLASHREGION[i].PERM = perm;
+#endif /* PM_S1_ADDRESS */
 		}
 	}
 
@@ -182,6 +236,9 @@ static void spm_config_flash(void)
 			| FLASH_LOCK | FLASH_NONSEC;
 
 	PRINT("Flash regions\t\tDomain\t\tPermissions\n");
+#ifdef PM_S1_ADDRESS
+	PRINT("Note: Non-active S0/S1 Slot is configured as non-secure");
+#endif
 
 	config_regions(false, 0, NON_SECURE_FLASH_REGION_INDEX,
 			secure_flash_perm);

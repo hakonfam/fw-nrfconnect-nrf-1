@@ -276,7 +276,7 @@ int fota_download_start(const char *host, const char *file, int sec_tag,
 int fota_download_init(fota_download_callback_t client_callback)
 {
 	if (client_callback == NULL) {
-		return -EINVAL;
+		return -EACCES;
 	}
 
 	callback = client_callback;

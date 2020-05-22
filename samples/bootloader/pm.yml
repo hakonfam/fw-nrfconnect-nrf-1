@@ -9,12 +9,6 @@ b0_image:
 b0:
   span: [b0_image, provision]
 
-s0_pad:
-  share_size: mcuboot_pad
-  placement:
-    after: b0
-    align: {start: CONFIG_FPROTECT_BLOCK_SIZE}
-
 spm_app:
   span: [spm, app]
 
@@ -24,14 +18,7 @@ s0_image:
 
 s0:
   # Phony container to allow hex overriding
-  span: [s0_pad, s0_image]
-
-s1_pad:
-  # This partition will only exist if mcuboot_pad exists.
-  share_size: mcuboot_pad
-  placement:
-    after: s0
-    align: {start: DT_FLASH_ERASE_BLOCK_SIZE}
+  span: [s0_image]
 
 s1_image:
   share_size: {one_of: [mcuboot, s0_image]}
@@ -41,7 +28,8 @@ s1_image:
 
 s1:
   # Partition which contains the whole S1 partition.
-  span: [s1_pad, s1_image]
+  span: [s1_image]
+  align: {start: 0x8000}
 
 provision:
   size: CONFIG_PM_PARTITION_SIZE_PROVISION
