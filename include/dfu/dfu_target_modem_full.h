@@ -1,42 +1,45 @@
 /*
- * Copyright (c) 2019 Nordic Semiconductor ASA
+ * Copyright (c) 2020 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
 
-/** @file dfu_target_modem.h
+/** @file dfu_target_modem_full.h
  *
- * @defgroup dfu_target_modem Modem DFU Target
+ * @defgroup dfu_target_modem_full Full Modem DFU Target
  * @{
- * @brief DFU Target for upgrades performed by Modem
+ * @brief DFU Target full modem updates.
  */
 
-#ifndef DFU_TARGET_MODEM_H__
-#define DFU_TARGET_MODEM_H__
+#ifndef DFU_TARGET_FLASH_H__
+#define DFU_TARGET_FLASH_H__
 
-#include <zephyr/types.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+
+int dfu_target_modem_full_cfg(uint8_t *buf, size_t len, struct device *dev,
+			      off_t dev_offset, size_t dev_size);
+
+
 /**
- * @brief See if data in buf indicates modem upgrade.
+ * @brief See if data in buf indicates a full modem update.
  *
  * @retval true if data matches, false otherwise.
  */
-bool dfu_target_modem_identify(const void *const buf);
+bool dfu_target_modem_full_identify(const void *const buf);
 
 /**
  * @brief Initialize dfu target, perform steps necessary to receive firmware.
  *
  * @param[in] file_size Size of the current file being downloaded.
- * @param[in] callback Callback function for signaling if the modem is not able
- *		       to service the erase request.
  *
  * @retval 0 If successful, negative errno otherwise.
  */
-int dfu_target_modem_init(size_t file_size, dfu_target_callback_t callback);
+int dfu_target_modem_full_init(size_t file_size);
 
 /**
  * @brief Get offset of firmware
@@ -45,7 +48,7 @@ int dfu_target_modem_init(size_t file_size, dfu_target_callback_t callback);
  *
  * @return 0 if success, otherwise negative value if unable to get the offset
  */
-int dfu_target_modem_offset_get(size_t *offset);
+int dfu_target_modem_full_offset_get(size_t *offset);
 
 /**
  * @brief Write firmware data.
@@ -55,17 +58,17 @@ int dfu_target_modem_offset_get(size_t *offset);
  *
  * @return 0 on success, negative errno otherwise.
  */
-int dfu_target_modem_write(const void *const buf, size_t len);
+int dfu_target_modem_full_write(const void *const buf, size_t len);
 
 /**
  * @brief Deinitialize resources and finalize firmware upgrade if successful.
- *
+
  * @param[in] successful Indicate whether the firmware was successfully recived.
  *
  * @return 0 on success, negative errno otherwise.
  */
-int dfu_target_modem_done(bool successful);
+int dfu_target_modem_full_done(bool successful);
 
-#endif /* DFU_TARGET_MODEM_H__ */
+#endif /* DFU_TARGET_FLASH_H__ */
 
 /**@} */
