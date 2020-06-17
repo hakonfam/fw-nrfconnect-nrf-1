@@ -1,4 +1,8 @@
-/*$$$LICENCE_NORDIC_STANDARD<2018>$$$*/
+/*
+ * Copyright (c) 2020 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+ */
 
 /**@file
  *
@@ -13,14 +17,14 @@
 #define RECOVERY_BOOTLOADER_H__
 
 #include <stdbool.h>
-#include "nrf.h"
-#include "app_util_platform.h"
+#include <kernel.h>
 
 #define RECOVERY_BL_PROTOCOL_VERSION 1                          /**< Recovery Bootloader protocol version. */
 
 /* Common platform dependent defines. */
 #define PAGE_SIZE                 (4096)                        /**< Flash page size. */
-#define FLASH_SIZE                (NRF_FICR->INFO.FLASH * 1024) /**< Flash size in bytes. */
+/* TODO Get this from DTS */
+#define FLASH_SIZE                0x100000 /**< Flash size in bytes. */
 #define BOOTLOADER_START_ADDRESS  (FLASH_SIZE - PAGE_SIZE)      /**< Address of the bootloader(last flash page). */
 #define BOOTLOADER_SIZE           (PAGE_SIZE)                   /**< Size of the bootloader in bytes. */
 #define MBR_START_ADDRESS         0                             /**< Address of the MBR(first flash page). */
@@ -68,7 +72,7 @@ typedef enum {
 /**
  * @brief Request message header.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint8_t sequence_no;                 /**< Packet sequence number. */
     uint8_t command;                     /**< Request command. */
 } recovery_bl_msg_req_hdr_t;
@@ -76,7 +80,7 @@ typedef PACKED_STRUCT {
 /**
  * @brief Response message header.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint8_t sequence_no;                 /**< Packet sequence number. */
     uint8_t command;                     /**< Response command. */
     uint8_t req_command;                 /**< Requested command. */
@@ -86,7 +90,7 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_DATA_WRITE request command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t address;                    /**< Start address of write area. */
     uint32_t length;                     /**< Length of data to be written. */
     uint8_t  data[1];                    /**< Variable length table of data to be stored in flash. */
@@ -95,7 +99,7 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_DATA_READ request command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t address;                    /**< Start address of read area. */
     uint32_t length;                     /**< Length of data to be read. */
 } recovery_bl_cmd_data_read_req_t;
@@ -103,7 +107,7 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_DATA_READ response command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t address;                    /**< Start address of requested read area. */
     uint32_t length;                     /**< Length of requested data to be read. */
     uint8_t  data[1];                    /**< Variable length table storing requested data. */
@@ -112,14 +116,14 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_PAGE_ERASE request command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t address;                    /**< Address of the page to be erased. */
 } recovery_bl_cmd_page_erase_req_t;
 
 /**
  * @brief @ref RECOVERY_BL_CMD_CRC_CHECK request command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t address;                    /**< Start address of CRC compute area. */
     uint32_t length;                     /**< Length of CRC compute area. */
 } recovery_bl_cmd_crc_check_req_t;
@@ -127,14 +131,14 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_CRC_CHECK response command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t crc;                        /**< Requested CRC value. */
 } recovery_bl_cmd_crc_check_resp_t;
 
 /**
  * @brief @ref RECOVERY_BL_CMD_UICR_WRITE request command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t address;                    /**< Start address of UICR write area. */
     uint32_t length;                     /**< Length of UICR write area. */
     uint8_t  data[1];                    /**< Variable length table of data to be stored in UICR registers. */
@@ -143,7 +147,7 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_UICR_READ request command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t address;                    /**< Start address of UICR read area. */
     uint32_t length;                     /**< Length of UICR data to be read. */
 } recovery_bl_cmd_uicr_read_req_t;
@@ -151,7 +155,7 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_UICR_READ response command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t address;                    /**< Start address of requested UICR read area. */
     uint32_t length;                     /**< Length of requested UICR data to be read. */
     uint8_t  data[1];                    /**< Variable length table storing requested UICR data. */
@@ -160,7 +164,7 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_VERSION_GET response command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t protocol_version;           /**< Requested protocol version number. */
     uint32_t fw_version;                 /**< Requested firmware version number. */
 } recovery_bl_cmd_version_get_resp_t;
@@ -168,7 +172,7 @@ typedef PACKED_STRUCT {
 /**
  * @brief @ref RECOVERY_BL_CMD_DEVICE_INFO_GET response command arguments.
  */
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t ficr_part;                  /**< Device part code(FICR.INFO.PART). */
     uint32_t ficr_variant;               /**< Device part variant(FICR.INFO.VARIANT). */
     uint32_t flash_size;                 /**< Device flash size. */
@@ -179,37 +183,33 @@ typedef PACKED_STRUCT {
 /**
  * @brief Request message structure.
  */
-ANON_UNIONS_ENABLE;
-typedef PACKED_STRUCT {
+typedef struct __packed {
     uint32_t                  msg_crc;                    /**< Packet CRC. */
     recovery_bl_msg_req_hdr_t hdr;                        /**< Request message header. */
-    __PACKED union {                                      /**< Union of request commands specific data. */
+    union {                                      /**< Union of request commands specific data. */
         recovery_bl_cmd_data_write_req_t write;           /**< Write request command data. */
         recovery_bl_cmd_data_read_req_t  read;            /**< Read request command data. */
         recovery_bl_cmd_page_erase_req_t erase;           /**< Page erase request command data. */
         recovery_bl_cmd_crc_check_req_t  crc_check;       /**< CRC check request command data. */
         recovery_bl_cmd_uicr_write_req_t uicr_write;      /**< UICR write request command data. */
         recovery_bl_cmd_uicr_read_req_t  uicr_read;       /**< UICR read request command data. */
-    };
+    } __packed;
 } recovery_bl_msg_req_t;
-ANON_UNIONS_DISABLE;
 
 /**
  * @brief Response message structure.
  */
-ANON_UNIONS_ENABLE;
-typedef PACKED_STRUCT {
+typedef struct __packed { /* TODO make all these __packed at the end as is done elsewhere */
     uint32_t                   msg_crc;                   /**< Packet CRC. */
     recovery_bl_msg_resp_hdr_t hdr;                       /**< Response messsage header. */
-    __PACKED union {                                      /**< Union of response commands specific data. */
+    union {                                      /**< Union of response commands specific data. */
         recovery_bl_cmd_data_read_resp_t    read;         /**< Read response command data. */
         recovery_bl_cmd_crc_check_resp_t    crc_check;    /**< CRC check response command data. */
         recovery_bl_cmd_uicr_read_resp_t    uicr_read;    /**< UICR read response command data. */
         recovery_bl_cmd_version_get_resp_t  version_get;  /**< Get version response command data. */
         recovery_bl_cmd_dev_info_get_resp_t dev_info_get; /**< Obtain info about device flash and UICR. */
-    };
+    } __packed;
 } recovery_bl_msg_resp_t;
-ANON_UNIONS_DISABLE;
 
 /**
  * @brief   Callback to be called on response transmission end.

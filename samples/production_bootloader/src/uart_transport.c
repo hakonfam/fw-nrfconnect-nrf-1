@@ -7,12 +7,17 @@
 #include "uart_transport.h"
 
 #include <string.h>
-#include "slip.h"
-#include "nrfx_uarte.h"
+#include <slip.h>
+#include <nrfx_uarte.h>
 #include "recovery_bootloader.h"
 
+#include <logging/log.h>
+
+LOG_MODULE_REGISTER(uart_transport, CONFIG_UART_TRANSPORT_LOG_LEVEL);
+
 /**< Size of maximum UART easy DMA transmission. */
-#define MAX_UARTE_PACKET_LEN ((1 << UARTE0_EASYDMA_MAXCNT_SIZE) -1)
+/* TODO remove division */
+#define MAX_UARTE_PACKET_LEN (((1 << UARTE0_EASYDMA_MAXCNT_SIZE) -1)/1024)
 
 /**
  * @brief   UART transport layer instance.
@@ -20,7 +25,7 @@
  * @details This structure contains status information
  *          and data buffer for the the transport layer.
  */
-struct {
+typedef struct {
     slip_t  slip;
     uint8_t uart_buffer;
     uint8_t recv_buffer[RECOVERY_BL_TRANSPORT_MTU + 1];
@@ -119,14 +124,14 @@ static void on_packet_received(uart_transport_t *p_dfu)
  */
 static __INLINE void on_rx_complete(uart_transport_t *p_dfu, uint8_t *p_data)
 {
-    ret_code_t ret_code;
+    int err;
 
 
     /* Decode bytes received in SLIP format. */
-    ret_code = slip_decode_add_byte(&p_dfu->slip, p_data[0]);
+    err = slip_decode_add_byte(&p_dfu->slip, p_data[0]);
 
     /* Check if received whole packet. */
-    if (ret_code == NRF_SUCCESS)
+    if (err == 0)
     {
         /* Process received message. */
         on_packet_received(p_dfu);
@@ -208,13 +213,15 @@ int uart_transport_init(void)
     transport.slip.state         = SLIP_STATE_DECODING;
 
     /* Set up UART port parameters. */
-    nrfx_uarte_config_t uart_config = NRFX_UARTE_DEFAULT_CONFIG;
+    /* TODO Use device tree for this  and below*/
+    nrfx_uarte_config_t uart_config = NRFX_UARTE_DEFAULT_CONFIG(20, 22);
 
-    /* TODO Use device tree for this */
-    uart_config.pseltxd   = CUSTOM_UART_TX_PIN_NUMBER;
+    /* TODO
+       uart_config.pseltxd   = CUSTOM_UART_TX_PIN_NUMBER;
     uart_config.pselrxd   = CUSTOM_UART_RX_PIN_NUMBER;
     uart_config.pselcts   = CUSTOM_UART_CTS_PIN_NUMBER;
     uart_config.pselrts   = CUSTOM_UART_RTS_PIN_NUMBER;
+    */
 
     uart_config.p_context = &transport;
 
@@ -223,12 +230,13 @@ int uart_transport_init(void)
 
     /* Initialize UART. */
     err =  nrfx_uarte_init(&uart_instance, &uart_config, uart_event_handler);
-    if (err != NRFX_SUCCESS)
+    if (err != NRFX_SUCCESS) {
         LOG_ERR("Failed initializing uart");
         return err;
     }
 
     /* Start data reception. */
+/* TODO add error check */
     err = nrfx_uarte_rx(&uart_instance, &transport.uart_buffer, 1);
     if (err != NRFX_SUCCESS)
     {

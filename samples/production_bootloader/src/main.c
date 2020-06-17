@@ -10,11 +10,14 @@
 
 int main(void)
 {
+	int err;
     // Move interrupt vector table to point at R-BL IRQs.
     SCB->VTOR = BOOTLOADER_START_ADDRESS;
 
     // Initialize serial transport for DFU protocol.
-    ret_code = uart_transport_init();
+    err = uart_transport_init();
+
+    return 0;
 }
 
 /**

@@ -1,9 +1,13 @@
-/*$$$LICENCE_NORDIC_STANDARD<2015>$$$*/
+/*
+ * Copyright (c) 2020 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+ */
+
 #ifndef SLIP_H__
 #define SLIP_H__
 
 #include <stdint.h>
-#include "sdk_errors.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,7 +54,7 @@ typedef struct
  * @retval  NRF_SUCCESS         If the input was successfully encoded into output.
  * @retval  NRF_ERROR_NULL      If one of the provided parameters is NULL.
  */
-ret_code_t slip_encode(uint8_t * p_output,  uint8_t * p_input, uint32_t input_length, uint32_t * p_output_buffer_length);
+int slip_encode(uint8_t * p_output,  uint8_t * p_input, uint32_t input_length, uint32_t * p_output_buffer_length);
 
 /**@brief Function for decoding a SLIP packet.
  *
@@ -68,7 +72,7 @@ ret_code_t slip_encode(uint8_t * p_output,  uint8_t * p_input, uint32_t input_le
  * @retval NRF_ERROR_INVALID_DATA   If the packet is encoded wrong. In this case, @p p_slip::state is set to @ref SLIP_STATE_CLEARING_INVALID_PACKET,
  *                                  and decoding will stay in this state until the END byte is received.
  */
-ret_code_t slip_decode_add_byte(slip_t * p_slip, uint8_t c);
+int slip_decode_add_byte(slip_t * p_slip, uint8_t c);
 
 #ifdef __cplusplus
 }

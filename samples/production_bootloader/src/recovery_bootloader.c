@@ -6,8 +6,11 @@
 
 #include "recovery_bootloader.h"
 #include <sys/crc.h>
-#include <nrf_nvmc.h>
+#include <nrfx_nvmc.h>
 #include <string.h>
+#include <logging/log.h>
+
+LOG_MODULE_REGISTER(recovery_bootloader, CONFIG_PRODUCTION_BOOTLOADER_LOG_LEVEL);
 
 #define ACK_RESP_CRC_LEN (sizeof(p_resp->hdr))                        /**< Length of the CRC data for ACK response message. */
 #define ACK_RESP_MSG_LEN (ACK_RESP_CRC_LEN + sizeof(p_resp->msg_crc)) /**< Length of the data packet for ACK response message. */
@@ -15,6 +18,12 @@
 static uint32_t last_resp_len = 0;                                  /**< Length of the last response for the valid request. */
 static uint8_t  seq_no        = 0xFF;                               /**< Sequence number of the last sended response. */
 static bool     reset_flag    = false;                              /**< Flag used to trigger device reset after response transmission end. */
+
+
+/* TODO kconfig these */
+#define FW_VERSION_MAJOR 1
+#define FW_VERSION_MINOR 1
+#define FW_VERSION_BUGFIX 1
 
 /**
  * @brief   Function for creating response ACK message.
@@ -29,15 +38,15 @@ static uint32_t ack_resp_msg_prepare(recovery_bl_msg_resp_t *p_resp,
                                      uint8_t req_command,
                                      recovery_bl_response_result_t result)
 {
-    ASSERT(p_resp != NULL);
-    ASSERT(req_command < RECOVERY_BL_CMD_COUNT);
-    ASSERT(result      < RECOVERY_BL_NACK_COUNT);
+    __ASSERT_NO_MSG(p_resp != NULL);
+    __ASSERT_NO_MSG(req_command < RECOVERY_BL_CMD_COUNT);
+    __ASSERT_NO_MSG(result      < RECOVERY_BL_NACK_COUNT);
 
     /* Setup ACK response fields and compute packet CRC. */
     p_resp->hdr.command     = RECOVERY_BL_CMD_RESPONSE;
     p_resp->hdr.req_command = req_command;
     p_resp->hdr.result      = result;
-    p_resp->msg_crc         = crc32_compute((uint8_t *)(&p_resp->hdr), ACK_RESP_CRC_LEN, NULL);
+    p_resp->msg_crc         = crc32_ieee((uint8_t *)(&p_resp->hdr), ACK_RESP_CRC_LEN);
 
     /* ACK response command has fixed lenght. */
     return ACK_RESP_MSG_LEN;
@@ -138,17 +147,16 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
                                  recovery_bl_msg_resp_t * p_resp,
                                  uint32_t                 length)
 {
-    ASSERT(p_msg  != NULL);
-    ASSERT(p_resp != NULL);
-    ASSERT(length != 0);
+    __ASSERT_NO_MSG(p_msg  != NULL);
+    __ASSERT_NO_MSG(p_resp != NULL);
+    __ASSERT_NO_MSG(length != 0);
 
     /* Length of response message. */
     uint32_t resp_len = 0;
 
     /* CRC is calculated starting from the packet header. */
-    uint32_t crc      = crc32_compute((uint8_t *)(&p_msg->hdr),
-                                       length - sizeof(p_msg->msg_crc),
-                                       NULL);
+    uint32_t crc      = crc32_ieee((uint8_t *)(&p_msg->hdr),
+                                       length - sizeof(p_msg->msg_crc));
 
     /* Check packet integrity. */
     if (crc != p_msg->msg_crc)
@@ -227,7 +235,7 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
             }
 
             /* Perform page erase. */
-            nrf_nvmc_page_erase(p_msg->erase.address);
+            nrfx_nvmc_page_erase(p_msg->erase.address);
 
             /* Verify if page has been correctly erased. */
             if (!is_area_erased(p_msg->erase.address, PAGE_SIZE))
@@ -299,9 +307,9 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
             }
 
             /* Write data to flash. */
-            nrf_nvmc_write_words(p_msg->write.address,
+            nrfx_nvmc_bytes_write(p_msg->write.address,
                                  (uint32_t *)p_msg->write.data,
-                                 p_msg->write.length / sizeof(uint32_t));
+                                 p_msg->write.length);
 
             /* Send ACK response. */
             resp_len = ack_resp_msg_prepare(p_resp,
@@ -329,14 +337,12 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
             p_resp->hdr.req_command = RECOVERY_BL_CMD_CRC_CHECK;
             p_resp->hdr.result      = RECOVERY_BL_ACK;
             p_resp->hdr.command     = RECOVERY_BL_CMD_RESPONSE;
-            p_resp->crc_check.crc   = crc32_compute((uint8_t *)p_msg->crc_check.address,
-                                                               p_msg->crc_check.length,
-                                                               NULL);
+            p_resp->crc_check.crc   = crc32_ieee((uint8_t *)p_msg->crc_check.address,
+                                                               p_msg->crc_check.length);
 
             /* Compute response packet CRC. */
-            p_resp->msg_crc         = crc32_compute((uint8_t *)(&p_resp->hdr),
-                                                     packet_crc_len,
-                                                     NULL);
+            p_resp->msg_crc         = crc32_ieee((uint8_t *)(&p_resp->hdr),
+                                                     packet_crc_len);
         } break;
 
         case RECOVERY_BL_CMD_RESET:
@@ -400,9 +406,9 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
             }
 
             /* Write data to UICR registers. */
-            nrf_nvmc_write_words(p_msg->uicr_write.address,
+            nrfx_nvmc_bytes_write(p_msg->uicr_write.address,
                                  (uint32_t *)p_msg->uicr_write.data,
-                                 p_msg->uicr_write.length / sizeof(uint32_t));
+                                 p_msg->uicr_write.length);
 
             /* Send ACK response. */
             resp_len = ack_resp_msg_prepare(p_resp, p_msg->hdr.command, RECOVERY_BL_ACK);
@@ -455,9 +461,8 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
             p_resp->hdr.command     = RECOVERY_BL_CMD_RESPONSE;
 
             /* Compute response packet CRC. */
-            p_resp->msg_crc         = crc32_compute((uint8_t *)(&p_resp->hdr),
-                                                     packet_crc_len,
-                                                     NULL);
+            p_resp->msg_crc         = crc32_ieee((uint8_t *)(&p_resp->hdr),
+                                                     packet_crc_len);
         } break;
 
         case RECOVERY_BL_CMD_UICR_READ:
@@ -502,9 +507,8 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
             p_resp->hdr.command       = RECOVERY_BL_CMD_RESPONSE;
 
             /* Compute response packet CRC. */
-            p_resp->msg_crc           = crc32_compute((uint8_t *)(&p_resp->hdr),
-                                                       packet_crc_len,
-                                                       NULL);
+            p_resp->msg_crc           = crc32_ieee((uint8_t *)(&p_resp->hdr),
+                                                       packet_crc_len);
         } break;
 
         case RECOVERY_BL_CMD_VERSION_GET:
@@ -522,9 +526,8 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
             p_resp->hdr.command                  = RECOVERY_BL_CMD_RESPONSE;
 
             /* Compute response packet CRC. */
-            p_resp->msg_crc                      = crc32_compute((uint8_t *)(&p_resp->hdr),
-                                                                  packet_crc_len,
-                                                                  NULL);
+            p_resp->msg_crc                      = crc32_ieee((uint8_t *)(&p_resp->hdr),
+                                                                  packet_crc_len);
         } break;
 
         case RECOVERY_BL_CMD_DEVICE_INFO_GET:
@@ -543,9 +546,8 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
             p_resp->hdr.command               = RECOVERY_BL_CMD_RESPONSE;
 
             /* Compute response packet CRC. */
-            p_resp->msg_crc                   = crc32_compute((uint8_t *)(&p_resp->hdr),
-                                                               packet_crc_len,
-                                                               NULL);
+            p_resp->msg_crc                   = crc32_ieee((uint8_t *)(&p_resp->hdr),
+                                                               packet_crc_len);
         } break;
 
         case RECOVERY_BL_CMD_ERASE_ALL:
@@ -556,7 +558,7 @@ uint32_t recovery_bl_msg_process(recovery_bl_msg_req_t  * p_msg,
 
             for (uint32_t i = 0; i < page_num; i++)
             {
-                nrf_nvmc_page_erase(start_address + (i * PAGE_SIZE));
+                nrfx_nvmc_page_erase(start_address + (i * PAGE_SIZE));
             }
 
             /* Erase UICR. */

@@ -1,10 +1,12 @@
-/*$$$LICENCE_NORDIC_STANDARD<2015>$$$*/
-#include "sdk_common.h"
-#if NRF_MODULE_ENABLED(SLIP)
+/*
+ * Copyright (c) 2020 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+ */
+
 #include "slip.h"
-
 #include <string.h>
-
+#include <kernel.h>
 
 #define SLIP_BYTE_END             0300    /* indicates end of packet */
 #define SLIP_BYTE_ESC             0333    /* indicates byte stuffing */
@@ -12,11 +14,11 @@
 #define SLIP_BYTE_ESC_ESC         0335    /* ESC ESC_ESC means ESC data byte */
 
 
-ret_code_t slip_encode(uint8_t * p_output,  uint8_t * p_input, uint32_t input_length, uint32_t * p_output_buffer_length)
+int slip_encode(uint8_t * p_output,  uint8_t * p_input, uint32_t input_length, uint32_t * p_output_buffer_length)
 {
     if (p_output == NULL || p_input == NULL || p_output_buffer_length == NULL)
     {
-        return NRF_ERROR_NULL;
+        return -EINVAL;
     }
 
     *p_output_buffer_length = 0;
@@ -42,19 +44,19 @@ ret_code_t slip_encode(uint8_t * p_output,  uint8_t * p_input, uint32_t input_le
     }
     p_output[(*p_output_buffer_length)++] = SLIP_BYTE_END;
 
-    return NRF_SUCCESS;
+    return 0;
 }
 
-ret_code_t slip_decode_add_byte(slip_t * p_slip, uint8_t c)
+int slip_decode_add_byte(slip_t * p_slip, uint8_t c)
 {
     if (p_slip == NULL)
     {
-        return NRF_ERROR_NULL;
+        return -EINVAL;
     }
 
     if (p_slip->current_index == p_slip->buffer_len)
     {
-        return NRF_ERROR_NO_MEM;
+        return -ENOMEM;
     }
 
     switch (p_slip->state)
@@ -64,7 +66,7 @@ ret_code_t slip_decode_add_byte(slip_t * p_slip, uint8_t c)
             {
                 case SLIP_BYTE_END:
                     // finished reading packet
-                    return NRF_SUCCESS;
+                    return 0;
 
                 case SLIP_BYTE_ESC:
                     // wait for
@@ -94,7 +96,7 @@ ret_code_t slip_decode_add_byte(slip_t * p_slip, uint8_t c)
                 default:
                     // protocol violation
                     p_slip->state = SLIP_STATE_CLEARING_INVALID_PACKET;
-                    return NRF_ERROR_INVALID_DATA;
+                    return -EFAULT;
             }
             break;
 
@@ -107,6 +109,5 @@ ret_code_t slip_decode_add_byte(slip_t * p_slip, uint8_t c)
             break;
     }
 
-    return NRF_ERROR_BUSY;
+    return -EAGAIN;
 }
-#endif //NRF_MODULE_ENABLED(SLIP)

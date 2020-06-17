@@ -1,4 +1,8 @@
-/*$$$LICENCE_NORDIC_STANDARD<2018>$$$*/
+/*
+ * Copyright (c) 2020 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+ */
 
 /**@file
  *
@@ -15,7 +19,6 @@
 #define UART_TRANSPORT_H__
 
 #include <stdint.h>
-#include "app_error.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +32,7 @@ extern "C" {
  * @retval NRFX_ERROR_BUSY          If other peripheral with the same ID is already in use.
  * @retval NRFX_ERROR_INTERNAL      If UART peripheral reported an error.
  */
-ret_code_t uart_transport_init(void);
+int uart_transport_init(void);
 
 #ifdef __cplusplus
 }
