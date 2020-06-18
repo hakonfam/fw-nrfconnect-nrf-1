@@ -59,7 +59,7 @@ def main():
     logger.debug('Arguments: ' + str(args))
 
     # Turn on file logger if requested.
-    log_lvl = logging.WARNING;
+    log_lvl = logging.WARNING
     if args.log:
         log_lvl = logging.INFO
         # create file handler

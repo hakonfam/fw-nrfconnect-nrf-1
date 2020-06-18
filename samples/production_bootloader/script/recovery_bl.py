@@ -53,10 +53,10 @@ class RecoveryBlVerificationError(Exception):
     pass
 
 class RecoveryBl:
-    def __init__(self, port, baudrate, argTimeout, log_level = logging.WARNING):
+    def __init__(self, port, baudrate, argTimeout, log_level=logging.WARNING):
         logging.basicConfig(level=log_level)
         self._slip_driver = sliplib.Driver()
-        self._serial = serial.Serial(port, baudrate, timeout=argTimeout, parity=serial.PARITY_NONE, rtscts=0)
+        self._serial = serial.Serial(port, baudrate, parity=serial.PARITY_NONE, rtscts=0) # TODO timeout=argTimeout instead of 0
         self._tx_buff = bytearray()
         self._seq_no = 0
 
@@ -211,12 +211,7 @@ class RecoveryBl:
 
     def read_response(self):
         while True:
-            try:
-                s = self._serial.read()
-            except:
-                return None
-            if not s:
-                return None
+            s = self._serial.read()
             resp = self._slip_driver.receive(s)
             if resp:
                 return resp[0]
@@ -368,7 +363,8 @@ class RecoveryBl:
 
         # Send packet with retries
         for i in range(0, RETRY_NUM):
-            self._serial.write(self._slip_driver.send(self._tx_buff))
+            to_send = self._slip_driver.send(self._tx_buff)
+            self._serial.write(to_send)
             # Wait for response
             resp = self.read_response()
             if resp != None and self.packet_crc_check(resp):
@@ -464,7 +460,6 @@ class RecoveryBl:
 
         # Build packet message
         self.build_version_get_msg()
-
         # Send packet with retries
         for i in range(0, RETRY_NUM):
             self._serial.write(self._slip_driver.send(self._tx_buff))

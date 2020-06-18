@@ -206,6 +206,7 @@ int uart_transport_init(void)
 {
     nrfx_err_t err = NRFX_SUCCESS;
 
+
     /* Initialize SLIP decoder. */
     transport.slip.p_buffer      = transport.recv_buffer;
     transport.slip.current_index = 0;
@@ -214,14 +215,12 @@ int uart_transport_init(void)
 
     /* Set up UART port parameters. */
     /* TODO Use device tree for this  and below*/
-    nrfx_uarte_config_t uart_config = NRFX_UARTE_DEFAULT_CONFIG(20, 22);
+    nrfx_uarte_config_t uart_config = NRFX_UARTE_DEFAULT_CONFIG(6, 8);
 
-    /* TODO
-       uart_config.pseltxd   = CUSTOM_UART_TX_PIN_NUMBER;
-    uart_config.pselrxd   = CUSTOM_UART_RX_PIN_NUMBER;
-    uart_config.pselcts   = CUSTOM_UART_CTS_PIN_NUMBER;
-    uart_config.pselrts   = CUSTOM_UART_RTS_PIN_NUMBER;
-    */
+    uart_config.pselrts   = 5;
+    uart_config.pseltxd   = 6;
+    uart_config.pselcts   = 7;
+    uart_config.pselrxd   = 8;
 
     uart_config.p_context = &transport;
 
@@ -236,7 +235,6 @@ int uart_transport_init(void)
     }
 
     /* Start data reception. */
-/* TODO add error check */
     err = nrfx_uarte_rx(&uart_instance, &transport.uart_buffer, 1);
     if (err != NRFX_SUCCESS)
     {
