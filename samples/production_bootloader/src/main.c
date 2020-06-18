@@ -7,6 +7,10 @@
 #include "uart_transport.h"
 #include "recovery_bootloader.h"
 
+#include <kernel.h>
+#include <zephyr.h>
+
+extern void arm_core_mpu_disable(void);
 
 int main(void)
 {
@@ -15,6 +19,7 @@ int main(void)
 	printk("HEllo schmello\n");
     // Move interrupt vector table to point at R-BL IRQs.
     // Initialize serial transport for DFU protocol.
+    arm_core_mpu_disable();
     err = uart_transport_init();
 
     while (1) {
