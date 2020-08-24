@@ -422,29 +422,37 @@ else()
     ${global_hex_depends}
     )
 
-  # For convenience, generate global hex file containing all domains' hex files.
-  set(final_merged ${PROJECT_BINARY_DIR}/merged_domains.hex)
+  print(domain)
+  print(PM_DOMAINS)
+  set(domains_without_root ${PM_DOMAINS})
+  list(REMOVE_ITEM PM_DOMAINS ${domain})
+  print(domains_without_root)
+  if (PM_DOMAINS AND NOT ("${domain}" STREQUAL "${BOARD}"))
+    message("creating todaminsa")
+    # For convenience, generate global hex file containing all domains' hex files.
+    set(final_merged ${PROJECT_BINARY_DIR}/merged_domains.hex)
 
-  # Add command to merge files.
-  add_custom_command(
-    OUTPUT ${final_merged}
-    COMMAND
-    ${PYTHON_EXECUTABLE}
-    ${ZEPHYR_BASE}/scripts/mergehex.py
-    -o ${final_merged}
-    ${domain_hex_files}
-    DEPENDS
-    ${global_hex_depends}
-    )
+    # Add command to merge files.
+    add_custom_command(
+      OUTPUT ${final_merged}
+      COMMAND
+      ${PYTHON_EXECUTABLE}
+      ${ZEPHYR_BASE}/scripts/mergehex.py
+      -o ${final_merged}
+      ${domain_hex_files}
+      DEPENDS
+      ${global_hex_depends}
+      )
 
-  # Wrapper target for the merge command.
-  add_custom_target(merged_domains_hex ALL DEPENDS ${final_merged})
+    # Wrapper target for the merge command.
+    add_custom_target(merged_domains_hex ALL DEPENDS ${final_merged})
 
-  # Add ${merged}.hex as the representative hex file for flashing this app.
-  if(TARGET flash)
-    add_dependencies(flash ${merged}_hex)
-  endif()
-  set(ZEPHYR_RUNNER_CONFIG_KERNEL_HEX "${final_merged}"
-    CACHE STRING "Path to merged image in Intel Hex format" FORCE)
+    # Add ${merged}.hex as the representative hex file for flashing this app.
+    if(TARGET flash)
+      add_dependencies(flash ${merged}_hex)
+    endif()
+    set(ZEPHYR_RUNNER_CONFIG_KERNEL_HEX "${final_merged}"
+      CACHE STRING "Path to merged image in Intel Hex format" FORCE)
+  endif() # PM_DOMAINS
 
 endif()
