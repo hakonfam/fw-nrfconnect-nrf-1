@@ -15,127 +15,137 @@
 
 #define WRITE_OFFSET 0x80000
 
-#define GET_CMD_PTR() pcd_cmd_write(write_buf, (void *)0xf00ba17, 10, 0)
+#define CMD_WRITE(cmd)                                          \
+	(zassert_equal(0,                                       \
+		       pcd_cmd_write(&cmd, write_buf_offset,    \
+				     (void *)0xf00ba17, 10, 0), \
+		       "unexpected failure"))
 
 
 /* Only 'a' */
 static const uint8_t data[BUF_LEN] = {[0 ... BUF_LEN - 1] = 'a'};
 static uint8_t read_buf[sizeof(data)];
 static uint8_t write_buf[100];
+static off_t write_buf_offset = (off_t)write_buf;
 
-static void test_pcd_cmd_get(void)
+static void test_pcd_cmd_read(void)
 {
-	struct pcd_cmd *cmd;
-	struct pcd_cmd *cmd_2;
+	struct pcd_cmd *cmd = NULL;
+	struct pcd_cmd *cmd_2 = NULL;
+	int err;
 
-	cmd = pcd_cmd_get(write_buf);
-	zassert_equal(cmd, NULL, "should be NULL");
+	err = pcd_cmd_read(&cmd, write_buf_offset);
+	zassert_true(err < 0, "should return error");
 
-	cmd = GET_CMD_PTR();
-	zassert_not_equal(cmd, NULL, "should not be NULL");
+	/* Performs valid write */
+	CMD_WRITE(cmd);
 
-	cmd_2 = pcd_cmd_get(write_buf);
-	zassert_not_equal(cmd, NULL, "should not be NULL");
+	err = pcd_cmd_read(&cmd_2, write_buf_offset);
+	zassert_true(err >= 0, "should not return error");
 
 	zassert_equal_ptr(cmd, cmd_2, "commands are not equal");
 }
 
 static void test_pcd_cmd_write(void)
 {
-	struct pcd_cmd *cmd;
+	struct pcd_cmd *cmd = NULL;
+	int err;
 
 	/* Null checks */
-	cmd = pcd_cmd_write(NULL, (const void *)data, sizeof(data),
-			    WRITE_OFFSET);
-	zassert_equal(cmd, NULL, "should be NULL");
+	err = pcd_cmd_write(&cmd, write_buf_offset, (const void *)data,
+			    0, 42);
+	zassert_true(err < 0, "should return error");
 
-	cmd = pcd_cmd_write(write_buf, NULL, sizeof(data),
+	err = pcd_cmd_write(&cmd, write_buf_offset, NULL, sizeof(data),
 			    WRITE_OFFSET);
-	zassert_equal(cmd, NULL, "should be NULL");
+	zassert_true(err < 0, "should return error");
 
-	cmd = GET_CMD_PTR();
+	/* Valid call */
+	CMD_WRITE(cmd);
 	zassert_not_equal(cmd, NULL, "should not be NULL");
 }
 
 static void test_pcd_invalidate(void)
 {
-	int rc;
-	struct pcd_cmd *cmd;
+	int err;
+	struct pcd_cmd *cmd = NULL;
 
-	rc = pcd_invalidate(NULL);
-	zassert_true(rc < 0, "Unexpected success");
+	err = pcd_cmd_invalidate(NULL);
+	zassert_true(err < 0, "Unexpected success");
 
-	cmd = GET_CMD_PTR();
+	CMD_WRITE(cmd);
 	zassert_not_equal(cmd, NULL, "should not be NULL");
 
-	rc = pcd_status(cmd);
-	zassert_true(rc >= 0, "pcd_status should return non-negative int");
+	err = pcd_cmd_status_get(cmd);
+	zassert_true(err >= 0, "should return non-negative int");
 
-	rc = pcd_invalidate(cmd);
-	zassert_equal(rc, 0, "Unexpected failure");
+	err = pcd_cmd_invalidate(cmd);
+	zassert_equal(err, 0, "Unexpected failure");
 
-	rc = pcd_status(cmd);
-	zassert_true(rc < 0, "pcd_status should return negative int");
+	err = pcd_cmd_status_get(cmd);
+	zassert_true(err < 0, "should return negative int");
 }
 
 
-static void test_pcd_fetch(void)
+static void test_pcd_fw_copy(void)
 {
-	int rc;
-	struct pcd_cmd *cmd;
+	int err;
+	struct pcd_cmd *cmd = NULL;
 	struct device *fdev;
 
-	cmd = pcd_cmd_write(write_buf, (const void *)data,
+	err = pcd_cmd_write(&cmd, write_buf_offset, (const void *)data,
 			    sizeof(data), WRITE_OFFSET);
-	zassert_not_equal(cmd, NULL, "should not be NULL");
+	zassert_true(cmd >= 0, "Unexpected failure");
 
 	fdev = device_get_binding(FLASH_NAME);
 	zassert_true(fdev != NULL, "fdev is NULL");
 
-	rc = pcd_status(cmd);
-	zassert_equal(rc, 0, "pcd_status should be zero when not complete");
+	err = pcd_cmd_status_get(cmd);
+	zassert_equal(err, 0, "pcd_cmd_status_get should be zero when not complete");
 
 	/* Null check */
-	rc = pcd_fetch(NULL, fdev);
-	zassert_not_equal(rc, 0, "Unexpected success");
+	err = pcd_fw_copy(NULL, fdev);
+	zassert_not_equal(err, 0, "Unexpected success");
 
-	rc = pcd_fetch(cmd, NULL);
-	zassert_not_equal(rc, 0, "Unexpected success");
+	err = pcd_fw_copy(cmd, NULL);
+	zassert_not_equal(err, 0, "Unexpected success");
 
 	/* Valid fetch */
-	rc = pcd_fetch(cmd, fdev);
-	zassert_equal(rc, 0, "Unexpected failure");
+	err = pcd_fw_copy(cmd, fdev);
+	zassert_equal(err, 0, "Unexpected failure");
 
-	rc = pcd_status(cmd);
-	zassert_true(rc > 0, "pcd_status should return positive int");
+	err = pcd_cmd_status_get(cmd);
+	zassert_true(err > 0, "pcd_cmd_status_get should return positive int");
 
-	rc = flash_read(fdev, WRITE_OFFSET, read_buf, sizeof(data));
-	zassert_equal(rc, 0, "Unexpected failure");
+	err = flash_read(fdev, WRITE_OFFSET, read_buf, sizeof(data));
+	zassert_equal(err, 0, "Unexpected failure");
 
 	zassert_true(memcmp((const void *)data, (const void *)read_buf,
 			    sizeof(data)) == 0, "neq");
 }
 
-static void test_pcd_status(void)
+static void test_pcd_cmd_status(void)
 {
-	int rc;
-	struct pcd_cmd *cmd = GET_CMD_PTR();
+	int err;
+	struct pcd_cmd *cmd = NULL;
 
-	rc = pcd_status(NULL);
-	zassert_true(rc < 0, "Unexpected success");
+	CMD_WRITE(cmd);
 
-	rc = pcd_status(cmd);
-	zassert_true(rc >= 0, "Unexpected failure");
+	err = pcd_cmd_status_get(NULL);
+	zassert_true(err < 0, "Unexpected success");
+
+	err = pcd_cmd_status_get(cmd);
+	zassert_true(err >= 0, "Unexpected failure");
 }
 
 void test_main(void)
 {
 	ztest_test_suite(pcd_test,
-			 ztest_unit_test(test_pcd_cmd_get),
+			 ztest_unit_test(test_pcd_cmd_read),
 			 ztest_unit_test(test_pcd_cmd_write),
 			 ztest_unit_test(test_pcd_invalidate),
-			 ztest_unit_test(test_pcd_fetch),
-			 ztest_unit_test(test_pcd_status)
+			 ztest_unit_test(test_pcd_fw_copy),
+			 ztest_unit_test(test_pcd_cmd_status)
 			 );
 
 	ztest_run_test_suite(pcd_test);

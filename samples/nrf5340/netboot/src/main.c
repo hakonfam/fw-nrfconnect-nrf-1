@@ -31,14 +31,19 @@ void main(void)
 	uint32_t s0_addr = s0_address_read();
 	bool valid = false;
 
-	cmd = pcd_cmd_get((void *)PCD_CMD_ADDRESS);
-	if (cmd != NULL) {
-		err = pcd_fetch(cmd, fdev);
+	err = pcd_cmd_read(&cmd, (void *)PCD_CMD_ADDRESS);
+	if (err >= 0) {
+		err = pcd_fw_copy(cmd, fdev);
 		if (err != 0) {
 			printk("Failed to transfer image: %d\n\r", err);
 			goto failure;
 		}
 
+		/* Note that only the SHA is validated, no signature
+		 * check is performed. This because the signature validation
+		 * is performed by the application core. This check is only
+		 * done to verify that the flash copy operation was successful.
+		 */
 		valid = bl_validate_firmware(s0_addr, s0_addr);
 		if (!valid) {
 			printk("Unable to find valid firmware inside %p \n\r",
@@ -62,5 +67,5 @@ void main(void)
 	return;
 
 failure:
-	pcd_invalidate(cmd);
+	pcd_cmd_invalidate(cmd);
 }

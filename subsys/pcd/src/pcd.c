@@ -21,41 +21,40 @@ LOG_MODULE_REGISTER(pcd, CONFIG_PCD_LOG_LEVEL);
 
 struct pcd_cmd {
 	uint32_t magic; /* Magic value to identify this structure in memory */
-	const void *src_addr; /* Source address to copy from */
+	const void *data;     /* Data to copy*/
 	size_t len;           /* Number of bytes to copy */
-	size_t offset;        /* Offset to store the flash image in */
+	off_t offset;         /* Offset to store the flash image in */
 } __aligned(4);
 
 
-struct pcd_cmd *pcd_cmd_get(void *addr)
+int pcd_cmd_read(struct pcd_cmd** cmd, off_t from)
 {
-	struct pcd_cmd *cmd = (struct pcd_cmd *)addr;
+	*cmd = (struct pcd_cmd *)from;
 
-	if (cmd->magic != PCD_CMD_MAGIC_COPY) {
-		return NULL;
+	if ((*cmd)->magic != PCD_CMD_MAGIC_COPY) {
+		return -EINVAL;
 	}
 
-	return cmd;
+	return 0;
 }
 
-struct pcd_cmd *pcd_cmd_write(void *cmd_addr, const void *src_addr, size_t len,
-			      size_t offset)
+int pcd_cmd_write(struct pcd_cmd **cmd, off_t dest, const void *data,
+		  size_t len, off_t offset)
 {
-	struct pcd_cmd *cmd = (struct pcd_cmd *)cmd_addr;
-
-	if (cmd_addr == NULL || src_addr == NULL || len == 0) {
-		return NULL;
+	if (data == NULL || len == 0) {
+		return -EINVAL;
 	}
 
-	cmd->magic = PCD_CMD_MAGIC_COPY;
-	cmd->src_addr = src_addr;
-	cmd->len = len;
-	cmd->offset = offset;
+	*cmd = (struct pcd_cmd *)dest;
+	(*cmd)->magic = PCD_CMD_MAGIC_COPY;
+	(*cmd)->data = data;
+	(*cmd)->len = len;
+	(*cmd)->offset = offset;
 
-	return cmd;
+	return 0;
 }
 
-int pcd_invalidate(struct pcd_cmd *cmd)
+int pcd_cmd_invalidate(struct pcd_cmd *cmd)
 {
 	if (cmd == NULL) {
 		return -EINVAL;
@@ -66,7 +65,7 @@ int pcd_invalidate(struct pcd_cmd *cmd)
 	return 0;
 }
 
-int pcd_status(struct pcd_cmd *cmd)
+int pcd_cmd_status_get(const struct pcd_cmd *cmd)
 {
 	if (cmd == NULL) {
 		return -EINVAL;
@@ -75,11 +74,11 @@ int pcd_status(struct pcd_cmd *cmd)
 	} else if (cmd->magic == PCD_CMD_MAGIC_DONE) {
 		return 1;
 	} else {
-		return -1;
+		return -EINVAL;
 	}
 }
 
-int pcd_fetch(struct pcd_cmd *cmd, struct device *fdev)
+int pcd_fw_copy(struct pcd_cmd *cmd, struct device *fdev)
 {
 	struct stream_flash_ctx stream;
 	uint8_t buf[CONFIG_PCD_BUF_SIZE];
@@ -96,7 +95,7 @@ int pcd_fetch(struct pcd_cmd *cmd, struct device *fdev)
 		return rc;
 	}
 
-	rc = stream_flash_buffered_write(&stream, (uint8_t *)cmd->src_addr,
+	rc = stream_flash_buffered_write(&stream, (uint8_t *)cmd->data,
 					 cmd->len, true);
 	if (rc != 0) {
 		LOG_ERR("stream_flash_buffered_write fail: %d", rc);

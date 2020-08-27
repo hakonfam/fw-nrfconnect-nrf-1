@@ -10,19 +10,25 @@
  * @{
  * @brief API for handling DFU of peripheral cores.
  *
- * The PCD API provides functions for sending/receiving DFU images between
- * cores on a multi core system. The cores communicate through a command
- * structure (CMD) which is stored in a shared memory location.
+ * The PCD API provides functions for transferring DFU images from a generic
+ * core to a peripheral core to which there is no flash access from the generic
+ * core.
  *
+ * The cores communicate through a command structure (CMD) which is stored in
+ * a shared memory location.
+ *
+ * The nRF5340 is an example of a system with these properties.
  */
 
 #ifndef PCD_H__
 #define PCD_H__
 
+#include <device.h>
+#include <sys/types.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-#include <device.h>
 
 #ifdef CONFIG_SOC_SERIES_NRF53X
 
@@ -43,25 +49,26 @@ struct pcd_cmd;
 
 /** @brief Get a PCD CMD from the specified address.
  *
+ * @param cmd  Pointer to where the output cmd pointer is stored
  * @param addr The address to check for a valid PCD CMD.
  *
- * @retval A pointer to the PCD CMD if successful.
- *           Otherwise, NULL is returned.
+ * @retval non-negative integer on success, negative errno code on failure.
  */
-struct pcd_cmd *pcd_cmd_get(void *addr);
+int pcd_cmd_read(struct pcd_cmd **cmd, off_t from);
 
 /** @brief Construct a PCD CMD for copying data/firmware.
  *
- * @param cmd_addr The address to write the CMD to.
- * @param src_addr The address to which the CMD copy data from.
- * @param len      The number of bytes that should be copied.
- * @param offset   The offset within the flash device to write the data to.
+ * @param cmd    Pointer to where the output cmd pointer is stored
+ * @param dest   The address to write the CMD to.
+ * @param data   The data to copy.
+ * @param len    The number of bytes that should be copied.
+ * @param offset The offset within the flash device to write the data to.
+ *               For internal flash, the offset is the same as the address.
  *
- * @retval A pointer to the written PCD CMD if successful.
- *           Otherwise, NULL is returned.
+ * @retval non-negative integer on success, negative errno code on failure.
  */
-struct pcd_cmd *pcd_cmd_write(void *cmd_addr, const void *src_addr, size_t len,
-		  size_t offset);
+int pcd_cmd_write(struct pcd_cmd **cmd, off_t dest, const void *data,
+		  size_t len, off_t offset);
 
 /** @brief Invalidate the PCD CMD, indicating that the copy failed.
  *
@@ -69,16 +76,16 @@ struct pcd_cmd *pcd_cmd_write(void *cmd_addr, const void *src_addr, size_t len,
  *
  * @retval non-negative integer on success, negative errno code on failure.
  */
-int pcd_invalidate(struct pcd_cmd *cmd);
+int pcd_cmd_invalidate(struct pcd_cmd *cmd);
 
 /** @brief Check the PCD CMD to find the status of the update.
  *
  * @param cmd The PCD CMD to check
  *
- * @retval 0 if operation is not complete, 1 if operation is complete, negative
- *	   integer on failure.
+ * @retval 0 if operation is not complete, positive integer if operation is
+ *           complete, negative integer on failure.
  */
-int pcd_status(struct pcd_cmd *cmd);
+int pcd_cmd_status_get(const struct pcd_cmd *cmd);
 
 /** @brief Perform the DFU image transfer.
  *
@@ -90,7 +97,7 @@ int pcd_status(struct pcd_cmd *cmd);
  *
  * @retval non-negative integer on success, negative errno code on failure.
  */
-int pcd_fetch(struct pcd_cmd *cmd, struct device *fdev);
+int pcd_fw_copy(struct pcd_cmd *cmd, struct device *fdev);
 
 #endif /* PCD_H__ */
 
