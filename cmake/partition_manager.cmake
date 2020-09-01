@@ -407,18 +407,6 @@ else()
     aborting. Command: ${pm_global_output_cmd}")
   endif()
 
-  set_property(
-    TARGET partition_manager
-    PROPERTY PM_CONFIG_FILES
-    ${pm_out_partition_file}
-    )
-
-  set_property(
-    TARGET partition_manager
-    PROPERTY PM_DEPENDS
-    ${global_hex_depends}
-    )
-
   # For convenience, generate global hex file containing all domains' hex files.
   set(final_merged ${PROJECT_BINARY_DIR}/merged_domains.hex)
 
@@ -443,5 +431,23 @@ else()
   endif()
   set(ZEPHYR_RUNNER_CONFIG_KERNEL_HEX "${final_merged}"
     CACHE STRING "Path to merged image in Intel Hex format" FORCE)
+
+  # Add report target
+  add_custom_target(
+    partition_manager_report
+    COMMAND
+    ${PYTHON_EXECUTABLE}
+    ${ZEPHYR_BASE}/../nrf/scripts/partition_manager_report.py
+    --input ${pm_out_partition_file}
+    --domains ${PM_DOMAINS}
+    DEPENDS
+    ${global_hex_depends}
+    COMMAND_EXPAND_LISTS
+    )
+
+  set_property(TARGET zephyr_property_target
+    APPEND PROPERTY rom_report_DEPENDENCIES
+    partition_manager_report
+    )
 
 endif()
