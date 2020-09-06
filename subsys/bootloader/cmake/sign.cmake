@@ -81,10 +81,10 @@ foreach (slot ${slots})
 
   if (CONFIG_BUILD_S1_VARIANT AND NOT CONFIG_BOOTLOADER_MCUBOOT AND
       CONFIG_SPM AND ("${slot}" STREQUAL s1_image))
-    set(to_sign_incorrect_size ${PROJECT_BINARY_DIR}/s1_spm_app.hex)
+    set(to_sign_unpatched_size ${PROJECT_BINARY_DIR}/s1_spm_app.hex)
     list(APPEND sign_depends s1_spm_app_hex_target)
   else()
-    set(to_sign_incorrect_size ${PROJECT_BINARY_DIR}/${slot}.hex)
+    set(to_sign_unpatched_size ${PROJECT_BINARY_DIR}/${slot}.hex)
     if(DEFINED ${slot}_is_from_child_image)
       list(APPEND sign_depends ${${slot}_is_from_child_image}_subimage)
     else()
@@ -92,7 +92,7 @@ foreach (slot ${slots})
     endif()
   endif()
 
-  list(APPEND sign_depends ${to_sign_incorrect_size})
+  list(APPEND sign_depends ${to_sign_unpatched_size})
   set(to_sign ${PROJECT_BINARY_DIR}/${slot}_fw_info_updated.hex)
   set(hash_file ${GENERATED_PATH}/${slot}_firmware.sha256)
   set(signature_file ${GENERATED_PATH}/${slot}_firmware.signature)
@@ -103,7 +103,7 @@ foreach (slot ${slots})
     --magic-value "${FIRMWARE_INFO_MAGIC}"
     --offset ${CONFIG_FW_INFO_OFFSET}
     --valid ${CONFIG_FW_INFO_VALID_VAL}
-    --in ${to_sign_incorrect_size}
+    --in ${to_sign_unpatched_size}
     --out ${to_sign}
     )
 

@@ -19,7 +19,6 @@ if (CONFIG_SPM)
       ${PROJECT_BINARY_DIR}/s1_image.hex
       )
 
-    print(s1_spm_app_files)
     add_custom_command(
       OUTPUT ${s1_spm_app_hex}
       COMMAND
