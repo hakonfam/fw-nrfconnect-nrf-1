@@ -4,11 +4,11 @@
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
 
-/** @file dfu_target_flash.h
+/** @file dfu_target_modem_full.h
  *
- * @defgroup dfu_target_flash Flash DFU Target
+ * @defgroup dfu_target_modem_full Full Modem DFU Target
  * @{
- * @brief DFU Target for upgrades written straight to flash devices.
+ * @brief DFU Target full modem updates.
  */
 
 #ifndef DFU_TARGET_FLASH_H__
@@ -21,22 +21,16 @@ extern "C" {
 #endif
 
 
-/**
- * @brief Set device configuration of dfu target flash.
- *
- * @retval 0 If successful, negative errno otherwise.
- */
-int dfu_target_flash_cfg(const char *dev_name, size_t start, size_t end,
-			 void *buf, size_t buf_len,
-			 dfu_target_callback_t callback);
+int dfu_target_modem_full_cfg(uint8_t *buf, size_t len, struct device *dev,
+			      off_t dev_offset, size_t dev_size);
 
 
 /**
- * @brief See if data in buf indicates flash device style upgrade.
+ * @brief See if data in buf indicates a full modem update.
  *
  * @retval true if data matches, false otherwise.
  */
-bool dfu_target_flash_identify(const void *const buf);
+bool dfu_target_modem_full_identify(const void *const buf);
 
 /**
  * @brief Initialize dfu target, perform steps necessary to receive firmware.
@@ -45,7 +39,7 @@ bool dfu_target_flash_identify(const void *const buf);
  *
  * @retval 0 If successful, negative errno otherwise.
  */
-int dfu_target_flash_init(size_t file_size);
+int dfu_target_modem_full_init(size_t file_size);
 
 /**
  * @brief Get offset of firmware
@@ -54,7 +48,7 @@ int dfu_target_flash_init(size_t file_size);
  *
  * @return 0 if success, otherwise negative value if unable to get the offset
  */
-int dfu_target_flash_offset_get(size_t *offset);
+int dfu_target_modem_full_offset_get(size_t *offset);
 
 /**
  * @brief Write firmware data.
@@ -64,7 +58,7 @@ int dfu_target_flash_offset_get(size_t *offset);
  *
  * @return 0 on success, negative errno otherwise.
  */
-int dfu_target_flash_write(const void *const buf, size_t len);
+int dfu_target_modem_full_write(const void *const buf, size_t len);
 
 /**
  * @brief Deinitialize resources and finalize firmware upgrade if successful.
@@ -73,7 +67,7 @@ int dfu_target_flash_write(const void *const buf, size_t len);
  *
  * @return 0 on success, negative errno otherwise.
  */
-int dfu_target_flash_done(bool successful);
+int dfu_target_modem_full_done(bool successful);
 
 #endif /* DFU_TARGET_FLASH_H__ */
 

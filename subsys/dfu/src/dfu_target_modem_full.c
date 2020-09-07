@@ -20,7 +20,7 @@ static size_t stream_buf_len;
 static off_t fdev_offset;
 static size_t fdev_size;
 static struct device *fdev;
-static struct dfu_target_stream_ctx stream_dfu;
+static struct dfu_target_stream_ctx stream_modem_full;
 
 
 bool dfu_target_modem_full_identify(const void *const buf)
@@ -29,8 +29,8 @@ bool dfu_target_modem_full_identify(const void *const buf)
 	return *((const uint32_t *)buf) == MODEM_FULL_HEADER_MAGIC;
 }
 
-int dfu_target_modem_cfg(uint8_t *buf, size_t len, struct device *dev,
-			 off_t dev_offset, size_t dev_size)
+int dfu_target_modem_full_cfg(uint8_t *buf, size_t len, struct device *dev,
+			      off_t dev_offset, size_t dev_size)
 {
 	if (buf == NULL) {
 		return -EINVAL;
@@ -63,7 +63,7 @@ int dfu_target_modem_full_init(size_t file_size)
 	}
 
 	/* TODO check file size? */
-	return dfu_target_stream_init(&stream_dfu, &stream,
+	return dfu_target_stream_init(&stream_modem_full, &stream,
 				      DFU_TARGET_STREAM_FLASH);
 }
 
