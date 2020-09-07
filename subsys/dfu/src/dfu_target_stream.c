@@ -28,7 +28,7 @@ static struct dfu_target_stream_ctx *ctx;
 static int store_progress(void)
 {
 	if (IS_ENABLED(CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS)) {
-		size_t bytes_written = stream_flash_bytes_written(&stream);
+		size_t bytes_written = stream_flash_bytes_written(&ctx->stream);
 
 		int err = settings_save_one(ctx->id, &bytes_written,
 					    sizeof(bytes_written));
@@ -131,7 +131,7 @@ int dfu_target_stream_offset_get(size_t *out)
 int dfu_target_stream_write(const void *const buf, size_t len)
 {
 	int err = stream_flash_buffered_write(ctx->stream,
-					      (u8_t *)buf, len, false);
+					      (uint8_t *)buf, len, false);
 
 	if (err != 0) {
 		LOG_ERR("stream_flash_buffered_write error %d", err);
