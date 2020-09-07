@@ -16,9 +16,9 @@ static const struct dfu_target dfu_target_ ## name  = { \
 	.done = dfu_target_ ## name ## _done, \
 }
 
-#ifdef CONFIG_DFU_TARGET_MODEM
-#include "dfu_target_modem.h"
-DEF_DFU_TARGET(modem);
+#ifdef CONFIG_DFU_TARGET_MODEM_DELTA
+#include "dfu_target_modem_delta.h"
+DEF_DFU_TARGET(modem_delta);
 #endif
 #ifdef CONFIG_DFU_TARGET_MCUBOOT
 #include "dfu_target_mcuboot.h"
@@ -46,7 +46,7 @@ int dfu_target_img_type(const void *const buf, size_t len)
 	}
 #endif
 #ifdef CONFIG_DFU_TARGET_MODEM
-	if (dfu_target_modem_identify(buf)) {
+	if (dfu_target_modem_delta_identify(buf)) {
 		return DFU_TARGET_IMAGE_TYPE_MODEM_DELTA;
 	}
 #endif
@@ -73,7 +73,7 @@ int dfu_target_init(int img_type, size_t file_size, dfu_target_callback_t cb)
 #endif
 #ifdef CONFIG_DFU_TARGET_MODEM
 	if (img_type == DFU_TARGET_IMAGE_TYPE_MODEM_DELTA) {
-		new_target = &dfu_target_modem;
+		new_target = &dfu_target_modem_delta;
 	}
 #endif
 #ifdef CONFIG_DFU_TARGET_FLASH
@@ -88,8 +88,9 @@ int dfu_target_init(int img_type, size_t file_size, dfu_target_callback_t cb)
 
 	/* The user is re-initializing with an previously aborted target.
 	 * Avoid re-initializing generally to ensure that the download can
-	 * continue where it left off. Re-initializing is required for modem
-	 * upgrades to re-open the DFU socket that is closed on abort.
+	 * continue where it left off. Re-initializing is required for
+	 * modem_delta upgrades to re-open the DFU socket that is closed on
+	 * abort.
 	 */
 	if (new_target == current_target
 	   && img_type != DFU_TARGET_IMAGE_TYPE_MODEM_DELTA) {

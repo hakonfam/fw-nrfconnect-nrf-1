@@ -6,7 +6,7 @@
 #include <logging/log.h>
 #include <dfu/dfu_target.h>
 
-LOG_MODULE_REGISTER(dfu_target_modem, CONFIG_DFU_TARGET_LOG_LEVEL);
+LOG_MODULE_REGISTER(dfu_target_modem_delta, CONFIG_DFU_TARGET_LOG_LEVEL);
 
 #define DIRTY_IMAGE 0x280000
 #define MODEM_MAGIC 0x7544656d
@@ -36,7 +36,7 @@ static int get_modem_error(void)
 	return err;
 }
 
-static int apply_modem_upgrade(void)
+static int apply_modem_delta_upgrade(void)
 {
 	int err;
 
@@ -54,7 +54,7 @@ static int apply_modem_upgrade(void)
 	return 0;
 }
 #define SLEEP_TIME 1
-static int delete_banked_modem_fw(void)
+static int delete_banked_modem_delta_fw(void)
 {
 	int err;
 	socklen_t len = sizeof(offset);
@@ -92,7 +92,7 @@ static int delete_banked_modem_fw(void)
 }
 
 /**@brief Initialize DFU socket. */
-static int modem_dfu_socket_init(void)
+static int modem_delta_dfu_socket_init(void)
 {
 	int err;
 	socklen_t len;
@@ -124,13 +124,13 @@ static int modem_dfu_socket_init(void)
 	return err;
 }
 
-bool dfu_target_modem_identify(const void *const buf)
+bool dfu_target_modem_delta_identify(const void *const buf)
 {
 	return ((const struct modem_delta_header *)buf)->magic == MODEM_MAGIC;
 
 }
 
-int dfu_target_modem_init(size_t file_size, dfu_target_callback_t cb)
+int dfu_target_modem_delta_init(size_t file_size, dfu_target_callback_t cb)
 {
 	int err;
 	size_t scratch_space;
@@ -138,7 +138,7 @@ int dfu_target_modem_init(size_t file_size, dfu_target_callback_t cb)
 
 	callback = cb;
 
-	err = modem_dfu_socket_init();
+	err = modem_delta_dfu_socket_init();
 	if (err < 0) {
 		return err;
 	}
@@ -146,7 +146,7 @@ int dfu_target_modem_init(size_t file_size, dfu_target_callback_t cb)
 	err = getsockopt(fd, SOL_DFU, SO_DFU_RESOURCES, &scratch_space, &len);
 	if (err < 0) {
 		if (errno == ENOEXEC) {
-			LOG_ERR("Modem error: %d", get_modem_error());
+			LOG_ERR("Modem error: %d", get_modem_delta_error());
 		} else {
 			LOG_ERR("getsockopt(OFFSET) errno: %d", errno);
 		}
@@ -169,7 +169,7 @@ int dfu_target_modem_init(size_t file_size, dfu_target_callback_t cb)
 	}
 
 	if (offset == DIRTY_IMAGE) {
-		delete_banked_modem_fw();
+		delete_banked_modem_delta_fw();
 	} else if (offset != 0) {
 		LOG_INF("Setting offset to 0x%x", offset);
 		len = sizeof(offset);
@@ -182,13 +182,13 @@ int dfu_target_modem_init(size_t file_size, dfu_target_callback_t cb)
 	return 0;
 }
 
-int dfu_target_modem_offset_get(size_t *out)
+int dfu_target_modem_delta_offset_get(size_t *out)
 {
 	*out = offset;
 	return 0;
 }
 
-int dfu_target_modem_write(const void *const buf, size_t len)
+int dfu_target_modem_delta_write(const void *const buf, size_t len)
 {
 	int err = 0;
 	int sent = 0;
@@ -217,16 +217,16 @@ int dfu_target_modem_write(const void *const buf, size_t len)
 	case DFU_INVALID_UUID:
 		return -EINVAL;
 	case DFU_INVALID_FILE_OFFSET:
-		delete_banked_modem_fw();
-		err = dfu_target_modem_write(buf, len);
+		delete_banked_modem_delta_fw();
+		err = dfu_target_modem_delta_write(buf, len);
 		if (err < 0) {
 			return -EINVAL;
 		} else {
 			return 0;
 		}
 	case DFU_AREA_NOT_BLANK:
-		delete_banked_modem_fw();
-		err = dfu_target_modem_write(buf, len);
+		delete_banked_modem_delta_fw();
+		err = dfu_target_modem_delta_write(buf, len);
 		if (err < 0) {
 			return -EINVAL;
 		} else {
@@ -237,12 +237,12 @@ int dfu_target_modem_write(const void *const buf, size_t len)
 	}
 }
 
-int dfu_target_modem_done(bool successful)
+int dfu_target_modem_delta_done(bool successful)
 {
 	int err = 0;
 
 	if (successful) {
-		err = apply_modem_upgrade();
+		err = apply_modem_delta_upgrade();
 		if (err < 0) {
 			LOG_ERR("Failed request modem DFU upgrade");
 			return err;

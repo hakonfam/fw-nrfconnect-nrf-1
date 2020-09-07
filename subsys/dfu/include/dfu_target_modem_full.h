@@ -20,7 +20,6 @@
 extern "C" {
 #endif
 
-typedef int (*dfu_target_callback_t)(u8_t *buf, size_t len);
 
 /**
  * @brief Set device configuration of dfu target flash.
