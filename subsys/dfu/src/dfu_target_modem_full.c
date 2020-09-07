@@ -8,7 +8,7 @@
 #include <drivers/flash.h>
 #include <logging/log.h>
 #include <dfu/dfu_target.h>
-#include <dfu/dfu_target_stream.h>
+#include <dfu_target_stream.h>
 
 LOG_MODULE_REGISTER(dfu_target_modem_full, CONFIG_DFU_TARGET_LOG_LEVEL);
 

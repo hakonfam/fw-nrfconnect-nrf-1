@@ -5,7 +5,6 @@
  */
 
 #include <zephyr.h>
-#include <pm_config.h>
 #include <logging/log.h>
 #include <dfu/dfu_target.h>
 #include <storage/stream_flash.h>
