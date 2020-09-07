@@ -28,7 +28,7 @@ static struct dfu_target_stream_ctx *ctx;
  */
 static int store_progress(void)
 {
-	if (IS_ENABLED(CONFIG_DFU_TARGET_B1_SAVE_PROGRESS)) {
+	if (IS_ENABLED(CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS)) {
 		size_t bytes_written = stream_flash_bytes_written(&stream);
 
 		int err = settings_save_one(ctx->id, &bytes_written,
@@ -53,6 +53,11 @@ static int settings_set(const char *key, size_t len_rd,
 {
 
 	/* TODO  do we need to add 'module/key' here, or is simply 'key' enough? */
+	/* TODO 2 here we must invoke a pre-known function from each target
+	 *  in other words me must forward the result of this function to the
+	 *  active target. */
+	/* TODO also ensure that when we wake up the correct ID is pinged */
+
 	if (!strcmp(key, ctx->id)) {
 		size_t bytes_written = stream_flash_bytes_written(&stream);
 		ssize_t len = read_cb(cb_arg, &bytes_written,
@@ -86,7 +91,7 @@ int dfu_target_stream_init(struct dfu_target_stream_ctx *target,
 	ctx->stream = stream;
 	ctx->id = id;
 
-	if (IS_ENABLED(CONFIG_DFU_TARGET_B1_SAVE_PROGRESS)) {
+	if (IS_ENABLED(CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS)) {
 		int err;
 
 		static struct settings_handler sh = {
