@@ -12,6 +12,19 @@
 
 LOG_MODULE_REGISTER(pcd, CONFIG_PCD_LOG_LEVEL);
 
+#ifdef CONFIG_SOC_SERIES_NRF53X
+
+/* These must be hard coded as this code is preprocessed for both net and app
+ * core.
+ */
+#define APP_CORE_SRAM_START 0x20000000
+#define APP_CORE_SRAM_SIZE KB(512)
+#define RAM_SECURE_ATTRIBUTION_REGION_SIZE 0x2000
+#define PCD_CMD_ADDRESS (APP_CORE_SRAM_START \
+			+ APP_CORE_SRAM_SIZE \
+			- RAM_SECURE_ATTRIBUTION_REGION_SIZE)
+#endif
+
 /** Magic value written to indicate that a copy should take place. */
 #define PCD_CMD_MAGIC_COPY 0xb5b4b3b6
 /** Magic value written to indicate that a something failed. */
@@ -26,50 +39,30 @@ struct pcd_cmd {
 	off_t offset;         /* Offset to store the flash image in */
 } __aligned(4);
 
+static struct pcd_cmd *cmd = (struct pcd_cmd*)PCD_CMD_ADDRESS;
 
-int pcd_cmd_read(struct pcd_cmd** cmd, off_t from)
-{
-	*cmd = (struct pcd_cmd *)from;
-
-	if ((*cmd)->magic != PCD_CMD_MAGIC_COPY) {
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-int pcd_cmd_write(struct pcd_cmd **cmd, off_t dest, const void *data,
-		  size_t len, off_t offset)
+int pcd_cmd_write(const void *data, size_t len, off_t offset)
 {
 	if (data == NULL || len == 0) {
 		return -EINVAL;
 	}
 
-	*cmd = (struct pcd_cmd *)dest;
-	(*cmd)->magic = PCD_CMD_MAGIC_COPY;
-	(*cmd)->data = data;
-	(*cmd)->len = len;
-	(*cmd)->offset = offset;
+	cmd->magic = PCD_CMD_MAGIC_COPY;
+	cmd->data = data;
+	cmd->len = len;
+	cmd->offset = offset;
 
 	return 0;
 }
 
-int pcd_cmd_invalidate(struct pcd_cmd *cmd)
+void pcd_cmd_invalidate(void)
 {
-	if (cmd == NULL) {
-		return -EINVAL;
-	}
-
 	cmd->magic = PCD_CMD_MAGIC_FAIL;
-
-	return 0;
 }
 
-int pcd_cmd_status_get(const struct pcd_cmd *cmd)
+int pcd_cmd_status_get(void)
 {
-	if (cmd == NULL) {
-		return -EINVAL;
-	} else if (cmd->magic == PCD_CMD_MAGIC_COPY) {
+	if (cmd->magic == PCD_CMD_MAGIC_COPY) {
 		return 0;
 	} else if (cmd->magic == PCD_CMD_MAGIC_DONE) {
 		return 1;
@@ -78,15 +71,11 @@ int pcd_cmd_status_get(const struct pcd_cmd *cmd)
 	}
 }
 
-int pcd_fw_copy(struct pcd_cmd *cmd, struct device *fdev)
+int pcd_fw_copy(struct device *fdev)
 {
 	struct stream_flash_ctx stream;
 	uint8_t buf[CONFIG_PCD_BUF_SIZE];
 	int rc;
-
-	if (cmd == NULL) {
-		return -EINVAL;
-	}
 
 	rc = stream_flash_init(&stream, fdev, buf, sizeof(buf),
 			       cmd->offset, 0, NULL);
@@ -108,4 +97,4 @@ int pcd_fw_copy(struct pcd_cmd *cmd, struct device *fdev)
 	cmd->magic = PCD_CMD_MAGIC_DONE;
 
 	return 0;
-}
+

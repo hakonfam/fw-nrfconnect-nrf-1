@@ -19,7 +19,6 @@
 
 void main(void)
 {
-	struct pcd_cmd *cmd = NULL;
 	int err = fprotect_area(PM_B0N_ADDRESS, PM_B0N_SIZE);
 	struct device *fdev = device_get_binding(FLASH_NAME);
 
@@ -31,9 +30,8 @@ void main(void)
 	uint32_t s0_addr = s0_address_read();
 	bool valid = false;
 
-	err = pcd_cmd_read(&cmd, (void *)PCD_CMD_ADDRESS);
-	if (err >= 0) {
-		err = pcd_fw_copy(cmd, fdev);
+	if (pcd_cmd_status_get() == 0) {
+		err = pcd_fw_copy(fdev);
 		if (err != 0) {
 			printk("Failed to transfer image: %d\n\r", err);
 			goto failure;

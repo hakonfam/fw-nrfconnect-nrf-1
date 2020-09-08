@@ -17,7 +17,6 @@ LOG_MODULE_DECLARE(mcuboot);
 int start_network_core_update(void *src_addr, size_t len)
 {
 	int err;
-	struct pcd_cmd *cmd;
 
 	/* Retain nRF5340 Network MCU in Secure domain (bus
 	 * accesses by Network MCU will have Secure attribute set).
@@ -30,8 +29,7 @@ int start_network_core_update(void *src_addr, size_t len)
 	nrf_reset_network_force_off(NRF_RESET, true);
 
 	LOG_INF("Writing cmd to addr: 0x%x", PCD_CMD_ADDRESS);
-	err = pcd_cmd_write(&cmd, PCD_CMD_ADDRESS, src_addr, len,
-			    NET_CORE_APP_OFFSET);
+	err = pcd_cmd_write(src_addr, len, NET_CORE_APP_OFFSET);
 	if (cmd == NULL) {
 		LOG_INF("Error while writing PCD cmd");
 		return -1;
@@ -41,7 +39,7 @@ int start_network_core_update(void *src_addr, size_t len)
 	LOG_INF("Turned on network core");
 
 	do {
-		err = pcd_cmd_status_get(cmd);
+		err = pcd_cmd_status_get();
 	} while (err == 0);
 
 	if (err < 0) {
