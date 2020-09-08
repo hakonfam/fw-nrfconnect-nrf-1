@@ -16,10 +16,6 @@ LOG_MODULE_REGISTER(dfu_target_mcuboot, CONFIG_DFU_TARGET_LOG_LEVEL);
 #define MAX_FILE_SEARCH_LEN 500
 #define MCUBOOT_HEADER_MAGIC 0x96f3b83d
 
-static struct stream_flash_ctx stream;
-static u8_t *stream_buf;
-static size_t stream_buf_len;
-static struct dfu_target_stream_ctx stream_dfu;
 
 bool dfu_target_mcuboot_identify(const void *const buf)
 {
@@ -57,13 +53,6 @@ int dfu_target_mcuboot_init(size_t file_size, dfu_target_callback_t cb)
 	}
 
 	flash_dev = device_get_binding(PM_MCUBOOT_SECONDARY_DEV_NAME);
-
-	err = stream_flash_init(&stream, flash_dev, stream_buf, stream_buf_len,
-				0, 0, NULL);
-	if (err < 0) {
-		LOG_ERR("stream_flash_init failed %d", err);
-		return err;
-	}
 
 	err = dfu_target_stream_init(&stream_dfu, &stream,
 				     DFU_TARGET_STERAM_MCUBOOT);

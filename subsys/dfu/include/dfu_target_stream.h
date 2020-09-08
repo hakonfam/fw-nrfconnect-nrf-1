@@ -15,19 +15,11 @@
 #define DFU_TARGET_STREAM_H__
 
 #include <stddef.h>
+#include <storage/stream_flash.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-enum dfu_target_stream_id {
-	DFU_TARGET_STREAM_ID_START = 0
-	DFU_TARGET_STREAM_MCUBOOT,
-	DFU_TARGET_STREAM_MODEM_FULL,
-	DFU_TARGET_STREAM_ID_LAST
-}
-
-struct dfu_target_stream_ctx;
 
 /**
  * @brief Initialize dfu target, perform steps necessary to write flash stream.
@@ -36,9 +28,9 @@ struct dfu_target_stream_ctx;
  *
  * @retval Non-negative value if successful, negative errno otherwise.
  */
-int dfu_target_stream_init(struct dfu_target_stream_ctx *target,
-			   struct stream_flash_ctx *stream,
-			   dfu_target_stream_id id);
+int dfu_target_stream_init(const char *id, struct device *fdev, uint8_t *buf,
+			   size_t len, size_t offset, size_t size,
+			   stream_flash_callback_t cb);
 
 /**
  * @brief Get offset of stream

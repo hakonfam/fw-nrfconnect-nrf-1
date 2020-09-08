@@ -45,19 +45,16 @@ int dfu_target_img_type(const void *const buf, size_t len)
 		return DFU_TARGET_IMAGE_TYPE_MCUBOOT;
 	}
 #endif
-#ifdef CONFIG_DFU_TARGET_MODEM
-	if (dfu_target_modem_delta_identify(buf)) {
+#ifdef CONFIG_DFU_TARGET_MODEM_DELTA
+	if (dfu_target_MODEM_DELTA(buf)) {
 		return DFU_TARGET_IMAGE_TYPE_MODEM_DELTA;
 	}
 #endif
-#ifdef CONFIG_DFU_TARGET_FLASH
-	if (dfu_target_flash_identify(buf)) {
-		return DFU_TARGET_IMAGE_TYPE_FLASH;
+#ifdef CONFIG_DFU_TARGET_MODEM_FULL
+	if (dfu_target_modem_delta_identify(buf)) {
+		return DFU_TARGET_IMAGE_TYPE_MODEM_FULL;
 	}
 #endif
-	}
-#endif
-
 	LOG_ERR("No supported image type found");
 	return -ENOTSUP;
 }

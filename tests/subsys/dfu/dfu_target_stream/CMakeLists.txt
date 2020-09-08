@@ -23,8 +23,3 @@ target_include_directories(app
   ${ZEPHYR_BASE}/../nrf/subsys/dfu/include
   ${ZEPHYR_BASE}/../nrf/include
   )
-
-target_compile_options(app
-  PRIVATE
-  -DCONFIG_DFU_TARGET_LOG_LEVEL=2
-  )

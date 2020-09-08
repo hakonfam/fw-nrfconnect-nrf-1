@@ -14,14 +14,7 @@ LOG_MODULE_REGISTER(dfu_target_modem_full, CONFIG_DFU_TARGET_LOG_LEVEL);
 
 #define MODEM_FULL_HEADER_MAGIC 0x7fdeb13c
 
-static struct stream_flash_ctx stream;
-static uint8_t *stream_buf;
-static size_t stream_buf_len;
-static off_t fdev_offset;
-static size_t fdev_size;
-static struct device *fdev;
-static struct dfu_target_stream_ctx stream_modem_full;
-
+static bool configured;
 
 bool dfu_target_modem_full_identify(const void *const buf)
 {
@@ -32,39 +25,26 @@ bool dfu_target_modem_full_identify(const void *const buf)
 int dfu_target_modem_full_cfg(uint8_t *buf, size_t len, struct device *dev,
 			      off_t dev_offset, size_t dev_size)
 {
-	if (buf == NULL) {
-		return -EINVAL;
+	int err;
+
+	err = dfu_target_stream_init("DFU_MODEM_FULL", dev, buf, len, offset,
+				     size, NULL);
+	if (err != 0) {
+		return err;
 	}
 
-	fdev = dev;
-	fdev_offset = offset;
-	fdev_size = size;
-	stream_buf = buf;
-	stream_buf_len = len;
+	configured = true;
 
 	return 0;
 }
 
 int dfu_target_modem_full_init(size_t file_size)
 {
-	/* TODO add more checking here */
-	if (stream_buf == NULL) {
-		LOG_ERR("Missing stream_buf, call '..set_buf' before '..init");
-		return -ENODEV;
+	if (!configured) {
+		return -EPERM;
 	}
 
-	flash_dev = device_get_binding(PM_MCUBOOT_SECONDARY_DEV_NAME);
-
-	err = stream_flash_init(&stream, fdev, stream_buf, stream_buf_len,
-				fdev_offset, fdev_size, NULL);
-	if (err < 0) {
-		LOG_ERR("stream_flash_init failed %d", err);
-		return err;
-	}
-
-	/* TODO check file size? */
-	return dfu_target_stream_init(&stream_modem_full, &stream,
-				      DFU_TARGET_STREAM_FLASH);
+	return 0;
 }
 
 int dfu_target_modem_full_offset_get(size_t *out)
@@ -79,5 +59,7 @@ int dfu_target_modem_full_write(const void *const buf, size_t len)
 
 int dfu_target_modem_full_done(bool successful)
 {
+	configured = false;
+
 	return dfu_target_stream_done(successful);
 }

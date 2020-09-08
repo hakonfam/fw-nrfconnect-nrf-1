@@ -11,30 +11,6 @@ menuconfig DFU_TARGET
 
 if (DFU_TARGET)
 
-config DFU_TARGET_FLASH
-	bool "Store DFU to flash device support"
-	default n
-	depends on FLASH
-	depends on FLASH_PAGE_LAYOUT
-	help
-	  Enable support for writing updates straight to flash device.
-	  Note: This feature only writes the downloaded data to a flash
-	  device, it does not perform the upgrade.
-
-if (DFU_TARGET_FLASH)
-
-config DFU_TARGET_FLASH_WRITE_BLOCK_SIZE
-	bool "Write"
-	default n
-	depends on FLASH
-	help
-	  Enable support for writing updates straight to flash device.
-	  Note: This feature only writes the downloaded data to a flash
-	  device, it does not perform the upgrade.
-
-
-endif # DFU_TARGET_FLASH
-
 config DFU_TARGET_MCUBOOT
 	bool "MCUBoot update support"
 	default y
@@ -45,21 +21,11 @@ config DFU_TARGET_MCUBOOT
 	help
 	  Enable support for updates that are performed by MCUboot.
 
-config DFU_TARGET_MCUBOOT_SAVE_PROGRESS
-	bool "Store write progress to flash (MCUboot)"
-	depends on DFU_TARGET_MCUBOOT
-	depends on SETTINGS
-	depends on !SETTINGS_NONE
-	help
-	  Enable this option to cause dfu_target_mcuboot to store the current
-	  write progress to flash. In case of power failure or device reset,
-	  the operation can then resume from the latest state.
-
 config DFU_TARGET_STREAM_SAVE_PROGRESS
 	bool "Store write progress to flash stream"
-	depends on DFU_TARGET_MCUBOOT || DFU_TARGET_MODEM_FULL
+	depends on DFU_TARGET_STREAM || ZTEST
 	depends on SETTINGS
-	depends on !SETTINGS_NONE
+#	depends on !SETTINGS_NONE
 	help
 	  Enable this option to cause dfu_target_b1 to store the current
 	  write progress to flash. In case of power failure or device reset,
