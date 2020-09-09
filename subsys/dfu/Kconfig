@@ -14,12 +14,16 @@ if (DFU_TARGET)
 config DFU_TARGET_MCUBOOT
 	bool "MCUBoot update support"
 	default y
-	depends on IMG_MANAGER
 	depends on BOOTLOADER_MCUBOOT
-	depends on IMG_ERASE_PROGRESSIVELY
+	select DFU_TARGET_STREAM
 	imply MPU_ALLOW_FLASH_WRITE
 	help
 	  Enable support for updates that are performed by MCUboot.
+
+config DFU_TARGET_STREAM
+	bool
+	depends on STREAM_FLASH_ERASE
+	depends on STREAM_FLASH
 
 config DFU_TARGET_STREAM_SAVE_PROGRESS
 	bool "Store write progress to flash stream"
