@@ -146,7 +146,7 @@ int dfu_target_modem_delta_init(size_t file_size, dfu_target_callback_t cb)
 	err = getsockopt(fd, SOL_DFU, SO_DFU_RESOURCES, &scratch_space, &len);
 	if (err < 0) {
 		if (errno == ENOEXEC) {
-			LOG_ERR("Modem error: %d", get_modem_delta_error());
+			LOG_ERR("Modem error: %d", get_modem_error());
 		} else {
 			LOG_ERR("getsockopt(OFFSET) errno: %d", errno);
 		}

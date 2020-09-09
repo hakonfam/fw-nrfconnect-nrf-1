@@ -17,9 +17,12 @@
 #define TEST_ID_1 "test_1"
 #define TEST_ID_2 "test_2"
 
+#define BUF_LEN 1400 /* Note, not page aligned */
+
 static struct device *fdev;
-static uint8_t buf[1024];
-static uint8_t write_buf[1024];
+static uint8_t sbuf[128];
+static uint8_t read_buf[BUF_LEN];
+static uint8_t write_buf[BUF_LEN] = {[0 ... BUF_LEN - 1] = 0xaa};
 
 static void test_dfu_target_stream(void)
 {
@@ -36,27 +39,27 @@ static void test_dfu_target_stream(void)
 	size_t offset;
 
 	/* Null checks */
-	err = dfu_target_stream_init(NULL, fdev, buf, sizeof(buf),
+	err = dfu_target_stream_init(NULL, fdev, sbuf, sizeof(sbuf),
 				     FLASH_BASE, 0, NULL);
 	zassert_true(err < 0, "Unexpected success");
 
-	err = dfu_target_stream_init(TEST_ID_1, NULL, buf, sizeof(buf),
+	err = dfu_target_stream_init(TEST_ID_1, NULL, sbuf, sizeof(sbuf),
 				     FLASH_BASE, 0, NULL);
 	zassert_true(err < 0, "Unexpected success");
 
-	err = dfu_target_stream_init(TEST_ID_1, fdev, NULL, sizeof(buf),
+	err = dfu_target_stream_init(TEST_ID_1, fdev, NULL, sizeof(sbuf),
 				     FLASH_BASE, 0, NULL);
 	zassert_true(err < 0, "Unexpected success");
 
 	/* Expected successful call */
-	err = dfu_target_stream_init(TEST_ID_1, fdev, buf, sizeof(buf),
+	err = dfu_target_stream_init(TEST_ID_1, fdev, sbuf, sizeof(sbuf),
 				     FLASH_BASE, 0, NULL);
 	zassert_equal(err, 0, "Unexpected failure");
 
 	/* Call _init again without calling "complete". This should result
 	 * in an error since only one id is supported simultaneously
 	 */
-	err = dfu_target_stream_init(TEST_ID_2, fdev, buf, sizeof(buf),
+	err = dfu_target_stream_init(TEST_ID_2, fdev, sbuf, sizeof(sbuf),
 				     FLASH_BASE, 0, NULL);
 	zassert_true(err < 0, "Unexpected success");
 
@@ -76,10 +79,15 @@ static void test_dfu_target_stream(void)
 	/* Call _init again after calling "_done". This should NOT result
 	 * in an error since the id should be reset.
 	 */
-	err = dfu_target_stream_init(TEST_ID_2, fdev, buf, sizeof(buf),
+	err = dfu_target_stream_init(TEST_ID_2, fdev, sbuf, sizeof(sbuf),
 				     FLASH_BASE, 0, NULL);
 	zassert_equal(err, 0, "Unexpected failure");
 
+	/* Read out the data to ensure that it was written correctly */
+	err = flash_read(fdev, FLASH_BASE, read_buf, BUF_LEN);
+	zassert_equal(err, 0, "Unexpected failure");
+	zassert_mem_equal(read_buf, write_buf, BUF_LEN, "Incorrect value");
+	
 }
 
 #ifdef CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS

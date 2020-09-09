@@ -6,7 +6,6 @@
 
 #include <zephyr.h>
 #include <logging/log.h>
-#include <dfu/dfu_target.h>
 #include <storage/stream_flash.h>
 
 LOG_MODULE_REGISTER(dfu_target_stream, CONFIG_DFU_TARGET_LOG_LEVEL);

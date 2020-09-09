@@ -46,12 +46,12 @@ int dfu_target_img_type(const void *const buf, size_t len)
 	}
 #endif
 #ifdef CONFIG_DFU_TARGET_MODEM_DELTA
-	if (dfu_target_MODEM_DELTA(buf)) {
+	if (dfu_target_modem_delta_identify(buf)) {
 		return DFU_TARGET_IMAGE_TYPE_MODEM_DELTA;
 	}
 #endif
 #ifdef CONFIG_DFU_TARGET_MODEM_FULL
-	if (dfu_target_modem_delta_identify(buf)) {
+	if (dfu_target_modem_full_identify(buf)) {
 		return DFU_TARGET_IMAGE_TYPE_MODEM_FULL;
 	}
 #endif

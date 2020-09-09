@@ -9,12 +9,17 @@
 #include <logging/log.h>
 #include <dfu/mcuboot.h>
 #include <dfu/dfu_target.h>
-#include <dfu/dfu_target_stream.h>
+#include <dfu_target_stream.h>
 
 LOG_MODULE_REGISTER(dfu_target_mcuboot, CONFIG_DFU_TARGET_LOG_LEVEL);
 
 #define MAX_FILE_SEARCH_LEN 500
 #define MCUBOOT_HEADER_MAGIC 0x96f3b83d
+
+
+static uint8_t *stream_buf = NULL;
+static size_t stream_buf_len;
+static const char *TARGET_MCUBOOT = "MCUBOOT"
 
 
 bool dfu_target_mcuboot_identify(const void *const buf)
@@ -23,7 +28,7 @@ bool dfu_target_mcuboot_identify(const void *const buf)
 	return *((const u32_t *)buf) == MCUBOOT_HEADER_MAGIC;
 }
 
-int dfu_target_mcuboot_set_buf(u8_t *buf, len)
+int dfu_target_mcuboot_set_buf(uint8_t *buf, size_t len)
 {
 	if (buf == NULL) {
 		return -EINVAL;
@@ -54,8 +59,9 @@ int dfu_target_mcuboot_init(size_t file_size, dfu_target_callback_t cb)
 
 	flash_dev = device_get_binding(PM_MCUBOOT_SECONDARY_DEV_NAME);
 
-	err = dfu_target_stream_init(&stream_dfu, &stream,
-				     DFU_TARGET_STERAM_MCUBOOT);
+	err = dfu_target_stream_init(TARGET_MCUBOOT, flash_dev, buf, buf_len,
+				     PM_MCUBOOT_SECONDARY_ADDRESS,
+				     PM_MCUBOOT_SECONDARY_SIZE, NULL);
 	if (err < 0) {
 		LOG_ERR("dfu_target_stream_init failed %d", err);
 		return err;
