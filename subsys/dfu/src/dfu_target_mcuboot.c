@@ -15,6 +15,8 @@ LOG_MODULE_REGISTER(dfu_target_mcuboot, CONFIG_DFU_TARGET_LOG_LEVEL);
 
 #define MAX_FILE_SEARCH_LEN 500
 #define MCUBOOT_HEADER_MAGIC 0x96f3b83d
+#define MCUBOOT_SECONDARY_LAST_PAGE_ADDR \
+	(PM_MCUBOOT_SECONDARY_ADDRESS + PM_MCUBOOT_SECONDARY_SIZE - 1)
 
 
 static uint8_t *stream_buf = NULL;
@@ -58,6 +60,10 @@ int dfu_target_mcuboot_init(size_t file_size, dfu_target_callback_t cb)
 	}
 
 	flash_dev = device_get_binding(PM_MCUBOOT_SECONDARY_DEV_NAME);
+	if (flash_dev == NULL) {
+		LOG_ERR("Failed to get device");
+		return -EFAULT;
+	}
 
 	err = dfu_target_stream_init(TARGET_MCUBOOT, flash_dev,
 				     stream_buf, stream_buf_len,
@@ -92,6 +98,12 @@ int dfu_target_mcuboot_done(bool successful)
 	}
 
 	if (successful) {
+		err = stream_flash_erase_page(dfu_target_stream_get_stream(),
+				MCUBOOT_SECONDARY_LAST_PAGE_ADDR);
+		if (err != 0) {
+			LOG_ERR("Unable to delete last page: %d", err);
+			return err;
+		}
 		err = boot_request_upgrade(BOOT_UPGRADE_TEST);
 		if (err != 0) {
 			LOG_ERR("boot_request_upgrade error %d", err);

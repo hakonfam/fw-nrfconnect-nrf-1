@@ -60,6 +60,11 @@ static int settings_set(const char *key, size_t len_rd,
 }
 #endif /* CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS */
 
+struct stream_flash_ctx * dfu_target_get_stream(void)
+{
+	return &stream;
+}
+
 int dfu_target_stream_init(const char *id, struct device *fdev, uint8_t *buf,
 			   size_t len, size_t offset, size_t size,
 			   stream_flash_callback_t cb)
