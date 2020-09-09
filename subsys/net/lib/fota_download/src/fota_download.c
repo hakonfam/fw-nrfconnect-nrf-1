@@ -24,6 +24,7 @@ static fota_download_callback_t callback;
 static struct download_client   dlc;
 static struct k_delayed_work    dlc_with_offset_work;
 static int socket_retries_left;
+static u8_t buf[128];
 
 static void send_evt(enum fota_download_evt_id id)
 {
@@ -293,6 +294,13 @@ int fota_download_init(fota_download_callback_t client_callback)
 
 	if (err != 0) {
 		return err;
+	}
+
+	if(IS_ENABLED(CONFIG_DFU_TARGET_MCUBOOT)) {
+		err = dfu_target_mcuboot_set_buf(buf, sizeof(buf));
+		if (err != 0) {
+			return err;
+		}
 	}
 
 	return 0;

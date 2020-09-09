@@ -19,7 +19,7 @@ LOG_MODULE_REGISTER(dfu_target_mcuboot, CONFIG_DFU_TARGET_LOG_LEVEL);
 
 static uint8_t *stream_buf = NULL;
 static size_t stream_buf_len;
-static const char *TARGET_MCUBOOT = "MCUBOOT"
+static const char *TARGET_MCUBOOT = "MCUBOOT";
 
 
 bool dfu_target_mcuboot_identify(const void *const buf)
@@ -59,7 +59,8 @@ int dfu_target_mcuboot_init(size_t file_size, dfu_target_callback_t cb)
 
 	flash_dev = device_get_binding(PM_MCUBOOT_SECONDARY_DEV_NAME);
 
-	err = dfu_target_stream_init(TARGET_MCUBOOT, flash_dev, buf, buf_len,
+	err = dfu_target_stream_init(TARGET_MCUBOOT, flash_dev,
+				     stream_buf, stream_buf_len,
 				     PM_MCUBOOT_SECONDARY_ADDRESS,
 				     PM_MCUBOOT_SECONDARY_SIZE, NULL);
 	if (err < 0) {
@@ -94,7 +95,6 @@ int dfu_target_mcuboot_done(bool successful)
 		err = boot_request_upgrade(BOOT_UPGRADE_TEST);
 		if (err != 0) {
 			LOG_ERR("boot_request_upgrade error %d", err);
-			reset_flash_context();
 			return err;
 		}
 		LOG_INF("MCUBoot image upgrade scheduled. Reset the device to "

@@ -68,14 +68,14 @@ int dfu_target_init(int img_type, size_t file_size, dfu_target_callback_t cb)
 		new_target = &dfu_target_mcuboot;
 	}
 #endif
-#ifdef CONFIG_DFU_TARGET_MODEM
+#ifdef CONFIG_DFU_TARGET_MODEM_DELTA
 	if (img_type == DFU_TARGET_IMAGE_TYPE_MODEM_DELTA) {
 		new_target = &dfu_target_modem_delta;
 	}
 #endif
-#ifdef CONFIG_DFU_TARGET_FLASH
-	if (img_type == DFU_TARGET_IMAGE_TYPE_FLASH) {
-		new_target = &dfu_target_flash;
+#ifdef CONFIG_DFU_TARGET_MODEM_FULL
+	if (img_type == DFU_TARGET_IMAGE_TYPE_MODEM_FULL) {
+		new_target = &dfu_target_modem_full;
 	}
 #endif
 	if (new_target == NULL) {

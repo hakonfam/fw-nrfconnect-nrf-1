@@ -10,6 +10,13 @@ zephyr_library_include_directories(include)
 zephyr_library_sources(
   src/dfu_target.c
   )
+
+if (CONFIG_DFU_TARGET_MCUBOOT)
+  zephyr_library_sources(
+    src/dfu_target_stream.c
+    )
+endif()
+
 zephyr_library_sources_ifdef(CONFIG_DFU_TARGET_MODEM_DELTA
   src/dfu_target_modem_delta.c
   )
