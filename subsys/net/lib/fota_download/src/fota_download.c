@@ -9,13 +9,13 @@
 #include <net/fota_download.h>
 #include <net/download_client.h>
 #include <dfu/dfu_target.h>
+#include <dfu_target_mcuboot.h>
 #include <pm_config.h>
 
 #ifdef PM_S1_ADDRESS
 /* MCUBoot support is required */
 #include <fw_info.h>
 #include <secure_services.h>
-#include <dfu_target_mcuboot.h>
 #endif
 
 LOG_MODULE_REGISTER(fota_download, CONFIG_FOTA_DOWNLOAD_LOG_LEVEL);
