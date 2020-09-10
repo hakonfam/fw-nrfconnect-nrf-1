@@ -17,15 +17,15 @@ static const struct dfu_target dfu_target_ ## name  = { \
 }
 
 #ifdef CONFIG_DFU_TARGET_MODEM_DELTA
-#include "dfu_target_modem_delta.h"
+#include "dfu/dfu_target_modem_delta.h"
 DEF_DFU_TARGET(modem_delta);
 #endif
 #ifdef CONFIG_DFU_TARGET_MCUBOOT
-#include "dfu_target_mcuboot.h"
+#include "dfu/dfu_target_mcuboot.h"
 DEF_DFU_TARGET(mcuboot);
 #endif
 #ifdef CONFIG_DFU_TARGET_FLASH
-#include "dfu_target_flash.h"
+#include "dfu/dfu_target_flash.h"
 DEF_DFU_TARGET(flash);
 #endif
 

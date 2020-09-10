@@ -280,7 +280,7 @@ void main(void)
 
 	modem_configure();
 
-	boot_write_img_confirmed();
+	/* TODO boot_write_img_confirmed(); */
 
 	err = application_init();
 	if (err != 0) {

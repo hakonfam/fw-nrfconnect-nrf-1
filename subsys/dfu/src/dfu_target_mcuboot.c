@@ -9,7 +9,7 @@
 #include <logging/log.h>
 #include <dfu/mcuboot.h>
 #include <dfu/dfu_target.h>
-#include <dfu_target_stream.h>
+#include <dfu/dfu_target_stream.h>
 
 LOG_MODULE_REGISTER(dfu_target_mcuboot, CONFIG_DFU_TARGET_LOG_LEVEL);
 
@@ -18,11 +18,17 @@ LOG_MODULE_REGISTER(dfu_target_mcuboot, CONFIG_DFU_TARGET_LOG_LEVEL);
 #define MCUBOOT_SECONDARY_LAST_PAGE_ADDR \
 	(PM_MCUBOOT_SECONDARY_ADDRESS + PM_MCUBOOT_SECONDARY_SIZE - 1)
 
+static const u32_t boot_img_magic[4] = {
+	0xf395c277,
+	0x7fefd260,
+	0x0f505235,
+	0x8079b62c,
+};
 
 static uint8_t *stream_buf = NULL;
 static size_t stream_buf_len;
 static const char *TARGET_MCUBOOT = "MCUBOOT";
-
+static struct device *flash_dev;
 
 bool dfu_target_mcuboot_identify(const void *const buf)
 {
@@ -45,7 +51,6 @@ int dfu_target_mcuboot_set_buf(uint8_t *buf, size_t len)
 int dfu_target_mcuboot_init(size_t file_size, dfu_target_callback_t cb)
 {
 	ARG_UNUSED(cb);
-	struct device *flash_dev;
 	int err;
 
 	if (stream_buf == NULL) {
@@ -104,15 +109,22 @@ int dfu_target_mcuboot_done(bool successful)
 			LOG_ERR("Unable to delete last page: %d", err);
 			return err;
 		}
-		err = boot_request_upgrade(BOOT_UPGRADE_TEST);
+
+		/* TODO should we add a function in stream_flash to write?
+		 * IE unbuffered write
+		 */
+		off_t magic_offset =
+			PM_MCUBOOT_SECONDARY_ADDRESS - BOOT_MAGIC_SZ;
+		err = flash_write(flash_dev, magic_offset, boot_img_magic,
+				  BOOT_MAGIC_SZ);
 		if (err != 0) {
-			LOG_ERR("boot_request_upgrade error %d", err);
+			LOG_ERR("failed writing magic: %d", err);
 			return err;
 		}
-		LOG_INF("MCUBoot image upgrade scheduled. Reset the device to "
-			"apply");
+
+		LOG_INF("App image upgrade scheduled. Reset device to apply");
 	} else {
-		LOG_INF("MCUBoot image upgrade aborted.");
+		LOG_INF("App image upgrade aborted.");
 	}
 
 	return err;

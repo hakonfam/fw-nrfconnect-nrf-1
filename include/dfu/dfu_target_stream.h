@@ -21,7 +21,7 @@
 extern "C" {
 #endif
 
-struct stream_flash_ctx * dfu_target_get_stream(void);
+struct stream_flash_ctx * dfu_target_stream_get_stream(void);
 
 /**
  * @brief Initialize dfu target, perform steps necessary to write flash stream.

@@ -9,7 +9,7 @@
 #include <net/fota_download.h>
 #include <net/download_client.h>
 #include <dfu/dfu_target.h>
-#include <dfu_target_mcuboot.h>
+#include <dfu/dfu_target_mcuboot.h>
 #include <pm_config.h>
 
 #ifdef PM_S1_ADDRESS
