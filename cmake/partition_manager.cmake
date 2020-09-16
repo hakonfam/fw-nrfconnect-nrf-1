@@ -311,13 +311,13 @@ foreach(container ${containers} ${merged})
 
 endforeach()
 
-get_target_property(runners_content runner_yml_props_target yaml_contents)
+get_target_property(runners_content runners_yaml_props_target yaml_contents)
 
 string(REGEX REPLACE "--hex-file=[^\n]*"
   "--hex-file=${PROJECT_BINARY_DIR}/${merged}.hex" new  ${runners_content})
 
 set_property(
-  TARGET         runner_yml_props_target
+  TARGET         runners_yaml_props_target
   PROPERTY       yaml_contents
   ${new}
   )
