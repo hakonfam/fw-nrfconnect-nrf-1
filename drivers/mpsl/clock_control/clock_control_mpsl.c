@@ -167,9 +167,11 @@ static enum clock_control_status hf_get_status(void)
 #if IS_ENABLED(CONFIG_USB_NRFX)
 static inline void power_event_cb(nrf_power_event_t event)
 {
-	extern void usb_dc_nrfx_power_event_callback(nrf_power_event_t event);
+	// TODO TORA: upmerge confirmation from KC needed.
+	// See: https://github.com/zephyrproject-rtos/zephyr/pull/27422
+	//extern void usb_dc_nrfx_power_event_callback(nrf_power_event_t event);
 
-	usb_dc_nrfx_power_event_callback(event);
+	//usb_dc_nrfx_power_event_callback(event);
 }
 #endif
 
