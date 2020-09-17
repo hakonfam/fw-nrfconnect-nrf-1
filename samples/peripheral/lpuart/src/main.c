@@ -13,7 +13,7 @@ LOG_MODULE_REGISTER(app);
 #define BUF_SIZE 64
 static K_MEM_SLAB_DEFINE(uart_slab, BUF_SIZE, 3, 4);
 
-static void uart_callback(struct device *dev,
+static void uart_callback(const struct device *dev,
 			  struct uart_event *evt, void *user_data)
 {
 	struct device *uart = user_data;
@@ -59,20 +59,20 @@ static void uart_callback(struct device *dev,
 
 void main(void)
 {
-	struct device *lpuart;
 	uint8_t txbuf[5] = {1, 2, 3, 4, 5};
 	int err;
 	uint8_t *buf;
 
 	k_msleep(1000);
 
-	lpuart = device_get_binding("LPUART");
+	const struct device *lpuart = device_get_binding("LPUART");
 	__ASSERT(lpuart, "Failed to get the device");
 
 	err = k_mem_slab_alloc(&uart_slab, (void **)&buf, K_NO_WAIT);
 	__ASSERT(err == 0, "Failed to alloc slab");
 
-	err = uart_callback_set(lpuart, uart_callback, lpuart);
+	// TODO TORA: upmerge confirmation from KC needed.
+	err = uart_callback_set(lpuart, uart_callback, (void *)lpuart);
 	__ASSERT(err == 0, "Failed to set callback");
 
 	err = uart_rx_enable(lpuart, buf, BUF_SIZE, 10);

@@ -17,7 +17,7 @@ struct lpuart_bidir_gpio {
 	struct gpio_callback callback;
 
 	/* gpio device. */
-	struct device *port;
+	const struct device *port;
 
 	/* pin number - within port. */
 	gpio_pin_t pin;
@@ -55,7 +55,7 @@ enum rx_state {
 /* Low power uart structure. */
 struct lpuart_data {
 	/* Physical UART device */
-	struct device *uart;
+	const struct device *uart;
 
 	/* Request pin. */
 	struct lpuart_bidir_gpio req_pin;
@@ -103,12 +103,12 @@ struct lpuart_config {
 	struct lpuart_pin_config rdy;
 };
 
-static inline struct lpuart_data *get_dev_data(struct device *dev)
+static inline struct lpuart_data *get_dev_data(const struct device *dev)
 {
 	return dev->data;
 }
 
-static inline const struct lpuart_config *get_dev_config(struct device *dev)
+static inline const struct lpuart_config *get_dev_config(const struct device *dev)
 {
 	return dev->config;
 }
@@ -273,7 +273,7 @@ static void on_rdy_pin_change(struct lpuart_data *data)
 	}
 }
 
-static void gpio_handler(struct device *port,
+static void gpio_handler(const struct device *port,
 			struct gpio_callback *cb,
 			gpio_port_pins_t pins)
 {
@@ -340,7 +340,7 @@ static int ctrl_pin_configure(struct lpuart_bidir_gpio *io,
 	return 0;
 }
 
-static int api_callback_set(struct device *dev, uart_callback_t callback,
+static int api_callback_set(const struct device *dev, uart_callback_t callback,
 			    void *user_data)
 {
 	struct lpuart_data *data = get_dev_data(dev);
@@ -351,7 +351,7 @@ static int api_callback_set(struct device *dev, uart_callback_t callback,
 	return 0;
 }
 
-static void user_callback(struct device *dev, struct uart_event *evt)
+static void user_callback(const struct device *dev, struct uart_event *evt)
 {
 	const struct lpuart_data *data = get_dev_data(dev);
 
@@ -360,7 +360,7 @@ static void user_callback(struct device *dev, struct uart_event *evt)
 	}
 }
 
-static void uart_callback(struct device *uart, struct uart_event *evt,
+static void uart_callback(const struct device *uart, struct uart_event *evt,
 			  void *user_data)
 {
 	struct device *dev = user_data;
@@ -445,7 +445,7 @@ static void tx_timeout(struct k_timer *timer)
 	user_callback(dev, &evt);
 }
 
-static int api_tx(struct device *dev, const uint8_t *buf,
+static int api_tx(const struct device *dev, const uint8_t *buf,
 		  size_t len, int32_t timeout)
 {
 	struct lpuart_data *data = get_dev_data(dev);
@@ -463,7 +463,7 @@ static int api_tx(struct device *dev, const uint8_t *buf,
 	return 0;
 }
 
-static int api_tx_abort(struct device *dev)
+static int api_tx_abort(const struct device *dev)
 {
 	struct lpuart_data *data = get_dev_data(dev);
 	const uint8_t *buf = data->tx_buf;
@@ -502,7 +502,7 @@ static int api_tx_abort(struct device *dev)
 	return err;
 }
 
-static int api_rx_enable(struct device *dev, uint8_t *buf,
+static int api_rx_enable(const struct device *dev, uint8_t *buf,
 			 size_t len, int32_t timeout)
 {
 	struct lpuart_data *data = get_dev_data(dev);
@@ -533,7 +533,7 @@ static int api_rx_enable(struct device *dev, uint8_t *buf,
 	return 0;
 }
 
-static int api_rx_buf_rsp(struct device *dev, uint8_t *buf, size_t len)
+static int api_rx_buf_rsp(const struct device *dev, uint8_t *buf, size_t len)
 {
 	struct lpuart_data *data = get_dev_data(dev);
 
@@ -558,7 +558,7 @@ static int api_rx_buf_rsp(struct device *dev, uint8_t *buf, size_t len)
 	return uart_rx_buf_rsp(data->uart, buf, len);
 }
 
-static int api_rx_disable(struct device *dev)
+static int api_rx_disable(const struct device *dev)
 {
 	struct lpuart_data *data = get_dev_data(dev);
 
@@ -567,7 +567,7 @@ static int api_rx_disable(struct device *dev)
 	return uart_rx_disable(data->uart);
 }
 
-static int lpuart_init(struct device *dev)
+static int lpuart_init(const struct device *dev)
 {
 	struct lpuart_data *data = get_dev_data(dev);
 	const struct lpuart_config *cfg = get_dev_config(dev);
@@ -589,22 +589,23 @@ static int lpuart_init(struct device *dev)
 	}
 
 	k_timer_init(&data->tx_timer, tx_timeout, NULL);
-	k_timer_user_data_set(&data->tx_timer, dev);
+	// TODO TORA: upmerge confirmation from KC needed.
+	k_timer_user_data_set(&data->tx_timer, (void *)dev);
 
 	return uart_callback_set(data->uart, uart_callback, (void *)dev);
 }
 
-static int api_poll_in(struct device *dev, unsigned char *p_char)
+static int api_poll_in(const struct device *dev, unsigned char *p_char)
 {
 	return -ENOTSUP;
 }
 
-static void api_poll_out(struct device *dev, unsigned char out_char)
+static void api_poll_out(const struct device *dev, unsigned char out_char)
 {
 	/* not supported */
 }
 
-static int api_configure(struct device *dev, const struct uart_config *cfg)
+static int api_configure(const struct device *dev, const struct uart_config *cfg)
 {
 	const struct lpuart_data *data = get_dev_data(dev);
 
@@ -615,7 +616,7 @@ static int api_configure(struct device *dev, const struct uart_config *cfg)
 	return uart_configure(data->uart, cfg);
 }
 
-static int api_config_get(struct device *dev, struct uart_config *cfg)
+static int api_config_get(const struct device *dev, struct uart_config *cfg)
 {
 	const struct lpuart_data *data = get_dev_data(dev);
 

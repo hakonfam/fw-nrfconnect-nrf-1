@@ -21,15 +21,15 @@
 
 #define DT_DRV_COMPAT nordic_nrf_clock
 
-static int clock_start(struct device *dev, clock_control_subsys_t subsys);
-static int clock_stop(struct device *dev, clock_control_subsys_t subsys);
-static int clock_async_start(struct device *dev, clock_control_subsys_t subsys,
+static int clock_start(const struct device *dev, clock_control_subsys_t subsys);
+static int clock_stop(const struct device *dev, clock_control_subsys_t subsys);
+static int clock_async_start(const struct device *dev, clock_control_subsys_t subsys,
 			     struct clock_control_async_data *data);
-static int clock_get_rate(struct device *dev, clock_control_subsys_t subsys,
+static int clock_get_rate(const struct device *dev, clock_control_subsys_t subsys,
 			  uint32_t *rate);
 static enum clock_control_status
-clock_get_status(struct device *dev, clock_control_subsys_t subsys);
-static int clock_control_init(struct device *dev);
+clock_get_status(const struct device *dev, clock_control_subsys_t subsys);
+static int clock_control_init(const struct device *dev);
 
 static const struct clock_control_driver_api clock_control_api = {
 	.on = clock_start,
@@ -205,7 +205,7 @@ void nrf_power_clock_isr(void)
 #endif
 }
 
-static int clock_start(struct device *dev, clock_control_subsys_t subsys)
+static int clock_start(const struct device *dev, clock_control_subsys_t subsys)
 {
 	struct mpsl_clock_control_data *mpsl_control_data = dev->data;
 	enum clock_control_nrf_type type = (enum clock_control_nrf_type)subsys;
@@ -237,7 +237,7 @@ static int clock_start(struct device *dev, clock_control_subsys_t subsys)
 	}
 }
 
-static int clock_stop(struct device *dev, clock_control_subsys_t subsys)
+static int clock_stop(const struct device *dev, clock_control_subsys_t subsys)
 {
 	struct mpsl_clock_control_data *mpsl_control_data = dev->data;
 	enum clock_control_nrf_type type = (enum clock_control_nrf_type)subsys;
@@ -273,7 +273,7 @@ static int clock_stop(struct device *dev, clock_control_subsys_t subsys)
 	}
 }
 
-static int clock_get_rate(struct device *dev, clock_control_subsys_t subsys,
+static int clock_get_rate(const struct device *dev, clock_control_subsys_t subsys,
 			  uint32_t *rate)
 {
 	ARG_UNUSED(dev);
@@ -296,7 +296,7 @@ static int clock_get_rate(struct device *dev, clock_control_subsys_t subsys,
 	return 0;
 }
 
-static enum clock_control_status clock_get_status(struct device *dev,
+static enum clock_control_status clock_get_status(const struct device *dev,
 						  clock_control_subsys_t subsys)
 {
 	ARG_UNUSED(dev);
@@ -316,7 +316,7 @@ static enum clock_control_status clock_get_status(struct device *dev,
 	}
 }
 
-static int clock_async_start(struct device *dev, clock_control_subsys_t subsys,
+static int clock_async_start(const struct device *dev, clock_control_subsys_t subsys,
 			     struct clock_control_async_data *data)
 {
 	struct mpsl_clock_control_data *mpsl_control_data = dev->data;
@@ -371,7 +371,7 @@ static int clock_async_start(struct device *dev, clock_control_subsys_t subsys,
 	return errcode;
 }
 
-static void started_cb(struct device *dev,
+static void started_cb(const struct device *dev,
 		       clock_control_subsys_t subsys,
 		       void *user_data)
 {
@@ -388,7 +388,7 @@ static void started_cb(struct device *dev,
 
 static void onoff_start(struct onoff_manager *mgr, onoff_notify_fn notify)
 {
-	struct device *dev = DEVICE_GET(clock_nrf);
+	const struct device *dev = DEVICE_GET(clock_nrf);
 	enum clock_control_nrf_type type = manager_to_clock_type(mgr);
 	static struct clock_control_async_data data;
 
@@ -408,7 +408,7 @@ static void onoff_start(struct onoff_manager *mgr, onoff_notify_fn notify)
 
 static void onoff_stop(struct onoff_manager *mgr, onoff_notify_fn notify)
 {
-	struct device *dev = DEVICE_GET(clock_nrf);
+	const struct device *dev = DEVICE_GET(clock_nrf);
 	enum clock_control_nrf_type type = manager_to_clock_type(mgr);
 
 	int err = clock_stop(dev, (clock_control_subsys_t) type);
@@ -416,7 +416,7 @@ static void onoff_stop(struct onoff_manager *mgr, onoff_notify_fn notify)
 	notify(mgr, err);
 }
 
-static int clock_control_init(struct device *dev)
+static int clock_control_init(const struct device *dev)
 {
 	struct mpsl_clock_control_data *mpsl_control_data = dev->data;
 
@@ -489,7 +489,7 @@ static void hf_clock_started_callback(void)
 	}
 
 	sys_slist_t *list = &(clock_control_data.async_on_list);
-	struct device *dev = DEVICE_GET(clock_nrf);
+	const struct device *dev = DEVICE_GET(clock_nrf);
 
 	if (is_running) {
 		struct clock_control_async_data *clock_async_data = NULL;
