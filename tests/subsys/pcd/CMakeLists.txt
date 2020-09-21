@@ -8,10 +8,26 @@ cmake_minimum_required(VERSION 3.13.1)
 
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 
-zephyr_compile_options(-DPCD_CMD_ADDRESS=0x1000000)
+# This check is needed since CMake does not fail when performing
+# 'set_property' to a source file which does not exist.
+set(pcd_dir ${ZEPHYR_BASE}/../nrf/subsys/pcd)
+set(pcd_source ${pcd_dir}/src/pcd.c)
+if (NOT EXISTS ${pcd_source})
+  message(FATAL_ERROR "Unable to find source being tested")
+endif()
+
+# Set some defines in order to include code which is conditionally included.
+set_source_files_properties(
+  ${pcd_source}
+  DIRECTORY ${pcd_dir}
+  PROPERTIES COMPILE_DEFINITIONS
+  "CONFIG_MCUBOOT")
+
+zephyr_include_directories(.) # To get 'pm_config.h"
 
 project(pcd_test)
 
 FILE(GLOB app_sources src/*.c)
 
 target_sources(app PRIVATE ${app_sources})
+

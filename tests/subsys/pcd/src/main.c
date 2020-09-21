@@ -24,8 +24,24 @@ static uint8_t read_buf[sizeof(data)];
 static uint8_t write_buf[100];
 static off_t write_buf_offset = (off_t)write_buf;
 
+#ifdef CONFIG_SOC_NRF5340_CPUAPP
+static void test_pcd_network_core_update(void)
+{
+	int err = pcd_network_core_update(&data, sizeof(data));
+	zassert_equal(err, 0, "Unexpected failure");
+
+}
+#else
+static void test_pcd_network_core_update(void)
+{
+	ztest_test_skip();
+}
+#endif /* CONFIG_SOC_NRF5340_CPUAPP */
+
 static void test_pcd_invalidate(void)
 {
+	pcd_fw_copy_invalidate();
+	zassert_true(pcd_fw_copy_status_get() < 0, "Unexpected success");
 }
 
 
@@ -40,6 +56,7 @@ static void test_pcd_fw_copy_status_get(void)
 void test_main(void)
 {
 	ztest_test_suite(pcd_test,
+			 ztest_unit_test(test_pcd_network_core_update),
 			 ztest_unit_test(test_pcd_invalidate),
 			 ztest_unit_test(test_pcd_fw_copy),
 			 ztest_unit_test(test_pcd_fw_copy_status_get)

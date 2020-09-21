@@ -105,7 +105,7 @@ static int pcd_cmd_write(const void *data, size_t len, off_t offset)
 	return 0;
 }
 
-int pcd_network_core_update(void *src_addr, size_t len)
+int pcd_network_core_update(const void *src_addr, size_t len)
 {
 	int err;
 
