@@ -24,7 +24,7 @@ static fota_download_callback_t callback;
 static struct download_client   dlc;
 static struct k_delayed_work    dlc_with_offset_work;
 static int socket_retries_left;
-static u8_t buf[128];
+static uint8_t buf[128];
 
 static void send_evt(enum fota_download_evt_id id)
 {

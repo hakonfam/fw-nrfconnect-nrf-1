@@ -18,7 +18,7 @@ LOG_MODULE_REGISTER(dfu_target_mcuboot, CONFIG_DFU_TARGET_LOG_LEVEL);
 #define MCUBOOT_SECONDARY_LAST_PAGE_ADDR \
 	(PM_MCUBOOT_SECONDARY_ADDRESS + PM_MCUBOOT_SECONDARY_SIZE - 1)
 
-static const u32_t boot_img_magic[4] = {
+static const uint32_t boot_img_magic[4] = {
 	0xf395c277,
 	0x7fefd260,
 	0x0f505235,
@@ -33,7 +33,7 @@ static struct device *flash_dev;
 bool dfu_target_mcuboot_identify(const void *const buf)
 {
 	/* MCUBoot headers starts with 4 byte magic word */
-	return *((const u32_t *)buf) == MCUBOOT_HEADER_MAGIC;
+	return *((const uint32_t *)buf) == MCUBOOT_HEADER_MAGIC;
 }
 
 int dfu_target_mcuboot_set_buf(uint8_t *buf, size_t len)
@@ -112,13 +112,19 @@ int dfu_target_mcuboot_done(bool successful)
 
 		/* TODO should we add a function in stream_flash to write?
 		 * IE unbuffered write
-		 */
 		off_t magic_offset =
 			PM_MCUBOOT_SECONDARY_ADDRESS - BOOT_MAGIC_SZ;
 		err = flash_write(flash_dev, magic_offset, boot_img_magic,
 				  BOOT_MAGIC_SZ);
 		if (err != 0) {
 			LOG_ERR("failed writing magic: %d", err);
+			return err;
+		}
+		 */
+		err = boot_request_upgrade(BOOT_UPGRADE_TEST);
+		if (err != 0) {
+			LOG_ERR("boot_request_upgrade error %d", err);
+			(void) dfu_target_stream_done(false);
 			return err;
 		}
 
