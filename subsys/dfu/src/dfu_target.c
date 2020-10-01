@@ -21,7 +21,7 @@ static const struct dfu_target dfu_target_ ## name  = { \
 DEF_DFU_TARGET(modem);
 #endif
 #ifdef CONFIG_DFU_TARGET_MCUBOOT
-#include "dfu_target_mcuboot.h"
+#include "dfu/dfu_target_mcuboot.h"
 DEF_DFU_TARGET(mcuboot);
 #endif
 
