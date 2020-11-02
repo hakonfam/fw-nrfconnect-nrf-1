@@ -3,11 +3,12 @@
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
+
 #include <string.h>
 #include <zephyr/types.h>
 #include <stdbool.h>
 #include <ztest.h>
-#include <dfu_target_stream.h>
+#include <dfu/dfu_target_stream.h>
 
 #define FLASH_NAME DT_CHOSEN_ZEPHYR_FLASH_CONTROLLER_LABEL
 #define FLASH_BASE (64*1024)
@@ -85,6 +86,7 @@ static void test_dfu_target_stream(void)
 	
 }
 
+#ifdef CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS
 static void test_dfu_target_stream_save_progress(void)
 {
 	int err;
@@ -162,7 +164,7 @@ static void test_dfu_target_stream_save_progress(void)
 	/* Verify that the offset is not 0 anymore */
 	err = dfu_target_stream_offset_get(&second_offset);
 	zassert_equal(err, 0, "Unexpected failure");
-	zassert_not_equal(second_offset, first_offset, "Offset hasn't updated");
+	zassert_not_equal(second_offset, first_offset, "Offset not updated");
 
 	/* Complete transfer with failure, this retains the non-0 offset */
 	err = dfu_target_stream_done(false);
@@ -179,6 +181,16 @@ static void test_dfu_target_stream_save_progress(void)
 	zassert_equal(err, 0, "Unexpected failure");
 	zassert_equal(0, first_offset, "Offsets has not been reset");
 }
+
+#else
+
+static void test_dfu_target_stream_save_progress(void)
+{
+        ztest_test_skip();
+}
+
+#endif
+
 
 void test_main(void)
 {

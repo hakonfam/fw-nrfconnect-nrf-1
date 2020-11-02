@@ -22,7 +22,7 @@ config DFU_TARGET_MCUBOOT
 	  Enable support for updates that are performed by MCUboot.
 
 config DFU_TARGET_STREAM
-	bool
+        bool "Generic DFU stream target"
 	depends on STREAM_FLASH_ERASE
 	depends on STREAM_FLASH
 
