@@ -1,8 +1,20 @@
 /*
- * Copyright (c) 2020 Nordic Semiconductor ASA
+ * Copyright (c) 2019 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
+
+/*
+ * Ensure 'strnlen' is available even with -std=c99. If
+ * _POSIX_C_SOURCE was defined we will get a warning when referencing
+ * 'strnlen'. If this proves to cause trouble we could easily
+ * re-implement strnlen instead, perhaps with a different name, as it
+ * is such a simple function.
+ */
+#if !defined(_POSIX_C_SOURCE)
+#define _POSIX_C_SOURCE 200809L
+#endif
+#include <string.h>
 
 #include <zephyr.h>
 #include <pm_config.h>
@@ -18,22 +30,50 @@ LOG_MODULE_REGISTER(dfu_target_mcuboot, CONFIG_DFU_TARGET_LOG_LEVEL);
 #define MCUBOOT_SECONDARY_LAST_PAGE_ADDR \
 	(PM_MCUBOOT_SECONDARY_ADDRESS + PM_MCUBOOT_SECONDARY_SIZE - 1)
 
-static const u32_t boot_img_magic[4] = {
-	0xf395c277,
-	0x7fefd260,
-	0x0f505235,
-	0x8079b62c,
-};
 
 static uint8_t *stream_buf = NULL;
 static size_t stream_buf_len;
 static const char *TARGET_MCUBOOT = "MCUBOOT";
-static struct device *flash_dev;
+
+int dfu_ctx_mcuboot_set_b1_file(const char *file, bool s0_active,
+				const char **update)
+{
+	if (file == NULL || update == NULL) {
+		return -EINVAL;
+	}
+
+	/* Ensure that 'file' is null-terminated. */
+	if (strnlen(file, MAX_FILE_SEARCH_LEN) == MAX_FILE_SEARCH_LEN) {
+		return -ENOTSUP;
+	}
+
+	/* We have verified that there is a null-terminator, so this is safe */
+	char *space = strstr(file, " ");
+
+	if (space == NULL) {
+		/* Could not find space separator in input */
+		*update = NULL;
+
+		return 0;
+	}
+
+	if (s0_active) {
+		/* Point after space to 'activate' second file path (S1) */
+		*update = space + 1;
+	} else {
+		*update = file;
+
+		/* Insert null-terminator to 'activate' first file path (S0) */
+		*space = '\0';
+	}
+
+	return 0;
+}
 
 bool dfu_target_mcuboot_identify(const void *const buf)
 {
 	/* MCUBoot headers starts with 4 byte magic word */
-	return *((const u32_t *)buf) == MCUBOOT_HEADER_MAGIC;
+	return *((const uint32_t *)buf) == MCUBOOT_HEADER_MAGIC;
 }
 
 int dfu_target_mcuboot_set_buf(uint8_t *buf, size_t len)
@@ -51,6 +91,7 @@ int dfu_target_mcuboot_set_buf(uint8_t *buf, size_t len)
 int dfu_target_mcuboot_init(size_t file_size, dfu_target_callback_t cb)
 {
 	ARG_UNUSED(cb);
+	const struct device *flash_dev;
 	int err;
 
 	if (stream_buf == NULL) {
@@ -109,22 +150,16 @@ int dfu_target_mcuboot_done(bool successful)
 			LOG_ERR("Unable to delete last page: %d", err);
 			return err;
 		}
-
-		/* TODO should we add a function in stream_flash to write?
-		 * IE unbuffered write
-		 */
-		off_t magic_offset =
-			PM_MCUBOOT_SECONDARY_ADDRESS - BOOT_MAGIC_SZ;
-		err = flash_write(flash_dev, magic_offset, boot_img_magic,
-				  BOOT_MAGIC_SZ);
+		err = boot_request_upgrade(BOOT_UPGRADE_TEST);
 		if (err != 0) {
-			LOG_ERR("failed writing magic: %d", err);
+			LOG_ERR("boot_request_upgrade error %d", err);
 			return err;
 		}
 
-		LOG_INF("App image upgrade scheduled. Reset device to apply");
+		LOG_INF("MCUBoot image upgrade scheduled. " \
+			 "Reset device to apply");
 	} else {
-		LOG_INF("App image upgrade aborted.");
+		LOG_INF("MCUBoot image upgrade aborted.");
 	}
 
 	return err;

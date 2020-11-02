@@ -30,8 +30,8 @@ struct stream_flash_ctx * dfu_target_stream_get_stream(void);
  *
  * @retval Non-negative value if successful, negative errno otherwise.
  */
-int dfu_target_stream_init(const char *id, struct device *fdev, uint8_t *buf,
-			   size_t len, size_t offset, size_t size,
+int dfu_target_stream_init(const char *id, const struct device *fdev,
+			   uint8_t *buf, size_t len, size_t offset, size_t size,
 			   stream_flash_callback_t cb);
 
 /**

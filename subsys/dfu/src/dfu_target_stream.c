@@ -7,6 +7,7 @@
 #include <zephyr.h>
 #include <logging/log.h>
 #include <storage/stream_flash.h>
+#include <stdio.h>
 
 LOG_MODULE_REGISTER(dfu_target_stream, CONFIG_DFU_TARGET_LOG_LEVEL);
 
@@ -15,7 +16,10 @@ static const char *current_id;
 
 #ifdef CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS
 
-#define MODULE "dfu_stream"
+static char current_name_key[12];
+
+#define MODULE "dfu"
+#define DFU_STREAM_OFFSET "stream/offset"
 #include <settings/settings.h>
 /**
  * @brief Store the information stored in the stream_flash instance so that it
@@ -23,9 +27,10 @@ static const char *current_id;
  */
 static int store_progress(void)
 {
+	int err;
 	size_t bytes_written = stream_flash_bytes_written(&stream);
 
-	int err = settings_save_one(current_id, &bytes_written,
+	err = settings_save_one(current_name_key, &bytes_written,
 			sizeof(bytes_written));
 
 	if (err) {
@@ -44,9 +49,6 @@ static int store_progress(void)
 static int settings_set(const char *key, size_t len_rd,
 			settings_read_cb read_cb, void *cb_arg)
 {
-
-	/* TODO  do we need to add 'module/key' here, or is simply 'key' enough? */
-
 	if (!strcmp(key, current_id)) {
 		ssize_t len = read_cb(cb_arg, &stream.bytes_written,
 				      sizeof(stream.bytes_written));
@@ -65,8 +67,8 @@ struct stream_flash_ctx * dfu_target_stream_get_stream(void)
 	return &stream;
 }
 
-int dfu_target_stream_init(const char *id, struct device *fdev, uint8_t *buf,
-			   size_t len, size_t offset, size_t size,
+int dfu_target_stream_init(const char *id, const struct device *fdev,
+			   uint8_t *buf, size_t len, size_t offset, size_t size,
 			   stream_flash_callback_t cb)
 {
 	int err;
@@ -90,6 +92,13 @@ int dfu_target_stream_init(const char *id, struct device *fdev, uint8_t *buf,
 	}
 
 #ifdef CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS
+	err = snprintf(current_name_key, sizeof(current_name_key),
+		       "%s/%s", MODULE, current_id);
+	if (err < 0 || err >= sizeof(current_name_key)) {
+		LOG_ERR("Unable to generate current_name_key");
+		return -EFAULT;
+	}
+
 	static struct settings_handler sh = {
 		.name = MODULE,
 		.h_set = settings_set,
@@ -103,14 +112,14 @@ int dfu_target_stream_init(const char *id, struct device *fdev, uint8_t *buf,
 	}
 
 	err = settings_register(&sh);
-	if (err) {
-		LOG_ERR("Cannot register settings (err %d)", err);
+	if (err && err != -EEXIST) {
+		LOG_ERR("setting_register failed: (err %d)", err);
 		return err;
 	}
 
 	err = settings_load();
 	if (err) {
-		LOG_ERR("Cannot load settings (err %d)", err);
+		LOG_ERR("settings_load failed (err %d)", err);
 		return err;
 	}
 #endif /* CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS */
@@ -135,7 +144,6 @@ int dfu_target_stream_write(const uint8_t *buf, size_t len)
 	}
 
 #ifdef CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS
-	/* TODO try to avoid all these ifdefs and use IS_ENABLED instaed */
 	err = store_progress();
 	if (err != 0) {
 		/* Failing to store progress is not a critical error you'll just
@@ -145,34 +153,39 @@ int dfu_target_stream_write(const uint8_t *buf, size_t len)
 	}
 #endif
 
-	return 0;
+	return err;
 }
 
 int dfu_target_stream_done(bool successful)
 {
 	int err = 0;
 
-	/* TODO how to handle ID here? should we set it to NULL and then
-	 * add some NULL checks in the write/init code?
-	 * By doing this, we ensure that init must be called again,
-	 * and hence we don't need enough info here to call
-	 * stream_init again. */
-	current_id = NULL;
-
 	if (successful) {
 		err = stream_flash_buffered_write(&stream, NULL, 0, true);
 		if (err != 0) {
 			LOG_ERR("stream_flash_buffered_write error %d", err);
 		}
-	}
-
 #ifdef CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS
-	err = store_progress();
-	if (err != 0) {
-		LOG_ERR("Unable to reset write progress: %d", err);
-	}
-#endif
+		/* Delete state so that a new call to 'init' will
+		 * start with offset 0.
+		 */
+		err = settings_delete(current_name_key);
+		if (err != 0) {
+			LOG_ERR("setting_delete error %d", err);
+		}
 
+	} else {
+		/* The stream has not completed, store the progress so that
+		 * a new call to 'init' will pick up where we left off.
+		 */
+		err = store_progress();
+		if (err != 0) {
+			LOG_ERR("Unable to reset write progress: %d", err);
+		}
+#endif
+	}
+
+	current_id = NULL;
 
 	return err;
 }

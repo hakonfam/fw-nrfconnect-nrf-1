@@ -23,3 +23,11 @@ target_include_directories(app
   ${ZEPHYR_BASE}/../nrf/subsys/dfu/include
   ${ZEPHYR_BASE}/../nrf/include
   )
+
+# Note: We enable CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS here since it has
+# dependencies in KConfig which is not satisfiable for this test project.
+target_compile_options(app
+  PRIVATE
+  -DCONFIG_DFU_TARGET_LOG_LEVEL=2
+  -DCONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS=1
+  )

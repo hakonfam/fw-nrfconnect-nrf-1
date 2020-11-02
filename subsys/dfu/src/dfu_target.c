@@ -24,9 +24,9 @@ DEF_DFU_TARGET(modem_delta);
 #include "dfu/dfu_target_mcuboot.h"
 DEF_DFU_TARGET(mcuboot);
 #endif
-#ifdef CONFIG_DFU_TARGET_FLASH
-#include "dfu/dfu_target_flash.h"
-DEF_DFU_TARGET(flash);
+#ifdef CONFIG_DFU_TARGET_MODEM_FULL
+#include "dfu/dfu_target_modem_full.h"
+DEF_DFU_TARGET(modem_full);
 #endif
 
 #define MIN_SIZE_IDENTIFY_BUF 0x280

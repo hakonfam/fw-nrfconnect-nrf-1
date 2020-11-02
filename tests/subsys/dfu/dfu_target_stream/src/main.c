@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Nordic Semiconductor ASA
+ * Copyright (c) 2020 Nordic Semiconductor ASA
  *
  * SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
  */
@@ -17,24 +17,15 @@
 #define TEST_ID_1 "test_1"
 #define TEST_ID_2 "test_2"
 
-#define BUF_LEN 1400 /* Note, not page aligned */
+#define BUF_LEN 14000 /* Note, not page aligned */
 
-static struct device *fdev;
+static const struct device *fdev;
 static uint8_t sbuf[128];
 static uint8_t read_buf[BUF_LEN];
 static uint8_t write_buf[BUF_LEN] = {[0 ... BUF_LEN - 1] = 0xaa};
 
 static void test_dfu_target_stream(void)
 {
-	/*
-	 * To test:
-	 *  - Parameter checks
-	 *  - Complete write which is not aligned.
-	 *  - Start update, cancel it, start different update
-	 *  - Start update, finish it, start different update
-	 *  - Start update, start other update, verify failure on second,
-	 *    and that the first is able to finish.
-	 */
 	int err;
 	size_t offset;
 
@@ -70,14 +61,18 @@ static void test_dfu_target_stream(void)
 	err = dfu_target_stream_offset_get(&offset);
 	zassert_equal(err, 0, "Unexpected failure");
 
-	zassert_equal(offset, sizeof(write_buf), "Invalid offset");
+	/* Since 'write_buf' is not page aligned, the 'offset' should not
+	 * correspond to the sice written.
+	 */
+	zassert_not_equal(offset, sizeof(write_buf), "Invalid offset");
 
 	/* Complete transfer */
 	err = dfu_target_stream_done(true);
 	zassert_equal(err, 0, "Unexpected failure");
 
 	/* Call _init again after calling "_done". This should NOT result
-	 * in an error since the id should be reset.
+	 * in an error since the id should be reset, and the setting
+	 * should be deleted.
 	 */
 	err = dfu_target_stream_init(TEST_ID_2, fdev, sbuf, sizeof(sbuf),
 				     FLASH_BASE, 0, NULL);
@@ -90,19 +85,100 @@ static void test_dfu_target_stream(void)
 	
 }
 
-#ifdef CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS
 static void test_dfu_target_stream_save_progress(void)
 {
+	int err;
+	size_t first_offset;
+	size_t second_offset;
+
+	/* Reset state to avoid failure when initializing */
+	err = dfu_target_stream_done(true);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	err = dfu_target_stream_init(TEST_ID_1, fdev, sbuf, sizeof(sbuf),
+				     FLASH_BASE, 0, NULL);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	/* Perform write, and verify offset */
+	err = dfu_target_stream_write(write_buf, sizeof(write_buf)/2);
+	zassert_equal(err, 0, "Unexpected failure");
+	
+	err = dfu_target_stream_offset_get(&first_offset);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	/* Complete transfer with failure */
+	err = dfu_target_stream_done(false);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	/* Re-initialize dfu target, don't perform any write operation, and
+	 * verify that the offsets are the same.
+	 */
+	err = dfu_target_stream_init(TEST_ID_1, fdev, sbuf, sizeof(sbuf),
+				     FLASH_BASE, 0, NULL);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	err = dfu_target_stream_offset_get(&second_offset);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	zassert_equal(first_offset, second_offset, "Offsets do not match");
+
+	/* Complete transfer with success */
+	err = dfu_target_stream_done(true);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	/* Re-initialize dfu target, don't perform any write operation, and
+	 * verify that the offset is now 0, since we had a succesfull 'done'.
+	 */
+	err = dfu_target_stream_init(TEST_ID_1, fdev, sbuf, sizeof(sbuf),
+				     FLASH_BASE, 0, NULL);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	err = dfu_target_stream_offset_get(&second_offset);
+	zassert_equal(err, 0, "Unexpected failure");
+	zassert_equal(0, second_offset, "Offsets do not match");
+
+	/* Next we ensure that changing the target results in the offset
+	 * being reset
+	 */
+
+	/* Complete transfer with success */
+	err = dfu_target_stream_done(true);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	/* Re-initialize dfu target, for 'TEST_ID_1' */
+	err = dfu_target_stream_init(TEST_ID_1, fdev, sbuf, sizeof(sbuf),
+				     FLASH_BASE, 0, NULL);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	/* Verify that offset is 0 */
+	err = dfu_target_stream_offset_get(&first_offset);
+	zassert_equal(err, 0, "Unexpected failure");
+	zassert_equal(0, first_offset, "Offsets do not match");
+
+	/* Perform write, and verify that offset has changed*/
+	err = dfu_target_stream_write(write_buf, sizeof(write_buf));
+	zassert_equal(err, 0, "Unexpected failure");
+
+	/* Verify that the offset is not 0 anymore */
+	err = dfu_target_stream_offset_get(&second_offset);
+	zassert_equal(err, 0, "Unexpected failure");
+	zassert_not_equal(second_offset, first_offset, "Offset hasn't updated");
+
+	/* Complete transfer with failure, this retains the non-0 offset */
+	err = dfu_target_stream_done(false);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	/* Re-initialize dfu target, for 'TEST_ID_2', verify that the offset
+	 * loaded is 0 even though it was just retained an non-0 for TEST_ID_1
+	 */
+	err = dfu_target_stream_init(TEST_ID_2, fdev, sbuf, sizeof(sbuf),
+				     FLASH_BASE, 0, NULL);
+	zassert_equal(err, 0, "Unexpected failure");
+
+	err = dfu_target_stream_offset_get(&first_offset);
+	zassert_equal(err, 0, "Unexpected failure");
+	zassert_equal(0, first_offset, "Offsets has not been reset");
 }
-
-#else
-static void test_dfu_target_stream_save_progress(void)
-{
-	ztest_test_skip();
-}
-
-
-#endif /* CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS */
 
 void test_main(void)
 {

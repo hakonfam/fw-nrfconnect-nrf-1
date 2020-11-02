@@ -11,8 +11,8 @@
  * @brief DFU Target full modem updates.
  */
 
-#ifndef DFU_TARGET_FLASH_H__
-#define DFU_TARGET_FLASH_H__
+#ifndef DFU_TARGET_MODEM_FULL_H__
+#define DFU_TARGET_MODEM_FULL_H__
 
 #include <stddef.h>
 
@@ -69,6 +69,6 @@ int dfu_target_modem_full_write(const void *const buf, size_t len);
  */
 int dfu_target_modem_full_done(bool successful);
 
-#endif /* DFU_TARGET_FLASH_H__ */
+#endif /* DFU_TARGET_MODEM_FULL_H__ */
 
 /**@} */
