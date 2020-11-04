@@ -16,13 +16,13 @@
 #include <dfu/mcuboot.h>
 
 #define LED_PORT DT_GPIO_LABEL(DT_ALIAS(led0), gpios)
-#define BUTTON1 DT_GPIO_LABEL(DT_ALIAS(led0), gpios)
 #define TLS_SEC_TAG 42
 
 static const struct device *gpiob;
-static struct gpio_cb_b1;
-static struct gpio_cb_b2;
-static struct k_work	fota_work;
+static struct gpio_callback gpio_cb_b1;
+static struct gpio_callback gpio_cb_b2;
+static struct k_work fota_work;
+static struct k_work fmfu_work;
 
 
 /**@brief Recoverable BSD library error. */
@@ -105,6 +105,18 @@ static void app_dfu_transfer_start(struct k_work *unused)
 
 }
 
+static void fmfu_transfer_start(struct k_work *unused)
+{
+        static int count;
+        printk("Started FMFU %d\n", ++count);
+
+        /* Re-enable button callback */
+        gpio_pin_interrupt_configure(gpiob, DT_GPIO_PIN(DT_ALIAS(sw1), gpios),
+                                     GPIO_INT_EDGE_TO_ACTIVE);
+
+
+}
+
 /**@brief Turn on LED0 and LED1 if CONFIG_APPLICATION_VERSION
  * is 2 and LED0 otherwise.
  */
@@ -135,6 +147,14 @@ void dfu_button_pressed(const struct device *gpiob, struct gpio_callback *cb,
 {
 	k_work_submit(&fota_work);
 	gpio_pin_interrupt_configure(gpiob, DT_GPIO_PIN(DT_ALIAS(sw0), gpios),
+				     GPIO_INT_DISABLE);
+}
+
+void fmfu_button_pressed(const struct device *gpiob, struct gpio_callback *cb,
+			 uint32_t pins)
+{
+	k_work_submit(&fmfu_work);
+	gpio_pin_interrupt_configure(gpiob, DT_GPIO_PIN(DT_ALIAS(sw1), gpios),
 				     GPIO_INT_DISABLE);
 }
 
@@ -181,7 +201,16 @@ static int dfu_buttons_init(void)
 			      DT_GPIO_FLAGS(DT_ALIAS(sw0), gpios),
 			      &gpio_cb_b1, dfu_button_pressed);
 	if (err != 0) {
-		printk("dfu_button_init failed: %d\n", err);
+		printk("dfu_button_init failed for sw0: %d\n", err);
+		return 1;
+	}
+
+	err = dfu_button_init(DT_GPIO_LABEL(DT_ALIAS(sw1), gpios),
+			      DT_GPIO_PIN(DT_ALIAS(sw1), gpios),
+			      DT_GPIO_FLAGS(DT_ALIAS(sw1), gpios),
+			      &gpio_cb_b2, fmfu_button_pressed);
+	if (err != 0) {
+		printk("dfu_button_init failed for sw1: %d\n", err);
 		return 1;
 	}
 
@@ -242,6 +271,7 @@ static int application_init(void)
 	int err;
 
 	k_work_init(&fota_work, app_dfu_transfer_start);
+	k_work_init(&fmfu_work, fmfu_transfer_start);
 
 	err = dfu_buttons_init();
 	if (err != 0) {
@@ -309,5 +339,7 @@ void main(void)
 		return;
 	}
 
-	printk("Press Button 1 to start the FOTA download\n");
+	printk("Choose what upgrade to download:\n");
+	printk("Press Button 1 for application firmware update\n");
+	printk("Press Button 2 for full modem firmware update (fmfu)\n");
 }
