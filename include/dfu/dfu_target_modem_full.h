@@ -15,15 +15,28 @@
 #define DFU_TARGET_MODEM_FULL_H__
 
 #include <stddef.h>
+#include <sys/types.h>
+#include <device.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 
-int dfu_target_modem_full_cfg(uint8_t *buf, size_t len, struct device *dev,
-			      off_t dev_offset, size_t dev_size);
-
+/**
+ * @brief Configure resources required by dfu_target_modem_full
+ *
+ * @param[in] buf Buffer to use for buffering streamed writes.
+ * @param[in] len Length of buf in bytes
+ * @param[in] dev Device to write the update to
+ * @param[in] dev_offset Offset within the device to store the update to
+ * @param[in] dev_size Total size of the device
+ *
+ * @retval non-negative integer if successful, otherwise negative errno.
+ */
+int dfu_target_modem_full_cfg(uint8_t *buf, size_t len,
+			      const struct device *dev, off_t dev_offset,
+			      size_t dev_size);
 
 /**
  * @brief See if data in buf indicates a full modem update.
@@ -39,7 +52,8 @@ bool dfu_target_modem_full_identify(const void *const buf);
  *
  * @retval 0 If successful, negative errno otherwise.
  */
-int dfu_target_modem_full_init(size_t file_size);
+int dfu_target_modem_full_init(size_t file_size,
+			       dfu_target_callback_t callback);
 
 /**
  * @brief Get offset of firmware
@@ -61,9 +75,10 @@ int dfu_target_modem_full_offset_get(size_t *offset);
 int dfu_target_modem_full_write(const void *const buf, size_t len);
 
 /**
- * @brief Deinitialize resources and finalize firmware upgrade if successful.
+ * @brief De-initialize resources and finalize firmware upgrade if successful.
 
- * @param[in] successful Indicate whether the firmware was successfully recived.
+ * @param[in] successful Indicate whether the firmware was successfully
+ *            received.
  *
  * @return 0 on success, negative errno otherwise.
  */

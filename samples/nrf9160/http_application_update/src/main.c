@@ -15,11 +15,13 @@
 #include <net/fota_download.h>
 #include <dfu/mcuboot.h>
 
-#define LED_PORT	DT_GPIO_LABEL(DT_ALIAS(led0), gpios)
+#define LED_PORT DT_GPIO_LABEL(DT_ALIAS(led0), gpios)
+#define BUTTON1 DT_GPIO_LABEL(DT_ALIAS(led0), gpios)
 #define TLS_SEC_TAG 42
 
-static const struct	device *gpiob;
-static struct		gpio_callback gpio_cb;
+static const struct device *gpiob;
+static struct gpio_cb_b1;
+static struct gpio_cb_b2;
 static struct k_work	fota_work;
 
 
@@ -136,33 +138,53 @@ void dfu_button_pressed(const struct device *gpiob, struct gpio_callback *cb,
 				     GPIO_INT_DISABLE);
 }
 
-static int dfu_button_init(void)
+static int dfu_button_init(const char *label, gpio_pin_t pin,
+			   gpio_flags_t flags, struct gpio_callback *cb,
+			   gpio_callback_handler_t handler)
 {
 	int err;
 
-	gpiob = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(sw0), gpios));
+	gpiob = device_get_binding(label);
 	if (gpiob == 0) {
 		printk("Nordic nRF GPIO driver was not found!\n");
 		return 1;
 	}
-	err = gpio_pin_configure(gpiob, DT_GPIO_PIN(DT_ALIAS(sw0), gpios),
-				 GPIO_INPUT |
-				 DT_GPIO_FLAGS(DT_ALIAS(sw0), gpios));
-	if (err == 0) {
-		gpio_init_callback(&gpio_cb, dfu_button_pressed,
-			BIT(DT_GPIO_PIN(DT_ALIAS(sw0), gpios)));
-		err = gpio_add_callback(gpiob, &gpio_cb);
-	}
-	if (err == 0) {
-		err = gpio_pin_interrupt_configure(gpiob,
-						   DT_GPIO_PIN(DT_ALIAS(sw0),
-							       gpios),
-						   GPIO_INT_EDGE_TO_ACTIVE);
-	}
+	err = gpio_pin_configure(gpiob, pin, GPIO_INPUT | flags);
 	if (err != 0) {
-		printk("Unable to configure SW0 GPIO pin!\n");
+		printk("gpio_pin_configure failed: %d\n", err);
+		return err;
+	}
+
+	gpio_init_callback(cb, handler, BIT(pin));
+	err = gpio_add_callback(gpiob, cb);
+	if (err != 0) {
+		printk("gpio_add_callback failed: %d\n", err);
+		return err;
+	}
+
+	err = gpio_pin_interrupt_configure(gpiob, pin, GPIO_INT_EDGE_TO_ACTIVE);
+	if (err != 0) {
+		printk("gpio_pin_interrupt_configure failed: %d\n", err);
+		return err;
+	}
+
+	return 0;
+
+}
+
+static int dfu_buttons_init(void)
+{
+	int err;
+
+	err = dfu_button_init(DT_GPIO_LABEL(DT_ALIAS(sw0), gpios),
+			      DT_GPIO_PIN(DT_ALIAS(sw0), gpios),
+			      DT_GPIO_FLAGS(DT_ALIAS(sw0), gpios),
+			      &gpio_cb_b1, dfu_button_pressed);
+	if (err != 0) {
+		printk("dfu_button_init failed: %d\n", err);
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -221,7 +243,7 @@ static int application_init(void)
 
 	k_work_init(&fota_work, app_dfu_transfer_start);
 
-	err = dfu_button_init();
+	err = dfu_buttons_init();
 	if (err != 0) {
 		return err;
 	}
