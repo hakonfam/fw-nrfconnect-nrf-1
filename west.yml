@@ -37,6 +37,8 @@ manifest:
       url-base: https://github.com/hakonfam
     - name: sigvartmh
       url-base: https://github.com/sigvartmh
+    - name: playground
+      url-base: https://github.com/NordicPlayground
 
   # If not otherwise specified, the projects below should be obtained
   # from the ncs remote.
@@ -134,6 +136,12 @@ manifest:
       repo-path: cddl_gen
       revision: 9b7aeceae415fe24ad6f9074f455041e138dd3b2
       path: modules/lib/cddl_gen
+    - name: libmodem
+      remote: playground
+      repo-path: libmodem
+      revision: pull/14/head
+      path: libmodem
+
 
   # West-related configuration for the nrf repository.
   self:
