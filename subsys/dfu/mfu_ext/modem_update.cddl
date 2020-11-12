@@ -8,7 +8,7 @@ Segments = [ + Segment ]
 Manifest = [
     version: uint,
     compat: uint,
-    blob_hash: bstr,
+    blob_hash: bstr .size 32,
     segments: bstr .cbor Segments
 ]
 
@@ -18,14 +18,14 @@ COSE_Sign1_Manifest = [
     protected: bstr .cbor header_map,
     unprotected: {},
     payload : bstr .cbor Manifest,
-    signature : bstr
+    signature : bstr .size 256
 ]
 
 header_map = {
-    1 => sign_ES256  ; algorithm identifier
+    1 => sign_RSA256  ; algorithm identifier
 }
 
-sign_ES256 = -7 ; ECDSA, SHA256
+sign_RSA256 = -37 ; RSASSA-PSS, SHA256
 
 Sig_structure1 = [
     context : "Signature1",

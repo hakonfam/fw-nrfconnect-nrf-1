@@ -17,7 +17,7 @@ typedef struct {
 } Segment_t;
 
 typedef struct {
-	Segment_t _Segments__Segment[3];
+	Segment_t _Segments__Segment[64];
 	size_t _Segments__Segment_count;
 } Segments_t;
 

@@ -32,7 +32,7 @@ static bool decode_header_map(
 	bool int_res;
 
 	bool result = (((map_start_decode(p_state) && (int_res = ((((uintx32_expect(p_state, (1))))
-	&& (intx32_expect(p_state, (-7))))), ((map_end_decode(p_state)) && int_res)))));
+	&& (intx32_expect(p_state, (-37))))), ((map_end_decode(p_state)) && int_res)))));
 
 	if (!result)
 	{
@@ -50,7 +50,9 @@ static bool decode_Manifest(
 
 	bool result = (((list_start_decode(p_state) && (int_res = (((uintx32_decode(p_state, (&(*p_result)._Manifest_version))))
 	&& ((uintx32_decode(p_state, (&(*p_result)._Manifest_compat))))
-	&& ((bstrx_decode(p_state, (&(*p_result)._Manifest_blob_hash))))
+	&& ((bstrx_decode(p_state, (&(*p_result)._Manifest_blob_hash)))
+	&& ((*p_result)._Manifest_blob_hash.len >= 32)
+	&& ((*p_result)._Manifest_blob_hash.len <= 32))
 	&& ((bstrx_decode(p_state, (&(*p_result)._Manifest_segments))))), ((list_end_decode(p_state)) && int_res)))));
 
 	if (!result)
@@ -72,7 +74,9 @@ static bool decode_COSE_Sign1_Manifest(
 	&& ((map_start_decode(p_state) && map_end_decode(p_state)))
 	&& (((int_res = (bstrx_cbor_start_decode(p_state, &(*p_result)._COSE_Sign1_Manifest_payload)
 	&& ((decode_Manifest(p_state, (&(*p_result)._COSE_Sign1_Manifest_payload_cbor)))))), bstrx_cbor_end_decode(p_state), int_res))
-	&& ((bstrx_decode(p_state, (&(*p_result)._COSE_Sign1_Manifest_signature))))), ((list_end_decode(p_state)) && int_res)))));
+	&& ((bstrx_decode(p_state, (&(*p_result)._COSE_Sign1_Manifest_signature)))
+	&& ((*p_result)._COSE_Sign1_Manifest_signature.len >= 256)
+	&& ((*p_result)._COSE_Sign1_Manifest_signature.len <= 256))), ((list_end_decode(p_state)) && int_res)))));
 
 	if (!result)
 	{
@@ -88,7 +92,7 @@ static bool decode_Segments(
 	cbor_print("decode_Segments\n");
 	bool int_res;
 
-	bool result = (((list_start_decode(p_state) && (int_res = (multi_decode(1, 3, &(*p_result)._Segments__Segment_count, (void*)decode_Segment, p_state, (&(*p_result)._Segments__Segment), sizeof(Segment_t))), ((list_end_decode(p_state)) && int_res)))));
+	bool result = (((list_start_decode(p_state) && (int_res = (multi_decode(1, 64, &(*p_result)._Segments__Segment_count, (void*)decode_Segment, p_state, (&(*p_result)._Segments__Segment), sizeof(Segment_t))), ((list_end_decode(p_state)) && int_res)))));
 
 	if (!result)
 	{

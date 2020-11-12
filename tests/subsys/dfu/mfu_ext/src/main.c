@@ -11,6 +11,7 @@
 #include <device.h>
 #include <drivers/flash.h>
 #include <dfu/mfu_ext.h>
+#include <modem_update_decode.h>
 
 #if USE_PARTITION_MANAGER
 #include <pm_config.h>
@@ -51,6 +52,17 @@ uint8_t mfu_pk[] = {
 	0xcd, 0x43, 0xe9, 0xff, 0x12, 0x13, 0xdb, 0x92,
 	0xdb, 0x04, 0x6c, 0x8a, 0x71, 0x87, 0x08, 0xda
 };
+
+
+static void test_real(void)
+{
+	COSE_Sign1_Manifest_t manifest;
+	size_t len;
+
+	bool res = cbor_decode_Wrapper(real_pk, sizeof(real_pk), &manifest,
+				       &len);
+	zassert_true(res, "FAIL");
+}
 
 static void test_mfu_ext_load_segments(void)
 {
@@ -94,6 +106,7 @@ static void test_mfu_ext_prevalidate(void)
 void test_main(void)
 {
 	ztest_test_suite(lib_mfu_ext_test,
+	     ztest_unit_test(test_real),
 	     ztest_unit_test(test_mfu_ext_load_segments),
 	     ztest_unit_test(test_mfu_ext_prevalidate)
 	 );

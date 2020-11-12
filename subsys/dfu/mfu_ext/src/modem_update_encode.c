@@ -33,7 +33,7 @@ static bool encode_header_map(
 	bool int_res;
 
 	bool result = (((map_start_encode(p_state, 1) && (int_res = ((((uintx32_encode(p_state, ((tmp_value=1, &tmp_value)))))
-	&& (intx32_encode(p_state, ((tmp_value=-7, &tmp_value)))))), ((map_end_encode(p_state, 1)) && int_res)))));
+	&& (intx32_encode(p_state, ((tmp_value=-37, &tmp_value)))))), ((map_end_encode(p_state, 1)) && int_res)))));
 
 	if (!result)
 	{
@@ -51,7 +51,9 @@ static bool encode_Manifest(
 
 	bool result = (((list_start_encode(p_state, 4) && (int_res = (((uintx32_encode(p_state, (&(*p_input)._Manifest_version))))
 	&& ((uintx32_encode(p_state, (&(*p_input)._Manifest_compat))))
-	&& ((bstrx_encode(p_state, (&(*p_input)._Manifest_blob_hash))))
+	&& (((*p_input)._Manifest_blob_hash.len >= 32)
+	&& ((*p_input)._Manifest_blob_hash.len <= 32)
+	&& (bstrx_encode(p_state, (&(*p_input)._Manifest_blob_hash))))
 	&& ((bstrx_encode(p_state, (&(*p_input)._Manifest_segments))))), ((list_end_encode(p_state, 4)) && int_res)))));
 
 	if (!result)
@@ -73,7 +75,9 @@ static bool encode_COSE_Sign1_Manifest(
 	&& ((map_start_encode(p_state, 0) && map_end_encode(p_state, 0)))
 	&& (((*p_input)._COSE_Sign1_Manifest_payload.value ? ((bstrx_encode(p_state, (&(*p_input)._COSE_Sign1_Manifest_payload)))) : (((int_res = (bstrx_cbor_start_encode(p_state, &(*p_input)._COSE_Sign1_Manifest_payload)
 	&& ((encode_Manifest(p_state, (&(*p_input)._COSE_Sign1_Manifest_payload_cbor)))))), bstrx_cbor_end_encode(p_state), int_res))))
-	&& ((bstrx_encode(p_state, (&(*p_input)._COSE_Sign1_Manifest_signature))))), ((list_end_encode(p_state, 4)) && int_res)))));
+	&& (((*p_input)._COSE_Sign1_Manifest_signature.len >= 256)
+	&& ((*p_input)._COSE_Sign1_Manifest_signature.len <= 256)
+	&& (bstrx_encode(p_state, (&(*p_input)._COSE_Sign1_Manifest_signature))))), ((list_end_encode(p_state, 4)) && int_res)))));
 
 	if (!result)
 	{
@@ -89,7 +93,7 @@ static bool encode_Segments(
 	cbor_print("encode_Segments\n");
 	bool int_res;
 
-	bool result = (((list_start_encode(p_state, 6) && (int_res = (multi_encode(1, 3, &(*p_input)._Segments__Segment_count, (void*)encode_Segment, p_state, (&(*p_input)._Segments__Segment), sizeof(Segment_t))), ((list_end_encode(p_state, 6)) && int_res)))));
+	bool result = (((list_start_encode(p_state, 128) && (int_res = (multi_encode(1, 64, &(*p_input)._Segments__Segment_count, (void*)encode_Segment, p_state, (&(*p_input)._Segments__Segment), sizeof(Segment_t))), ((list_end_encode(p_state, 128)) && int_res)))));
 
 	if (!result)
 	{

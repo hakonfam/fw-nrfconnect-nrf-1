@@ -16,25 +16,27 @@ target_sources(app
   src/main.c
   )
 
+set(mfu_ext ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext)
+
 set(GENERATE True)
 
 if (GENERATE)
   generate_cddl(
-    ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext/modem_update.cddl
+    ${mfu_ext}/modem_update.cddl
     ENTRY_TYPES Wrapper Sig_structure1 Segments
     DECODE
-    C_FILE ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext/src/modem_update_decode.c
-    H_FILE ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext/include/modem_update_decode.h
-    TYPE_FILE ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext/include/modem_update_types.h
+    C_FILE ${mfu_ext}/src/modem_update_decode.c
+    H_FILE ${mfu_ext}/include/modem_update_decode.h
+    TYPE_FILE ${mfu_ext}/include/modem_update_types.h
     )
 
   generate_cddl(
-    ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext/modem_update.cddl
+    ${mfu_ext}/modem_update.cddl
     ENTRY_TYPES Wrapper Sig_structure1 Segments
     ENCODE
-    C_FILE ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext/src/modem_update_encode.c
-    H_FILE ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext/include/modem_update_encode.h
-    TYPE_FILE ${CMAKE_CURRENT_LIST_DIR}/../../../../subsys/dfu/mfu_ext/include/modem_update_types.h
+    C_FILE ${mfu_ext}/src/modem_update_encode.c
+    H_FILE ${mfu_ext}/include/modem_update_encode.h
+    TYPE_FILE ${mfu_ext}/include/modem_update_types.h
     )
 endif()
 

@@ -6,10 +6,7 @@
 
 menuconfig MFU_EXT
 	bool "Modem Firmware Upgrade from external flash"
-	select NORDIC_SECURITY_BACKEND
-	select CC3XX_BACKEND
-	select MBEDTLS_ENABLE_HEAP
-	select CDDL_GEN
+	depends on CDDL_GEN
 
 
 if (MFU_EXT)
