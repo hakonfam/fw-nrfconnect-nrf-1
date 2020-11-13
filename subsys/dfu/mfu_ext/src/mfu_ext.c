@@ -9,6 +9,7 @@
 #include <logging/log.h>
 #include <dfu/mfu_ext.h>
 #include <nrf_fmfu.h>
+#include <export/nrf_fmfu.h>
 #include <mbedtls/sha256.h>
 
 LOG_MODULE_REGISTER(mfu_ext, CONFIG_MFU_EXT_LOG_LEVEL);
@@ -21,13 +22,7 @@ static size_t buf_len;
 int mfu_ext_init(uint8_t *buf_in, size_t buf_len_in)
 {
 	int err;
-	struct nrf_fmfu_digest_buffer_t digest_buffer;
-	size_t modem_buffer_length;
-
-	err = nrf_fmfu_init(&digest_buffer, &modem_buffer_length);
-	if (err != 0) {
-		LOG_ERR("nrf_fmfu_init failed: %d\n", err);
-	}
+	struct nrf_fmfu_digest digest_buffer;
 
 	if (buf_in == NULL) {
 		return -EINVAL;
@@ -35,6 +30,11 @@ int mfu_ext_init(uint8_t *buf_in, size_t buf_len_in)
 
 	buf = buf_in;
 	buf_len = buf_len_in;
+
+	err = nrf_fmfu_init(&digest_buffer, buf_len, buf);
+	if (err != 0) {
+		LOG_ERR("nrf_fmfu_init failed: %d\n", err);
+	}
 
 	return 0;
 
@@ -193,9 +193,6 @@ static int load_segment(const struct device *fdev, size_t seg_size,
 	int err;
 	uint32_t read_addr = seg_offset;
 	size_t bytes_left = seg_size;
-	struct nrf_fmfu_memory_chunk_t chunk = \
-		{.data = buf,
-		 .target_address = seg_target_addr};
 
 	while (bytes_left) {
 		uint32_t read_len = MIN(RPC_BUFFER_SIZE, bytes_left);
@@ -205,17 +202,17 @@ static int load_segment(const struct device *fdev, size_t seg_size,
 			return err;
 		}
 
-		chunk.data_len = read_len;
-		err = nrf_fmfu_write_memory_chunk(&chunk);
+		err = nrf_fmfu_memory_chunk_write(seg_target_addr, read_len,
+						  buf);
 		if (err != 0) {
 			LOG_ERR("nrf_fmfu_write_memory_chunk failed: %d", err);
 			return err;
 		}
 
 		LOG_DBG("wrote chunk: offset 0x%x target addr 0x%x size 0x%x", \
-			read_addr, chunk.target_address, chunk.data_len);
+			read_addr, seg_target_addr, read_len);
 
-		chunk.target_address += read_len;
+		seg_target_addr += read_len;
 		bytes_left -= read_len;
 		read_addr += read_len;
 	}

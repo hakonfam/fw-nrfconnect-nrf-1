@@ -33,8 +33,8 @@ manifest:
       url-base: https://github.com/nanopb
     - name: alexa
       url-base: https://github.com/alexa
-    - name: hakonfam
-      url-base: https://github.com/hakonfam
+    - name: oyro
+      url-base: https://github.com/oyvindronningstad
     - name: sigvartmh
       url-base: https://github.com/sigvartmh
     - name: playground
@@ -132,9 +132,9 @@ manifest:
       revision: face92d8c62184832793f518bb1f19379538c5c1
       remote: alexa
     - name: cddl-gen
-      remote: hakonfam
+      remote: oyro
       repo-path: cddl_gen
-      revision: 9b7aeceae415fe24ad6f9074f455041e138dd3b2
+      revision: master
       path: modules/lib/cddl_gen
     - name: libmodem
       remote: playground

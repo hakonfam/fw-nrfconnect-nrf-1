@@ -16,7 +16,7 @@
 #include <net/socket.h>
 #include <nrf_socket.h>
 #include <dfu/mcuboot.h>
-#include <nrf_fmfu.h>
+#include <export/nrf_fmfu.h>
 #include <dfu/dfu_target_mcuboot.h>
 #include <dfu/dfu_target_modem_full.h>
 #include <dfu/mfu_ext.h>
@@ -32,7 +32,7 @@ static struct gpio_callback gpio_cb_b2;
 static struct k_work fota_work;
 static struct k_work fmfu_work;
 static char modem_version[256];
-static uint8_t fota_buf[8*1024];
+static uint8_t fota_buf[NRF_FMFU_MODEM_BUFFER_SIZE];
 static bool downloading_modem_firmware;
 
 #ifndef CONFIG_USE_HTTPS
