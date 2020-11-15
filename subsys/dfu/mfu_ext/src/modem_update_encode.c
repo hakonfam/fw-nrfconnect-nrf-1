@@ -10,43 +10,39 @@
 
 
 static bool encode_Segment(
-		cbor_state_t *p_state, const Segment_t * p_input)
+		cbor_state_t *p_state, const Segment_t *p_input)
 {
-	cbor_print("encode_Segment\n");
+	cbor_print(__func__ "\n");
 
 	bool result = (((((uintx32_encode(p_state, (&(*p_input)._Segment_target_addr))))
 	&& ((uintx32_encode(p_state, (&(*p_input)._Segment_len)))))));
 
 	if (!result)
-	{
 		cbor_trace();
-	}
 
 	return result;
 }
 
 static bool encode_header_map(
-		cbor_state_t *p_state, const void * p_input)
+		cbor_state_t *p_state, const void *p_input)
 {
-	cbor_print("encode_header_map\n");
+	cbor_print(__func__ "\n");
 	uint32_t tmp_value;
 	bool int_res;
 
-	bool result = (((map_start_encode(p_state, 1) && (int_res = ((((uintx32_encode(p_state, ((tmp_value=1, &tmp_value)))))
-	&& (intx32_encode(p_state, ((tmp_value=-37, &tmp_value)))))), ((map_end_encode(p_state, 1)) && int_res)))));
+	bool result = (((map_start_encode(p_state, 1) && (int_res = ((((uintx32_encode(p_state, ((tmp_value = 1, &tmp_value)))))
+	&& (intx32_encode(p_state, ((tmp_value = -37, &tmp_value)))))), ((map_end_encode(p_state, 1)) && int_res)))));
 
 	if (!result)
-	{
 		cbor_trace();
-	}
 
 	return result;
 }
 
 static bool encode_Manifest(
-		cbor_state_t *p_state, const Manifest_t * p_input)
+		cbor_state_t *p_state, const Manifest_t *p_input)
 {
-	cbor_print("encode_Manifest\n");
+	cbor_print(__func__ "\n");
 	bool int_res;
 
 	bool result = (((list_start_encode(p_state, 4) && (int_res = (((uintx32_encode(p_state, (&(*p_input)._Manifest_version))))
@@ -57,17 +53,15 @@ static bool encode_Manifest(
 	&& ((bstrx_encode(p_state, (&(*p_input)._Manifest_segments))))), ((list_end_encode(p_state, 4)) && int_res)))));
 
 	if (!result)
-	{
 		cbor_trace();
-	}
 
 	return result;
 }
 
 static bool encode_COSE_Sign1_Manifest(
-		cbor_state_t *p_state, const COSE_Sign1_Manifest_t * p_input)
+		cbor_state_t *p_state, const COSE_Sign1_Manifest_t *p_input)
 {
-	cbor_print("encode_COSE_Sign1_Manifest\n");
+	cbor_print(__func__ "\n");
 	bool int_res;
 
 	bool result = (((list_start_encode(p_state, 4) && (int_res = ((((*p_input)._COSE_Sign1_Manifest_protected.value ? ((bstrx_encode(p_state, (&(*p_input)._COSE_Sign1_Manifest_protected)))) : (((int_res = (bstrx_cbor_start_encode(p_state, &(*p_input)._COSE_Sign1_Manifest_protected)
@@ -80,33 +74,29 @@ static bool encode_COSE_Sign1_Manifest(
 	&& (bstrx_encode(p_state, (&(*p_input)._COSE_Sign1_Manifest_signature))))), ((list_end_encode(p_state, 4)) && int_res)))));
 
 	if (!result)
-	{
 		cbor_trace();
-	}
 
 	return result;
 }
 
 static bool encode_Segments(
-		cbor_state_t *p_state, const Segments_t * p_input)
+		cbor_state_t *p_state, const Segments_t *p_input)
 {
-	cbor_print("encode_Segments\n");
+	cbor_print(__func__ "\n");
 	bool int_res;
 
-	bool result = (((list_start_encode(p_state, 128) && (int_res = (multi_encode(1, 64, &(*p_input)._Segments__Segment_count, (void*)encode_Segment, p_state, (&(*p_input)._Segments__Segment), sizeof(Segment_t))), ((list_end_encode(p_state, 128)) && int_res)))));
+	bool result = (((list_start_encode(p_state, 128) && (int_res = (multi_encode(1, 64, &(*p_input)._Segments__Segment_count, (void *)encode_Segment, p_state, (&(*p_input)._Segments__Segment), sizeof(Segment_t))), ((list_end_encode(p_state, 128)) && int_res)))));
 
 	if (!result)
-	{
 		cbor_trace();
-	}
 
 	return result;
 }
 
 static bool encode_Sig_structure1(
-		cbor_state_t *p_state, const Sig_structure1_t * p_input)
+		cbor_state_t *p_state, const Sig_structure1_t *p_input)
 {
-	cbor_print("encode_Sig_structure1\n");
+	cbor_print(__func__ "\n");
 	cbor_string_type_t tmp_str;
 	bool int_res;
 
@@ -117,25 +107,21 @@ static bool encode_Sig_structure1(
 	&& ((bstrx_encode(p_state, (&(*p_input)._Sig_structure1_payload))))), ((list_end_encode(p_state, 4)) && int_res)))));
 
 	if (!result)
-	{
 		cbor_trace();
-	}
 
 	return result;
 }
 
 static bool encode_Wrapper(
-		cbor_state_t *p_state, const COSE_Sign1_Manifest_t * p_input)
+		cbor_state_t *p_state, const COSE_Sign1_Manifest_t *p_input)
 {
-	cbor_print("encode_Wrapper\n");
+	cbor_print(__func__ "\n");
 
 	bool result = ((tag_encode(p_state, 18)
 	&& (encode_COSE_Sign1_Manifest(p_state, (&(*p_input))))));
 
 	if (!result)
-	{
 		cbor_trace();
-	}
 
 	return result;
 }
@@ -143,8 +129,8 @@ static bool encode_Wrapper(
 
 
 bool cbor_encode_Wrapper(
-		uint8_t * p_payload, size_t payload_len,
-		const COSE_Sign1_Manifest_t * p_input,
+		uint8_t *p_payload, size_t payload_len,
+		const COSE_Sign1_Manifest_t *p_input,
 		size_t *p_payload_len_out)
 {
 	cbor_state_t state = {
@@ -174,8 +160,8 @@ bool cbor_encode_Wrapper(
 
 
 bool cbor_encode_Sig_structure1(
-		uint8_t * p_payload, size_t payload_len,
-		const Sig_structure1_t * p_input,
+		uint8_t *p_payload, size_t payload_len,
+		const Sig_structure1_t *p_input,
 		size_t *p_payload_len_out)
 {
 	cbor_state_t state = {
@@ -205,8 +191,8 @@ bool cbor_encode_Sig_structure1(
 
 
 bool cbor_encode_Segments(
-		uint8_t * p_payload, size_t payload_len,
-		const Segments_t * p_input,
+		uint8_t *p_payload, size_t payload_len,
+		const Segments_t *p_input,
 		size_t *p_payload_len_out)
 {
 	cbor_state_t state = {

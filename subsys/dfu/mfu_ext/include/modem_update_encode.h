@@ -14,20 +14,20 @@
 
 
 bool cbor_encode_Wrapper(
-		uint8_t * p_payload, size_t payload_len,
-		const COSE_Sign1_Manifest_t * p_input,
+		uint8_t *p_payload, size_t payload_len,
+		const COSE_Sign1_Manifest_t *p_input,
 		size_t *p_payload_len_out);
 
 
 bool cbor_encode_Sig_structure1(
-		uint8_t * p_payload, size_t payload_len,
-		const Sig_structure1_t * p_input,
+		uint8_t *p_payload, size_t payload_len,
+		const Sig_structure1_t *p_input,
 		size_t *p_payload_len_out);
 
 
 bool cbor_encode_Segments(
-		uint8_t * p_payload, size_t payload_len,
-		const Segments_t * p_input,
+		uint8_t *p_payload, size_t payload_len,
+		const Segments_t *p_input,
 		size_t *p_payload_len_out);
 
 

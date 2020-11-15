@@ -133,21 +133,8 @@ static void apply_fmfu(void)
 
 	flash_dev = device_get_binding(EXT_FLASH_DEVICE);
 
-	err = mfu_ext_init(fota_buf, sizeof(fota_buf));
-	if (err != 0 ) {
-		printk("mfu_ext_init failed: %d\n", err);
-		return;
-	}
-
-	err = mfu_ext_prevalidate(flash_dev, 0, &valid, &seg_offset,
-				  &blob_offset);
-	if (err != 0 ) {
-		printk("mfu_ext_prevalidate failed: %d\n", err);
-		return;
-	}
-
-	err = mfu_ext_load(flash_dev, seg_offset, blob_offset);
-	if (err != 0 ) {
+	err = mfu_ext_load(flash_dev, 0);
+	if (err != 0) {
 		printk("mfu_ext_load failed: %d\n", err);
 		return;
 	}
@@ -174,6 +161,15 @@ static void fmfu_transfer_start(struct k_work *unused)
 					0, 0);
 	if (err != 0) {
 		printk("dfu_target_modem_full_cfg failed: %d\n", err);
+		return;
+	}
+
+	/* We can re-use the fota_buf as mfu_ext is only executed once
+	 * the whole update has been downloaded.
+	 */
+	err = mfu_ext_init(fota_buf, sizeof(fota_buf));
+	if (err != 0) {
+		printk("mfu_ext_init failed: %d\n", err);
 		return;
 	}
 
@@ -428,8 +424,6 @@ void main(void)
 	printk("Initialized bsdlib\n");
 
 	modem_configure();
-
-	apply_fmfu();
 
 	boot_write_img_confirmed();
 

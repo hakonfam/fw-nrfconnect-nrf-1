@@ -14,20 +14,20 @@
 
 
 bool cbor_decode_Wrapper(
-		const uint8_t * p_payload, size_t payload_len,
-		COSE_Sign1_Manifest_t * p_result,
+		const uint8_t *p_payload, size_t payload_len,
+		COSE_Sign1_Manifest_t *p_result,
 		size_t *p_payload_len_out);
 
 
 bool cbor_decode_Sig_structure1(
-		const uint8_t * p_payload, size_t payload_len,
-		Sig_structure1_t * p_result,
+		const uint8_t *p_payload, size_t payload_len,
+		Sig_structure1_t *p_result,
 		size_t *p_payload_len_out);
 
 
 bool cbor_decode_Segments(
-		const uint8_t * p_payload, size_t payload_len,
-		Segments_t * p_result,
+		const uint8_t *p_payload, size_t payload_len,
+		Segments_t *p_result,
 		size_t *p_payload_len_out);
 
 
