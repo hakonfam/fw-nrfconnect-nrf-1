@@ -1,0 +1,6 @@
+tests:
+  dfu.fmfu_fdev:
+    platform_allow: native_posix nrf9160dk_nrf9160
+    tags: dfu fmfu_fdev
+    # TODO add overlay for 9160 with DK
+    # and add support for that as well
