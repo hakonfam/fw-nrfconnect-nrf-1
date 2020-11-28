@@ -9,6 +9,6 @@ cmake_minimum_required(VERSION 3.13.1)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(http_application_update)
 
+# NORDIC SDK APP START
 target_sources(app PRIVATE src/main.c)
-target_sources(app PRIVATE ../src/update.c)
-target_include_directories(app PRIVATE ../include)
+# NORDIC SDK APP END

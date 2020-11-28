@@ -15,34 +15,25 @@
 #include <net/fota_download.h>
 #include <net/socket.h>
 #include <nrf_socket.h>
-#include <dfu/mcuboot.h>
-#include <nrf_fmfu.h>
-#include <dfu/dfu_target_mcuboot.h>
-#include <dfu/dfu_target_modem_full.h>
-#include <dfu/fmfu_fdev.h>
 #include <stdio.h>
-
 
 #define LED_PORT DT_GPIO_LABEL(DT_ALIAS(led0), gpios)
 #define TLS_SEC_TAG 42
 
 static const struct device *gpiob;
-static struct gpio_callback gpio_cb_b1;
-static struct gpio_callback gpio_cb_b2;
+static struct gpio_callback gpio_cb;
 static struct k_work fota_work;
-static struct k_work fmfu_work;
-static char modem_version[256];
-static uint8_t fota_buf[NRF_FMFU_MODEM_BUFFER_SIZE];
-static bool downloading_modem_firmware;
+
+void (*finished_cb)(void);
+const char *(*host_get)(void);
+const char *(*file_get)(void);
+bool (*two_leds)(void);
 
 #ifndef CONFIG_USE_HTTPS
 #define SEC_TAG (-1)
 #else
 #define SEC_TAG (TLS_SEC_TAG)
 #endif
-
-#define EXT_FLASH_DEVICE DT_LABEL(DT_INST(0, jedec_spi_nor))
-
 
 /**@brief Recoverable modem library error. */
 void nrf_modem_recoverable_error_handler(uint32_t err)
@@ -94,30 +85,15 @@ int cert_provision(void)
 	return 0;
 }
 
-static void print_modem_version(void)
-{
-	int err = at_cmd_write("AT+CGMR", modem_version, sizeof(modem_version),
-				NULL);
-
-	__ASSERT(err == 0, "Failed reading modem version");
-
-	printk("Current modem firmware version: %s", modem_version);
-}
-
 /**@brief Start transfer of the file. */
-static void app_dfu_transfer_start(struct k_work *unused)
+static void update_transfer_start(struct k_work *unused)
 {
 	int retval;
 	char *apn = NULL;
 
-	retval = dfu_target_mcuboot_set_buf(fota_buf, sizeof(fota_buf));
-	if (retval != 0) {
-		printk("dfu_target_mcuboot_set_buf() failed, err %d\n", retval);
-		return;
-	}
-
-	retval = fota_download_start(CONFIG_DOWNLOAD_HOST,
-				     CONFIG_DOWNLOAD_FILE,
+	/* Functions for getting the host and file */
+	retval = fota_download_start(host_get(),
+				     file_get(),
 				     SEC_TAG,
 				     apn,
 				     0);
@@ -133,84 +109,7 @@ static void app_dfu_transfer_start(struct k_work *unused)
 
 }
 
-static void apply_fmfu(void)
-{
-	int err;
-	const struct device *flash_dev = device_get_binding(EXT_FLASH_DEVICE);
-
-	err = libmodem_shutdown();
-	if (err != 0) {
-		printk("libmodem_shutdown() failed: %d\n", err);
-		return;
-	}
-
-	err = fmfu_fdev_load(fota_buf, sizeof(fota_buf), flash_dev, 0);
-	if (err != 0) {
-		printk("fmfu_fdev_load failed: %d\n", err);
-		return;
-	}
-
-	err = libmodem_init();
-	if (err != 0) {
-		printk("libmodem_init() failed: %d\n", err);
-		return;
-	}
-
-	printk("Modem firmware update completed");
-	print_modem_version();
-
-}
-
-static void fmfu_transfer_start(struct k_work *unused)
-{
-	const struct device *flash_dev;
-	const char *file = CONFIG_DOWNLOAD_MODEM_0_FILE;
-	int err;
-	char *apn = NULL;
-
-	printk("Started full modem firmware update\n");
-
-	flash_dev = device_get_binding(EXT_FLASH_DEVICE);
-
-	/* Pass 0 as size since that tells the stream_flash module
-	 * that we want to use all the available flash in the device
-	 */
-	err = dfu_target_modem_full_cfg(fota_buf, sizeof(fota_buf), flash_dev,
-					0, 0);
-	if (err != 0) {
-		printk("dfu_target_modem_full_cfg failed: %d\n", err);
-		return;
-	}
-
-	/* Check if we should download modem 0 or 1 */
-	if (strncmp(modem_version, CONFIG_DOWNLOAD_MODEM_0_VERSION,
-		    strlen(CONFIG_DOWNLOAD_MODEM_0_VERSION)) == 0) {
-		file = CONFIG_DOWNLOAD_MODEM_1_FILE;
-	}
-
-	printk("Downloading modem firmware %s\n", file);
-
-	err = fota_download_start(CONFIG_DOWNLOAD_MODEM_HOST,
-				  file, SEC_TAG, apn, 0);
-	if (err != 0) {
-		/* Re-enable button callback */
-		gpio_pin_interrupt_configure(gpiob,
-					     DT_GPIO_PIN(DT_ALIAS(sw1), gpios),
-					     GPIO_INT_EDGE_TO_ACTIVE);
-
-		printk("fota_download_start() failed, err %d\n",
-			err);
-		return;
-	}
-
-	downloading_modem_firmware = true;
-}
-
-/**
- * Take function pointer as argument, true if 2 LEDs should flash,
- * false if 1 LED should flash.
- */
-static int led_app_version(void)
+static int led_init(void)
 {
 	const struct device *dev;
 
@@ -224,11 +123,12 @@ static int led_app_version(void)
 			   GPIO_OUTPUT_ACTIVE |
 			   DT_GPIO_FLAGS(DT_ALIAS(led0), gpios));
 
-#if CONFIG_APPLICATION_VERSION == 2
-	gpio_pin_configure(dev, DT_GPIO_PIN(DT_ALIAS(led1), gpios),
-			   GPIO_OUTPUT_ACTIVE |
-			   DT_GPIO_FLAGS(DT_ALIAS(led1), gpios));
-#endif
+	if (two_leds()) {
+		gpio_pin_configure(dev, DT_GPIO_PIN(DT_ALIAS(led1), gpios),
+				GPIO_OUTPUT_ACTIVE |
+				DT_GPIO_FLAGS(DT_ALIAS(led1), gpios));
+	}
+
 	return 0;
 }
 
@@ -240,70 +140,34 @@ void dfu_button_pressed(const struct device *gpiob, struct gpio_callback *cb,
 				     GPIO_INT_DISABLE);
 }
 
-void fmfu_button_pressed(const struct device *gpiob, struct gpio_callback *cb,
-			 uint32_t pins)
-{
-	k_work_submit(&fmfu_work);
-	gpio_pin_interrupt_configure(gpiob, DT_GPIO_PIN(DT_ALIAS(sw1), gpios),
-				     GPIO_INT_DISABLE);
-}
 
-static int dfu_button_init(const char *label, gpio_pin_t pin,
-			   gpio_flags_t flags, struct gpio_callback *cb,
-			   gpio_callback_handler_t handler)
+static int button_init(void)
 {
 	int err;
 
-	gpiob = device_get_binding(label);
+	gpiob = device_get_binding(DT_GPIO_LABEL(DT_ALIAS(sw0), gpios));
 	if (gpiob == 0) {
 		printk("Nordic nRF GPIO driver was not found!\n");
 		return 1;
 	}
-	err = gpio_pin_configure(gpiob, pin, GPIO_INPUT | flags);
-	if (err != 0) {
-		printk("gpio_pin_configure failed: %d\n", err);
-		return err;
+	err = gpio_pin_configure(gpiob, DT_GPIO_PIN(DT_ALIAS(sw0), gpios),
+				 GPIO_INPUT |
+				 DT_GPIO_FLAGS(DT_ALIAS(sw0), gpios));
+	if (err == 0) {
+		gpio_init_callback(&gpio_cb, dfu_button_pressed,
+			BIT(DT_GPIO_PIN(DT_ALIAS(sw0), gpios)));
+		err = gpio_add_callback(gpiob, &gpio_cb);
 	}
-
-	gpio_init_callback(cb, handler, BIT(pin));
-	err = gpio_add_callback(gpiob, cb);
-	if (err != 0) {
-		printk("gpio_add_callback failed: %d\n", err);
-		return err;
+	if (err == 0) {
+		err = gpio_pin_interrupt_configure(gpiob,
+						   DT_GPIO_PIN(DT_ALIAS(sw0),
+							       gpios),
+						   GPIO_INT_EDGE_TO_ACTIVE);
 	}
-
-	err = gpio_pin_interrupt_configure(gpiob, pin, GPIO_INT_EDGE_TO_ACTIVE);
 	if (err != 0) {
-		printk("gpio_pin_interrupt_configure failed: %d\n", err);
-		return err;
-	}
-
-	return 0;
-
-}
-
-static int dfu_buttons_init(void)
-{
-	int err;
-
-	err = dfu_button_init(DT_GPIO_LABEL(DT_ALIAS(sw0), gpios),
-			      DT_GPIO_PIN(DT_ALIAS(sw0), gpios),
-			      DT_GPIO_FLAGS(DT_ALIAS(sw0), gpios),
-			      &gpio_cb_b1, dfu_button_pressed);
-	if (err != 0) {
-		printk("dfu_button_init failed for sw0: %d\n", err);
+		printk("Unable to configure SW0 GPIO pin!\n");
 		return 1;
 	}
-
-	err = dfu_button_init(DT_GPIO_LABEL(DT_ALIAS(sw1), gpios),
-			      DT_GPIO_PIN(DT_ALIAS(sw1), gpios),
-			      DT_GPIO_FLAGS(DT_ALIAS(sw1), gpios),
-			      &gpio_cb_b2, fmfu_button_pressed);
-	if (err != 0) {
-		printk("dfu_button_init failed for sw1: %d\n", err);
-		return 1;
-	}
-
 	return 0;
 }
 
@@ -318,14 +182,8 @@ void fota_dl_handler(const struct fota_download_evt *evt)
 		gpio_pin_interrupt_configure(gpiob,
 					     DT_GPIO_PIN(DT_ALIAS(sw0), gpios),
 					     GPIO_INT_EDGE_TO_ACTIVE);
-		gpio_pin_interrupt_configure(gpiob,
-					     DT_GPIO_PIN(DT_ALIAS(sw1), gpios),
-					     GPIO_INT_EDGE_TO_ACTIVE);
 
-		if (downloading_modem_firmware) {
-			apply_fmfu();
-			downloading_modem_firmware = false;
-		}
+		finished_cb();
 
 		break;
 
@@ -362,22 +220,35 @@ static void modem_configure(void)
 	__ASSERT(err == 0, "LTE link could not be established.");
 	printk("LTE Link Connected!\n");
 #endif
-	print_modem_version();
 }
 
-static int application_init(void)
+int update_sample_init(void (*finished_cb_in)(void),
+		       const char *(*host_get_in)(void),
+		       const char *(file_get_in)(void),
+		       bool (*two_leds_in)(void))
 {
 	int err;
 
-	k_work_init(&fota_work, app_dfu_transfer_start);
-	k_work_init(&fmfu_work, fmfu_transfer_start);
+	if (finished_cb_in == NULL || host_get_in == NULL || file_get_in == NULL
+	    || two_leds_in ==NULL) {
+		return -EINVAL;
+	}
 
-	err = dfu_buttons_init();
+	finished_cb = finished_cb_in;
+	host_get = host_get_in;
+	file_get = file_get_in;
+	two_leds = two_leds_in;
+
+	k_work_init(&fota_work, update_transfer_start);
+
+	modem_configure();
+
+	err = button_init();
 	if (err != 0) {
 		return err;
 	}
 
-	err = led_app_version();
+	err = led_init();
 	if (err != 0) {
 		return err;
 	}
@@ -388,63 +259,4 @@ static int application_init(void)
 	}
 
 	return 0;
-}
-
-void main(void)
-{
-	int err;
-
-	printk("HTTP application update sample started\n");
-	printk("Initializing modem library\n");
-#if !defined(CONFIG_LIBMODEM_SYS_INIT)
-	err = libmodem_init();
-#else
-	/* If libmodem is initialized on post-kernel we should
-	 * fetch the returned error code instead of libmodem_init
-	 */
-	err = libmodem_get_init_ret();
-#endif
-	switch (err) {
-	case MODEM_DFU_RESULT_OK:
-		printk("Modem firmware update successful!\n");
-		printk("Modem will run the new firmware after reboot\n");
-		k_thread_suspend(k_current_get());
-		break;
-	case MODEM_DFU_RESULT_UUID_ERROR:
-	case MODEM_DFU_RESULT_AUTH_ERROR:
-		printk("Modem firmware update failed\n");
-		printk("Modem will run non-updated firmware on reboot.\n");
-		break;
-	case MODEM_DFU_RESULT_HARDWARE_ERROR:
-	case MODEM_DFU_RESULT_INTERNAL_ERROR:
-		printk("Modem firmware update failed\n");
-		printk("Fatal error.\n");
-		break;
-	case -1:
-		printk("Could not initialize momdem library.\n");
-		printk("Fatal error.\n");
-		return;
-	default:
-		break;
-	}
-	printk("Initialized modem library\n");
-
-	/* START debug stuff */
-	apply_fmfu();
-
-	/* END debug stuff */
-
-	modem_configure();
-
-	boot_write_img_confirmed();
-
-
-	err = application_init();
-	if (err != 0) {
-		return;
-	}
-
-	printk("Choose what upgrade to download:\n");
-	printk("Press Button 1 for application firmware update\n");
-	printk("Press Button 2 for full modem firmware update (fmfu)\n");
 }

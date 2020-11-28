@@ -39,10 +39,10 @@ config DFU_TARGET_STREAM_SAVE_PROGRESS
 config DFU_TARGET_MODEM_DELTA
 	bool "Modem delta update support"
 	imply DOWNLOAD_CLIENT_RANGE_REQUESTS
-	default y
+	default n
 	depends on SOC_NRF9160_SICA
 	help
-	  Enable support for updates to the modem firmware.
+	  Enable support for delta updates to the modem firmware.
 
 config DFU_TARGET_MODEM_TIMEOUT
 	int "Erase pending timeout"
@@ -65,7 +65,8 @@ config DFU_TARGET_MODEM_FULL
 	depends on FMFU_FDEV
 	help
 	  Enable support for full updates to the modem firmware.
-	  Note that this requires an external flash.
+	  Note that this requires an external flash with minimum
+	  2MB free space.
 
 
 module=DFU_TARGET
