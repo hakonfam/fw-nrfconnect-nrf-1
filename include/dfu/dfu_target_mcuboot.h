@@ -79,7 +79,6 @@ int dfu_target_mcuboot_write(const void *const buf, size_t len);
 
 /**
  * @brief Deinitialize resources and finalize firmware upgrade if successful.
-
  * @param[in] successful Indicate whether the firmware was successfully recived.
  *
  * @return 0 on success, negative errno otherwise.
