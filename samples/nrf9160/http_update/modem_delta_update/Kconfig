@@ -1,0 +1,29 @@
+#
+# Copyright (c) 2020 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-BSD-5-Clause-Nordic
+#
+
+menu "HTTP modem delta update sample"
+
+config DOWNLOAD_FILE_BASE_TO_FOTA_TEST
+	string "File to update modem from base to test firmware"
+
+config DOWNLOAD_FILE_FOTA_TEST_TO_BASE
+	string "File to update modem from test firmware base"
+
+config DOWNLOAD_HOST
+	string "Host part of URL to download files."
+
+config SUPPORTED_BASE_VERSION
+	string "Supported base version"
+
+config USE_HTTPS
+	bool
+	prompt "Use HTTPS for download"
+
+endmenu
+
+menu "Zephyr Kernel"
+source "Kconfig.zephyr"
+endmenu
