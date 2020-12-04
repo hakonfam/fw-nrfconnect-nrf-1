@@ -16,7 +16,11 @@ static const char *get_host(void)
 
 static const char *get_file(void)
 {
-	return CONFIG_DOWNLOAD_FILE;
+#if CONFIG_APPLICATION_VERSION == 2
+	return CONFIG_DOWNLOAD_FILE_V1;
+#else
+	return CONFIG_DOWNLOAD_FILE_V2;
+#endif
 }
 
 static void finished(void)

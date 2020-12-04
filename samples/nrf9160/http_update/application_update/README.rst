@@ -52,29 +52,35 @@ The sample also uses MCUboot, which is automatically built and merged into the f
 Specifying the image file
 =========================
 
-Before building the sample, you must specify where the image file will be located.
+Before building the sample, you must specify where the image files will be located.
+The sample use two update images, and selects which one to download based on the value of ``CONFIG_APPLICATION_VERSION`` (1 or 2).
 If you do not want to host it yourself, you can upload it to a public S3 bucket on Amazon Web Services (AWS).
 See `Setting up an AWS S3 bucket`_ for instructions.
 
 To specify the location in |SES|:
 
 1. Select :guilabel:`Project` -> :guilabel:`Configure nRF Connect SDK Project`.
-#. Navigate to :guilabel:`HTTP application update sample` and specify the download host name (``CONFIG_DOWNLOAD_HOST``) and the file to download (``CONFIG_DOWNLOAD_FILE``).
+#. Navigate to :guilabel:`HTTP application update sample` and specify the download host name (``CONFIG_DOWNLOAD_HOST``) and the files to download (``CONFIG_DOWNLOAD_FILE_V1`` and ``CONFIG_DOWNLOAD_FILE_V2``).
 #. Click :guilabel:`Configure` to save the configuration.
 
 .. include:: /includes/aws_s3_bucket.txt
 
+
+.. _app_update_hosting
+
 Hosting your image on an AWS S3 Server
 --------------------------------------
 
-1. Go to `AWS S3 console`_ and sign in.
+1. Build the sample with ``CONFIG_APPLICATION_VERSION`` set to 1, create a copy of :file:`build/zephyr/app_update.bin` called `app_update_v1.bin` (or similar)
+#. Build the sample with ``CONFIG_APPLICATION_VERSION`` set to 2, create a copy of :file:`build/zephyr/app_update.bin` called `app_update_v2.bin` (or similar)
+#. Go to `AWS S3 console`_ and sign in.
 #. Go to the bucket you have created.
-#. Click :guilabel:`Upload` and select the file :file:`app_update.bin` (located in the :file:`zephyr` subfolder of your build directory).
-#. Click the file you uploaded in the bucket and check the :guilabel:`Object URL` field to find the download URL for the file.
+#. Click :guilabel:`Upload` and select the two files :file:`app_update_v1.bin` and :file:`app_update_v2.bin` (created in the earlier step).
+#. Click the files you uploaded in the bucket and check the :guilabel:`Object URL` field to find the download URL for the files.
 
 When specifying the image file, use the ``<bucket-name>.s3.<region>.amazonaws.com`` part of the URL for the download hostname.
 Make sure to not include the ``https``.
-Specify the rest of the URL as file name.
+Specify the rest of the URL as the file names.
 
 
 Testing
@@ -82,11 +88,7 @@ Testing
 
 After programming the sample to the board, test it by performing the following steps:
 
-1. Configure the application version to be 2.
-   To do so, either change ``CONFIG_APPLICATION_VERSION`` to 2 in the :file:`prj.conf` file, or select :guilabel:`Project` -> :guilabel:`Configure nRF Connect SDK Project` -> :guilabel:`HTTP application update sample` in |SES| and change the value for :guilabel:`Application version`.
-   Then rebuild the application.
-#. Upload the file :file:`update.bin` to the server you have chosen.
-   To upload the file on nRF Cloud, click :guilabel:`Upload` for the firmware URL that you generated earlier.
+1. Upload the update files as specified in :ref:`app_update_hosting`.
    Then select the file :file:`update.bin` and upload it.
 #. Reset your nRF9160 DK to start the application.
 #. Open a terminal emulator and observe that an output similar to this is printed::
