@@ -59,10 +59,18 @@ function(ncs_add_partition_manager_config config_file)
     ${out_path}
     )
   if (IMAGE_NAME)
+    # Share location of original source file so that the parent image can add it
+    # to the CMAKE_CONFIGURE_DEPENDS list.
+    share("list(APPEND ${IMAGE_NAME}PM_YML_DEP_FILES ${pm_path})")
+
     # Share location of preprocessed pm.yml file so that the parent image can
     # use it as source for partition manager configuration.
     share("list(APPEND ${IMAGE_NAME}PM_YML_FILES ${out_path})")
   endif()
+
+  # Re-configure (Re-execute all CMakeLists.txt code) when original
+  # (not preprocessed) configuration file changes.
+  set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${pm_path})
 
 endfunction()
 
