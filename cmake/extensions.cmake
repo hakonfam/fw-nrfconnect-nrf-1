@@ -52,9 +52,17 @@ function(ncs_add_partition_manager_config config_file)
     PM_SUBSYS_PATHS
     ${pm_path}
     )
+
+  set(out_path ${CMAKE_CURRENT_BINARY_DIR}/${pm_filename})
   set_property(GLOBAL APPEND PROPERTY
     PM_SUBSYS_OUTPUT_PATHS
-    ${CMAKE_CURRENT_BINARY_DIR}/${pm_filename}
+    ${out_path}
     )
+  if (IMAGE_NAME)
+    # Share location of preprocessed pm.yml file so that the parent image can
+    # use it as source for partition manager configuration.
+    share("list(APPEND ${IMAGE_NAME}PM_YML_FILES ${out_path})")
+  endif()
+
 endfunction()
 
