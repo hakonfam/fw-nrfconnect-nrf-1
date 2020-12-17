@@ -33,6 +33,14 @@ manifest:
       url-base: https://github.com/nanopb
     - name: alexa
       url-base: https://github.com/alexa
+    - name: oyro
+      url-base: https://github.com/oyvindronningstad
+    - name: haam
+      url-base: https://github.com/hakonfam
+    - name: lemrey
+      url-base: https://github.com/lemrey
+    - name: playground
+      url-base: https://github.com/NordicPlayground
 
   # If not otherwise specified, the projects below should be obtained
   # from the ncs remote.
@@ -100,9 +108,9 @@ manifest:
       revision: b18c7b8e3f1fbfc99e0f02102a9d8e3b60304959
       path: modules/lib/mcumgr
     - name: nrfxlib
-      repo-path: sdk-nrfxlib
-      path: nrfxlib
-      revision: 784df6f0093f915c0f1406393bcb6c242b02178d
+      revision: fmfu
+      repo-path: nrfxlib-1
+      remote: haam
     - name: trusted-firmware-m
       repo-path: sdk-trusted-firmware-m
       path: modules/tee/tfm
@@ -129,6 +137,12 @@ manifest:
       path: modules/alexa-embedded
       revision: face92d8c62184832793f518bb1f19379538c5c1
       remote: alexa
+    - name: cddl-gen
+      remote: oyro
+      repo-path: cddl_gen
+      revision: master
+      path: modules/lib/cddl_gen
+
 
   # West-related configuration for the nrf repository.
   self:
