@@ -14,3 +14,9 @@ target_sources(app
   src/main.c
   )
 
+target_include_directories(app
+  PRIVATE
+  ${NRF_DIR}/../nrfxlib/nrf_modem/include
+  snetoesunthoeu
+  )
+
