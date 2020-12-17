@@ -61,6 +61,14 @@ If there is already a firmware patch stored in the modem, the library requests t
 When the complete transfer is done, call the :c:func:`dfu_target_done` function to request the modem to apply the patch, and to close the socket.
 On the next reboot, the modem will try to apply the patch.
 
+.. _lib_dfu_target_full_modem_update:
+Full modem upgrades
+===================
+
+This type of update supports updating the modem firmware using the serialized firmware bundled in the modem firmware release zip.
+This DFU target will download serialized modem firmware to an external flash.
+Hence, an external flash is required for this type of upgrade.
+Once the modem firmware has been downloaded :ref:`lib_fmfu_fdev` is used to write the firmware to the modem.
 
 Configuration
 *************
@@ -69,6 +77,7 @@ You can disable support for specific DFU targets with the following parameters:
 
 * :option:`CONFIG_DFU_TARGET_MCUBOOT`
 * :option:`CONFIG_DFU_TARGET_MODEM_DELTA`
+* :option:`CONFIG_DFU_TARGET_FULL_MODEM`
 
 By default, all DFU targets are enabled, but you can only select the targets that are supported by your device and application.
 
