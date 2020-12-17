@@ -48,9 +48,16 @@ nRF5340 SoC
 DFU Target
 ----------
 
-* Renamed ``dfu_target_modem`` to ``dfu_target_modem_delta``.
-* Moved all ``dfu_target`` code up one directory from :file:`subsys/dfu` to :file:`subsys/dfu/dfu_target`.
-* Extracted stream flash functionality from ``dfu_target_mcuboot`` into ``dfu_target_stream_flash`` to facilitate code re-use for other ``dfu_targets`` which writes large objects to flash.
+* Added:
+
+  * New target ``dfu_target_full_modem`` which is used for full modem firmware updates.
+    Note that this requires an external flash of minimum 2MB to work.
+
+* Updated:
+
+   * Renamed ``dfu_target_modem`` to ``dfu_target_modem_delta``.
+   * Moved all ``dfu_target`` code up one directory from :file:`subsys/dfu` to :file:`subsys/dfu/dfu_target`.
+   * Extracted stream flash functionality from ``dfu_target_mcuboot`` into ``dfu_target_stream_flash`` to facilitate code re-use for other ``dfu_targets`` which writes large objects to flash.
 
 HTTP Update
 -----------
@@ -58,6 +65,8 @@ HTTP Update
 * Added:
 
   * New sample :ref:`http_modem_delta_update_sample` which shows how to add modem delta upgrade support to an application.
+  * New sample :ref:`http_full_modem_update_sample` which shows how to add full modem modem upgrade support to an application.
+    Note that this requires an external flash of minimum 2MB to work, hence the sample will only work on ``nrf9160dk`` version ``0.14.0`` or later.
 
 * Updated:
 
