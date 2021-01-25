@@ -8,8 +8,9 @@
 #include <drivers/flash.h>
 #include <logging/log.h>
 #include <dfu/fmfu_fdev.h>
-#include <nrf_fmfu.h>
+#include <nrf_modem_full_dfu.h>
 #include <mbedtls/sha256.h>
+#include <stdio.h>
 
 LOG_MODULE_REGISTER(fmfu_fdev, CONFIG_FMFU_FDEV_LOG_LEVEL);
 
@@ -55,27 +56,73 @@ static int get_hash_from_flash(const struct device *fdev, size_t offset,
 	return 0;
 }
 
+static int write_segment(uint8_t *buf, size_t buf_len, uint32_t address,
+			 bool is_bootloader)
+{
+	int err;
+	char out_buf[128];
+
+	LOG_DBG("writing 0x%x bytes to 0x%x", buf_len, address);
+
+	LOG_INF("Start of segment data: ");
+	for (int i = 0; i < 32; ++i) {
+		printf("%02x", buf[i]);
+	}
+	printf("\n");
+
+	LOG_INF("End of segment data: ");
+	for (int i = buf_len-32; i < buf_len; ++i) {
+		printf("%02x", buf[i]);
+	}
+	printf("\n");
+	
+	if (is_bootloader) {
+		err = nrf_modem_full_dfu_bl_write(buf_len, buf);
+		if (err != 0) {
+			LOG_ERR("nrf_...dfu_bl_write failed, errno: %d", errno);
+			return err;
+		}
+
+	} else {
+		err = nrf_modem_full_dfu_fw_write(address, buf_len, buf);
+		if (err != 0) {
+			LOG_ERR("nrf...full_dfu_fw_write failed, err!: %d",
+					err);
+			return err;
+		}
+	}
+
+	err = nrf_modem_full_dfu_apply();
+	if (err != 0) {
+		LOG_ERR("nrf_..._full_dfu_apply (bl) failed, errno: %d",
+				errno);
+		return err;
+	}
+	LOG_DBG("nrf_modem_full_dfu_apply() done");
+
+	return 0;
+}
+
 static int load_segment(const struct device *fdev, size_t seg_size,
 			uint32_t seg_target_addr, uint32_t seg_offset,
-			uint8_t *buf)
+			uint8_t *buf, bool is_bl)
 {
 	int err;
 	uint32_t read_addr = seg_offset;
 	size_t bytes_left = seg_size;
 
 	while (bytes_left) {
-		uint32_t read_len = MIN(NRF_FMFU_MODEM_BUFFER_SIZE, bytes_left);
+		uint32_t read_len = MIN(6*1024, bytes_left);
 
 		err = flash_read(fdev, read_addr, buf, read_len);
 		if (err != 0) {
-			LOG_ERR("flash_read failed2: %d", err);
+			LOG_ERR("flash_read failed: %d", err);
 			return err;
 		}
 
-		err = nrf_fmfu_memory_chunk_write(seg_target_addr, read_len,
-						  buf);
+		err = write_segment(buf, read_len, seg_target_addr, is_bl);
 		if (err != 0) {
-			LOG_ERR("nrf_fmfu_memory_chunk_write failed: %d", err);
+			LOG_ERR("write_segment failed: %d", err);
 			return err;
 		}
 
@@ -85,6 +132,9 @@ static int load_segment(const struct device *fdev, size_t seg_size,
 		seg_target_addr += read_len;
 		bytes_left -= read_len;
 		read_addr += read_len;
+	}
+
+	if (is_bl) {
 	}
 
 	return 0;
@@ -104,34 +154,24 @@ static int load_segments(const struct device *fdev, uint8_t *meta_buf,
 		uint32_t seg_addr =
 			seg->_Segments__Segment[i]._Segment_target_addr;
 		uint32_t read_addr = blob_offset + prev_segments_len;
+		bool is_bootloader = i == 0;
 
-		err = nrf_fmfu_transfer_start();
-		if (err != 0) {
-			LOG_ERR("nrf_fmfu_transfer_start failed: %d", err);
-			return err;
-		}
+		LOG_INF("Writing segment %d, Target addr: 0x%x, size: 0%x", i,
+			seg_addr, seg_size);
 
-		err = load_segment(fdev, seg_size, seg_addr, read_addr, buf);
+		err = load_segment(fdev, seg_size, seg_addr, read_addr, buf,
+				   is_bootloader);
 		if (err != 0) {
 			LOG_ERR("load_segment failed: %d", err);
 			return err;
 		}
 
-		LOG_DBG("Modem state: %d", nrf_fmfu_modem_state_get());
-
-		err = nrf_fmfu_transfer_end();
-		if (err != 0) {
-			LOG_ERR("nrf_fmfu_transfer_end fail: errno: %d", errno);
-			return err;
-		}
-
 		if (i == 0) {
 #ifndef CONFIG_FMFU_FDEV_SKIP_PREVALIDATION
-			/* This is the first segment, which contains the
-			 * IPC-DFU bootloader. We can now perform the
-			 * signature verification.
+			/* The IPC-DFU bootloader has been written, we can now
+			 * perform the prevalidation.
 			 */
-			err = nrf_fmfu_verify_signature(wrapper_len,
+			err = nrf_modem_full_dfu_verify(wrapper_len,
 							(void *)meta_buf);
 			if (err != 0) {
 				LOG_ERR("nrf_fmfu_verify_signature failed, "
@@ -148,6 +188,12 @@ static int load_segments(const struct device *fdev, uint8_t *meta_buf,
 
 		LOG_INF("Segment %d written. Target addr: 0x%x, size: 0%x", i,
 			seg_addr, seg_size);
+	}
+
+	err = nrf_modem_full_dfu_apply();
+	if (err != 0) {
+		LOG_ERR("nrf_..._full_dfu_apply (fw) failed, errno: %d", errno);
+		return err;
 	}
 
 	LOG_INF("FMFU finished");
@@ -168,19 +214,20 @@ int fmfu_fdev_load(uint8_t *buf, size_t buf_len, const struct device *fdev,
 	size_t wrapper_len;
 	uint8_t hash[32];
 	size_t blob_len;
-	uint32_t unused;
 	int err;
 
 	if (buf == NULL || fdev == NULL) {
 		return -ENOMEM;
 	}
 
+	LOG_INF("nrf_modem_full_dfu_init() start");
 	/* Put modem in DFU/RPC state */
-	err = nrf_fmfu_init(NULL, &unused);
+	err = nrf_modem_full_dfu_init(NULL);
 	if (err != 0) {
-		LOG_ERR("nrf_fmfu_init failed, errno: %d.", errno);
+		LOG_ERR("nrf_modem_full_dfu_init failed, errno: %d.", errno);
 		return err;
 	}
+	LOG_INF("nrf_modem_full_dfu_init() done");
 
 	/* Read the whole wrapper. */
 	err = flash_read(fdev, offset, meta_buf, MAX_META_LEN);
@@ -190,6 +237,7 @@ int fmfu_fdev_load(uint8_t *buf, size_t buf_len, const struct device *fdev,
 
 	if (!cbor_decode_Wrapper(meta_buf, MAX_META_LEN, &wrapper,
 				 &wrapper_len)) {
+		LOG_ERR("Unable to decode wrapper");
 		return -EINVAL;
 	}
 
@@ -205,6 +253,7 @@ int fmfu_fdev_load(uint8_t *buf, size_t buf_len, const struct device *fdev,
 		&wrapper._COSE_Sign1_Manifest_payload_cbor._Manifest_segments;
 	if (!cbor_decode_Segments(segments_string->value, segments_string->len,
 				  &segments, NULL)) {
+		LOG_ERR("Unable to decode segments");
 		return -EINVAL;
 	}
 
@@ -224,6 +273,7 @@ int fmfu_fdev_load(uint8_t *buf, size_t buf_len, const struct device *fdev,
 	    wrapper._COSE_Sign1_Manifest_payload_cbor._Manifest_blob_hash.len) {
 		hash_len_valid = true;
 	} else {
+		LOG_ERR("Invalid hash length");
 		return -EINVAL;
 	}
 
@@ -236,6 +286,7 @@ int fmfu_fdev_load(uint8_t *buf, size_t buf_len, const struct device *fdev,
 	if (memcmp(expected_hash, hash, sizeof(hash)) == 0) {
 		hash_valid = true;
 	} else {
+		LOG_ERR("Invalid hash");
 		return -EINVAL;
 	}
 

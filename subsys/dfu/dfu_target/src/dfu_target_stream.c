@@ -23,7 +23,7 @@ static const char *current_id;
 
 #ifdef CONFIG_DFU_TARGET_STREAM_SAVE_PROGRESS
 
-static char current_name_key[12];
+static char current_name_key[32];
 
 /**
  * @brief Store the information stored in the stream_flash instance so that it

@@ -261,6 +261,8 @@ function(add_child_image_from_source)
       )
   endforeach()
 
+  print(image_cmake_args)
+
   file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/${ACI_NAME})
   execute_process(
     COMMAND ${CMAKE_COMMAND}

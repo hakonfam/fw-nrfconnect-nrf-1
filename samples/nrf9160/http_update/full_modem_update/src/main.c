@@ -9,7 +9,7 @@
 #include <modem/nrf_modem_lib.h>
 #include <dfu/dfu_target_full_modem.h>
 #include <net/fota_download.h>
-#include <nrf_fmfu.h>
+#include <nrf_modem_full_dfu.h>
 #include <dfu/fmfu_fdev.h>
 #include <drivers/gpio.h>
 #include <stdio.h>
@@ -27,7 +27,7 @@ static const struct device *gpiob;
 static struct gpio_callback gpio_cb;
 static const struct device *flash_dev;
 static char modem_version[MAX_MODEM_VERSION_LEN];
-static uint8_t fota_buf[NRF_FMFU_MODEM_BUFFER_SIZE];
+static uint8_t fota_buf[0x10000]; // TODO
 
 static void fmfu_button_irq_disable(void)
 {
@@ -52,11 +52,21 @@ static void apply_fmfu_from_ext_flash(void)
 
 	printk("Applying full modem firmware update from external flash\n");
 
-	err = nrf_modem_lib_shutdown();
+	printk("nrf_modem_shutdown() - start\n");
+	err = nrf_modem_shutdown();
 	if (err != 0) {
 		printk("nrf_modem_lib_shutdown() failed: %d\n", err);
 		return;
 	}
+	printk("nrf_modem_shutdown() - done\n");
+
+	printk("nrf_modem_lib_ini(FMFU) - start\n");
+	err = nrf_modem_lib_init(FULL_DFU_MODE);
+	if (err != 0) {
+		printk("nrf_modem_lib_init() failed: %d\n", err);
+		return;
+	}
+	printk("nrf_modem_lib_ini(FMFU) - done\n");
 
 	err = fmfu_fdev_load(fota_buf, sizeof(fota_buf), flash_dev, 0);
 	if (err != 0) {
@@ -64,7 +74,7 @@ static void apply_fmfu_from_ext_flash(void)
 		return;
 	}
 
-	err = nrf_modem_lib_init();
+	err = nrf_modem_lib_init(NORMAL_MODE);
 	if (err != 0) {
 		printk("nrf_modem_lib_init() failed: %d\n", err);
 		return;
@@ -161,7 +171,7 @@ void main(void)
 
 	printk("HTTP full modem update sample started\n");
 
-	err = nrf_modem_lib_init();
+	err = nrf_modem_lib_init(NORMAL_MODE);
 	if (err) {
 		printk("Failed to initialize modem lib!\n");
 		return;
