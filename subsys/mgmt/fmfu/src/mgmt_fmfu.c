@@ -8,6 +8,7 @@
 #include <logging/log.h>
 #include <mgmt/mgmt.h>
 #include <nrf_modem_full_dfu.h>
+#include <modem/nrf_modem_lib.h>
 #include <mgmt/mgmt_fmfu.h>
 #include "cborattr/cborattr.h"
 #include <stats/stats.h>
@@ -193,6 +194,7 @@ static int mgmt_get_memory_hash(struct mgmt_ctxt *ctxt)
 	unsigned long long start;
 	unsigned long long end;
 	struct nrf_modem_full_dfu_digest digest;
+	static int num = 0;
 
 	/* We expect two variables: the start and end address of a memory region
 	 * that we want to verify (obtain a hash for)
@@ -239,6 +241,11 @@ static int mgmt_get_memory_hash(struct mgmt_ctxt *ctxt)
 	cbor_err |= cbor_encode_int(&ctxt->encoder, rc);
 	if (cbor_err != 0) {
 		return MGMT_ERR_ENOMEM;
+	}
+
+	if (++num == 3) {
+		nrf_modem_lib_shutdown();
+		nrf_modem_lib_init(FULL_DFU_MODE);
 	}
 
 	return MGMT_ERR_EOK;
