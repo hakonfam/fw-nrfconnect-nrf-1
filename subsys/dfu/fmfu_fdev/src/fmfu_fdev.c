@@ -56,26 +56,11 @@ static int get_hash_from_flash(const struct device *fdev, size_t offset,
 	return 0;
 }
 
-static int write_segment(uint8_t *buf, size_t buf_len, uint32_t address,
-			 bool is_bootloader)
+static int write_chunk(uint8_t *buf, size_t buf_len, uint32_t address,
+		       bool is_bootloader)
 {
 	int err;
-	char out_buf[128];
 
-	LOG_DBG("writing 0x%x bytes to 0x%x", buf_len, address);
-
-	LOG_INF("Start of segment data: ");
-	for (int i = 0; i < 32; ++i) {
-		printf("%02x", buf[i]);
-	}
-	printf("\n");
-
-	LOG_INF("End of segment data: ");
-	for (int i = buf_len-32; i < buf_len; ++i) {
-		printf("%02x", buf[i]);
-	}
-	printf("\n");
-	
 	if (is_bootloader) {
 		err = nrf_modem_full_dfu_bl_write(buf_len, buf);
 		if (err != 0) {
@@ -83,6 +68,12 @@ static int write_segment(uint8_t *buf, size_t buf_len, uint32_t address,
 			return err;
 		}
 
+		err = nrf_modem_full_dfu_apply();
+		if (err != 0) {
+			LOG_ERR("nrf_..._full_dfu_apply (bl) failed, errno: %d",
+					errno);
+			return err;
+		}
 	} else {
 		err = nrf_modem_full_dfu_fw_write(address, buf_len, buf);
 		if (err != 0) {
@@ -92,13 +83,6 @@ static int write_segment(uint8_t *buf, size_t buf_len, uint32_t address,
 		}
 	}
 
-	err = nrf_modem_full_dfu_apply();
-	if (err != 0) {
-		LOG_ERR("nrf_..._full_dfu_apply (bl) failed, errno: %d",
-				errno);
-		return err;
-	}
-	LOG_DBG("nrf_modem_full_dfu_apply() done");
 
 	return 0;
 }
@@ -112,7 +96,8 @@ static int load_segment(const struct device *fdev, size_t seg_size,
 	size_t bytes_left = seg_size;
 
 	while (bytes_left) {
-		uint32_t read_len = MIN(6*1024, bytes_left);
+		uint32_t read_len = MIN(NRF_MODEM_FULL_DFU_WRITE_LEN,
+					bytes_left);
 
 		err = flash_read(fdev, read_addr, buf, read_len);
 		if (err != 0) {
@@ -120,13 +105,13 @@ static int load_segment(const struct device *fdev, size_t seg_size,
 			return err;
 		}
 
-		err = write_segment(buf, read_len, seg_target_addr, is_bl);
+		err = write_chunk(buf, read_len, seg_target_addr, is_bl);
 		if (err != 0) {
-			LOG_ERR("write_segment failed: %d", err);
+			LOG_ERR("write_chunk failed: %d", err);
 			return err;
 		}
 
-		LOG_DBG("wrote chunk: offset 0x%x target addr 0x%x size 0x%x",
+		LOG_DBG("Wrote chunk: offset 0x%x target addr 0x%x size 0x%x",
 			read_addr, seg_target_addr, read_len);
 
 		seg_target_addr += read_len;
@@ -147,8 +132,6 @@ static int load_segments(const struct device *fdev, uint8_t *meta_buf,
 	int err;
 	size_t prev_segments_len = 0;
 
-	LOG_INF("Writing %d segments", seg->_Segments__Segment_count);
-
 	for (int i = 0; i < seg->_Segments__Segment_count; i++) {
 		size_t seg_size = seg->_Segments__Segment[i]._Segment_len;
 		uint32_t seg_addr =
@@ -156,8 +139,8 @@ static int load_segments(const struct device *fdev, uint8_t *meta_buf,
 		uint32_t read_addr = blob_offset + prev_segments_len;
 		bool is_bootloader = i == 0;
 
-		LOG_INF("Writing segment %d, Target addr: 0x%x, size: 0%x", i,
-			seg_addr, seg_size);
+		LOG_INF("Writing segment %d/%d, Target addr: 0x%x, size: 0%x",
+			i+1,seg->_Segments__Segment_count, seg_addr, seg_size);
 
 		err = load_segment(fdev, seg_size, seg_addr, read_addr, buf,
 				   is_bootloader);
@@ -183,11 +166,7 @@ static int load_segments(const struct device *fdev, uint8_t *meta_buf,
 				"should only be done during development");
 #endif /* CONFIG_FMFU_FDEV_SKIP_PREVALIDATION */
 		}
-
 		prev_segments_len += seg_size;
-
-		LOG_INF("Segment %d written. Target addr: 0x%x, size: 0%x", i,
-			seg_addr, seg_size);
 	}
 
 	err = nrf_modem_full_dfu_apply();
@@ -220,14 +199,12 @@ int fmfu_fdev_load(uint8_t *buf, size_t buf_len, const struct device *fdev,
 		return -ENOMEM;
 	}
 
-	LOG_INF("nrf_modem_full_dfu_init() start");
 	/* Put modem in DFU/RPC state */
 	err = nrf_modem_full_dfu_init(NULL);
 	if (err != 0) {
 		LOG_ERR("nrf_modem_full_dfu_init failed, errno: %d.", errno);
 		return err;
 	}
-	LOG_INF("nrf_modem_full_dfu_init() done");
 
 	/* Read the whole wrapper. */
 	err = flash_read(fdev, offset, meta_buf, MAX_META_LEN);

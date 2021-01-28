@@ -33,6 +33,8 @@ rsource "shell/Kconfig"
 
 rsource "mpsl/Kconfig"
 
+rsource "mgmt/fmfu/Kconfig"
+
 rsource "partition_manager/Kconfig"
 
 rsource "nrf_rpc/Kconfig"

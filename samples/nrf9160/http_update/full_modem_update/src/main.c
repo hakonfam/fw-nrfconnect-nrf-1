@@ -27,7 +27,10 @@ static const struct device *gpiob;
 static struct gpio_callback gpio_cb;
 static const struct device *flash_dev;
 static char modem_version[MAX_MODEM_VERSION_LEN];
-static uint8_t fota_buf[0x10000]; // TODO
+
+/* Buffer used as temporary storage when downloading the modem firmware */
+#define FOTA_BUF_SIZE (0x1000)
+static uint8_t fota_buf[FOTA_BUF_SIZE];
 
 static void fmfu_button_irq_disable(void)
 {
@@ -52,21 +55,17 @@ static void apply_fmfu_from_ext_flash(void)
 
 	printk("Applying full modem firmware update from external flash\n");
 
-	printk("nrf_modem_shutdown() - start\n");
-	err = nrf_modem_shutdown();
+	err = nrf_modem_lib_shutdown();
 	if (err != 0) {
 		printk("nrf_modem_lib_shutdown() failed: %d\n", err);
 		return;
 	}
-	printk("nrf_modem_shutdown() - done\n");
 
-	printk("nrf_modem_lib_ini(FMFU) - start\n");
 	err = nrf_modem_lib_init(FULL_DFU_MODE);
 	if (err != 0) {
 		printk("nrf_modem_lib_init() failed: %d\n", err);
 		return;
 	}
-	printk("nrf_modem_lib_ini(FMFU) - done\n");
 
 	err = fmfu_fdev_load(fota_buf, sizeof(fota_buf), flash_dev, 0);
 	if (err != 0) {
@@ -74,11 +73,21 @@ static void apply_fmfu_from_ext_flash(void)
 		return;
 	}
 
+	printk("suhtdown -start\n");
+	err = nrf_modem_lib_shutdown();
+	if (err != 0) {
+		printk("nrf_modem_lib_shutdown() failed: %d\n", err);
+		return;
+	}
+	printk("suhtdown -done\n");
+
+	printk("init-start\n");
 	err = nrf_modem_lib_init(NORMAL_MODE);
 	if (err != 0) {
 		printk("nrf_modem_lib_init() failed: %d\n", err);
 		return;
 	}
+	printk("init-done\n");
 
 	printk("Modem firmware update completed\n");
 }
