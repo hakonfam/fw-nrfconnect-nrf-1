@@ -28,9 +28,11 @@ static struct gpio_callback gpio_cb;
 static const struct device *flash_dev;
 static char modem_version[MAX_MODEM_VERSION_LEN];
 
-/* Buffer used as temporary storage when downloading the modem firmware */
-#define FOTA_BUF_SIZE (0x1000)
-static uint8_t fota_buf[FOTA_BUF_SIZE];
+/* Buffer used as temporary storage when downloading the modem firmware, and
+ * when loading the modem firmware from external flash to the modem.
+ */
+#define FMFU_BUF_SIZE (0x1000)
+static uint8_t fmfu_buf[FMFU_BUF_SIZE];
 
 static void fmfu_button_irq_disable(void)
 {
@@ -67,7 +69,7 @@ static void apply_fmfu_from_ext_flash(void)
 		return;
 	}
 
-	err = fmfu_fdev_load(fota_buf, sizeof(fota_buf), flash_dev, 0);
+	err = fmfu_fdev_load(fmfu_buf, sizeof(fmfu_buf), flash_dev, 0);
 	if (err != 0) {
 		printk("fmfu_fdev_load failed: %d\n", err);
 		return;
@@ -207,8 +209,8 @@ void main(void)
 	}
 
 	const struct dfu_target_full_modem_params params = {
-		.buf = fota_buf,
-		.len = sizeof(fota_buf),
+		.buf = fmfu_buf,
+		.len = sizeof(fmfu_buf),
 		.dev = &(struct dfu_target_fmfu_fdev){ .dev = flash_dev,
 						       .offset = 0,
 						       .size = 0 }

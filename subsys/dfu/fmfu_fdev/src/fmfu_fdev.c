@@ -67,13 +67,6 @@ static int write_chunk(uint8_t *buf, size_t buf_len, uint32_t address,
 			LOG_ERR("nrf_...dfu_bl_write failed, errno: %d", errno);
 			return err;
 		}
-
-		err = nrf_modem_full_dfu_apply();
-		if (err != 0) {
-			LOG_ERR("nrf_..._full_dfu_apply (bl) failed, errno: %d",
-					errno);
-			return err;
-		}
 	} else {
 		err = nrf_modem_full_dfu_fw_write(address, buf_len, buf);
 		if (err != 0) {
@@ -89,15 +82,14 @@ static int write_chunk(uint8_t *buf, size_t buf_len, uint32_t address,
 
 static int load_segment(const struct device *fdev, size_t seg_size,
 			uint32_t seg_target_addr, uint32_t seg_offset,
-			uint8_t *buf, bool is_bl)
+			uint8_t *buf, size_t buf_len, bool is_bootloader)
 {
 	int err;
 	uint32_t read_addr = seg_offset;
 	size_t bytes_left = seg_size;
 
 	while (bytes_left) {
-		uint32_t read_len = MIN(NRF_MODEM_FULL_DFU_WRITE_LEN,
-					bytes_left);
+		uint32_t read_len = MIN(buf_len, bytes_left);
 
 		err = flash_read(fdev, read_addr, buf, read_len);
 		if (err != 0) {
@@ -105,7 +97,8 @@ static int load_segment(const struct device *fdev, size_t seg_size,
 			return err;
 		}
 
-		err = write_chunk(buf, read_len, seg_target_addr, is_bl);
+		err = write_chunk(buf, read_len, seg_target_addr,
+				  is_bootloader);
 		if (err != 0) {
 			LOG_ERR("write_chunk failed: %d", err);
 			return err;
@@ -119,7 +112,16 @@ static int load_segment(const struct device *fdev, size_t seg_size,
 		read_addr += read_len;
 	}
 
-	if (is_bl) {
+	if (is_bootloader) {
+		/* We need to explicitly call _apply() once all chunks of the
+		 * bootloader has been written.
+		 */
+		err = nrf_modem_full_dfu_apply();
+		if (err != 0) {
+			LOG_ERR("nrf_..._full_dfu_apply (bl) failed, errno: %d",
+					errno);
+			return err;
+		}
 	}
 
 	return 0;
@@ -127,7 +129,7 @@ static int load_segment(const struct device *fdev, size_t seg_size,
 
 static int load_segments(const struct device *fdev, uint8_t *meta_buf,
 			 size_t wrapper_len, const Segments_t *seg,
-			 size_t blob_offset, uint8_t *buf)
+			 size_t blob_offset, uint8_t *buf, size_t buf_len)
 {
 	int err;
 	size_t prev_segments_len = 0;
@@ -143,7 +145,7 @@ static int load_segments(const struct device *fdev, uint8_t *meta_buf,
 			i+1,seg->_Segments__Segment_count, seg_addr, seg_size);
 
 		err = load_segment(fdev, seg_size, seg_addr, read_addr, buf,
-				   is_bootloader);
+				   buf_len, is_bootloader);
 		if (err != 0) {
 			LOG_ERR("load_segment failed: %d", err);
 			return err;
@@ -270,7 +272,7 @@ int fmfu_fdev_load(uint8_t *buf, size_t buf_len, const struct device *fdev,
 	if (hash_len_valid && hash_valid) {
 		return load_segments(fdev, meta_buf, wrapper_len,
 				     (const Segments_t *)&segments, blob_offset,
-				     buf);
+				     buf, buf_len);
 	} else {
 		return -EINVAL;
 	}
