@@ -60,7 +60,7 @@ add_custom_command(
   --oht ${types_h}
   -t ${entry_types}
   -d # Decode
-  --default-maxq 16 # Up to 16 segments is supported.
+  --default-maxq 128 # TNSW-33521
   COMMAND
   ${CMAKE_COMMAND} -DFILES="${decode_c}\;${decode_h}\;${types_h}" -P ${license}
   ${CLANG_FORMAT_COMMAND}

@@ -6,7 +6,7 @@
 
 /*
  * Generated with cddl_gen.py (https://github.com/oyvindronningstad/cddl_gen)
- * Generated with a default_maxq of 16
+ * Generated with a default_maxq of 128
  */
 
 #ifndef MODEM_UPDATE_DECODE_H__
@@ -19,7 +19,7 @@
 #include "cbor_decode.h"
 #include "modem_update_types.h"
 
-#if DEFAULT_MAXQ != 16
+#if DEFAULT_MAXQ != 128
 #error "The type file was generated with a different default_maxq than this file"
 #endif
 

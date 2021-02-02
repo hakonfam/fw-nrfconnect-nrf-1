@@ -6,7 +6,7 @@
 
 /*
  * Generated with cddl_gen.py (https://github.com/oyvindronningstad/cddl_gen)
- * Generated with a default_maxq of 16
+ * Generated with a default_maxq of 128
  */
 
 #include <stdint.h>
@@ -16,7 +16,7 @@
 #include "cbor_decode.h"
 #include "modem_update_decode.h"
 
-#if DEFAULT_MAXQ != 16
+#if DEFAULT_MAXQ != 128
 #error "The type file was generated with a different default_maxq than this file"
 #endif
 
@@ -126,7 +126,7 @@ static bool decode_Segments(cbor_state_t *state, Segments_t *result)
 	bool tmp_result = ((
 		(list_start_decode(state) &&
 		 (int_res = (multi_decode(
-			  1, 16, &(*result)._Segments__Segment_count,
+			  1, 128, &(*result)._Segments__Segment_count,
 			  (void *)decode_Segment, state,
 			  (&(*result)._Segments__Segment), sizeof(Segment_t))),
 		  ((list_end_decode(state)) && int_res)))));
