@@ -156,12 +156,14 @@ static int load_segments(const struct device *fdev, uint8_t *meta_buf,
 			/* The IPC-DFU bootloader has been written, we can now
 			 * perform the prevalidation.
 			 */
+			LOG_INF("Running prevalidation (can take minutes)");
 			err = nrf_modem_full_dfu_verify(wrapper_len,
 							(void *)meta_buf);
 			if (err != 0) {
 				LOG_ERR("nrf_fmfu_verify_signature failed, "
 					"errno: %d",
 					errno);
+				return err;
 			}
 #else
 			LOG_WRN("[WARNING] Skipping prevalidation, this "
