@@ -182,15 +182,17 @@ void main(void)
 
 	printk("HTTP full modem update sample started\n");
 
-	err = nrf_modem_lib_init(NORMAL_MODE);
-	if (err) {
-		printk("Failed to initialize modem lib!\n");
-		return;
-	}
-
 	flash_dev = device_get_binding(EXT_FLASH_DEVICE);
 	if (flash_dev == NULL) {
 		printk("Failed to get flash device: %s\n", EXT_FLASH_DEVICE);
+		return;
+	}
+
+	err = nrf_modem_lib_init(NORMAL_MODE);
+	if (err) {
+		printk("Failed to initialize modem lib!\n");
+		printk("Applying full modem update from ext flash\n");
+		apply_fmfu_from_ext_flash();
 		return;
 	}
 

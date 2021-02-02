@@ -243,11 +243,6 @@ static int mgmt_get_memory_hash(struct mgmt_ctxt *ctxt)
 		return MGMT_ERR_ENOMEM;
 	}
 
-	if (++num == 3) {
-		nrf_modem_lib_shutdown();
-		nrf_modem_lib_init(FULL_DFU_MODE);
-	}
-
 	return MGMT_ERR_EOK;
 }
 
