@@ -51,21 +51,23 @@ void fmfu_button_pressed(const struct device *gpiob, struct gpio_callback *cb,
 	fmfu_button_irq_disable();
 }
 
-static void apply_fmfu_from_ext_flash(void)
+static void apply_fmfu_from_ext_flash(bool valid_init)
 {
 	int err;
 
 	printk("Applying full modem firmware update from external flash\n");
 
-	err = nrf_modem_lib_shutdown();
-	if (err != 0) {
-		printk("nrf_modem_lib_shutdown() failed: %d\n", err);
-		return;
+	if (valid_init) {
+		err = nrf_modem_lib_shutdown();
+		if (err != 0) {
+			printk("nrf_modem_lib_shutdown() failed: %d\n", err);
+			return;
+		}
 	}
 
 	err = nrf_modem_lib_init(FULL_DFU_MODE);
 	if (err != 0) {
-		printk("nrf_modem_lib_init() failed: %d\n", err);
+		printk("nrf_modem_lib_init(FULL_DFU_MODE) failed: %d\n", err);
 		return;
 	}
 
@@ -75,30 +77,30 @@ static void apply_fmfu_from_ext_flash(void)
 		return;
 	}
 
-	printk("suhtdown -start\n");
 	err = nrf_modem_lib_shutdown();
 	if (err != 0) {
 		printk("nrf_modem_lib_shutdown() failed: %d\n", err);
 		return;
 	}
-	printk("suhtdown -done\n");
 
-	printk("init-start\n");
 	err = nrf_modem_lib_init(NORMAL_MODE);
 	if (err != 0) {
 		printk("nrf_modem_lib_init() failed: %d\n", err);
 		return;
 	}
-	printk("init-done\n");
+
+	update_sample_done();
+	fmfu_button_irq_enable();
 
 	printk("Modem firmware update completed\n");
+
 }
 
 static void fmfu_work_cb(struct k_work *work)
 {
 	ARG_UNUSED(work);
 
-	apply_fmfu_from_ext_flash();
+	apply_fmfu_from_ext_flash(true);
 }
 
 static int button_init(void)
@@ -149,8 +151,7 @@ void fota_dl_handler(const struct fota_download_evt *evt)
 		printk("Received error from fota_download\n");
 		/* Fallthrough */
 	case FOTA_DOWNLOAD_EVT_FINISHED:
-		apply_fmfu_from_ext_flash();
-		update_sample_done();
+		apply_fmfu_from_ext_flash(true);
 		break;
 
 	default:
@@ -190,10 +191,10 @@ void main(void)
 
 	err = nrf_modem_lib_init(NORMAL_MODE);
 	if (err) {
-		printk("Failed to initialize modem lib!\n");
-		printk("Applying full modem update from ext flash\n");
-		apply_fmfu_from_ext_flash();
-		return;
+		printk("Failed to initialize modem lib, err: %d\n", err);
+		printk("This could indicate that an earlier update failed\n");
+		printk("Trying to apply modem update from ext flash\n");
+		apply_fmfu_from_ext_flash(false);
 	}
 
 	k_work_init(&fmfu_work, fmfu_work_cb);
