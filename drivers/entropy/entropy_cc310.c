@@ -20,10 +20,6 @@
 #include <psa/crypto.h>
 #include <psa/crypto_extra.h>
 #include <tfm_ns_interface.h>
-#elif defined(CONFIG_HARDWARE_DEVICE_CS_GENERATOR)
-#include "nrf_cc3xx_platform_ctr_drbg.h"
-
-static nrf_cc3xx_platform_ctr_drbg_context_t ctr_drbg_ctx;
 #else
 #include "nrf_cc3xx_platform_entropy.h"
 #endif
@@ -40,68 +36,36 @@ static int entropy_cc3xx_rng_get_entropy(
 	__ASSERT_NO_MSG(dev != NULL);
 	__ASSERT_NO_MSG(buffer != NULL);
 
-
 #if defined(CONFIG_BUILD_WITH_TFM)
-
 	res = psa_generate_random(buffer, length);
 	if (res != PSA_SUCCESS) {
 		return -EINVAL;
 	}
 
+#elif (CONFIG_SPM)
+	size_t olen;
+
+	res = spm_request_random_number(buffer,
+						length,
+						&olen);
+
+	if (olen != length) {
+		return -EINVAL;
+	}
 #else
 	size_t olen;
-	size_t offset = 0;
-	size_t chunk_size = CTR_DRBG_MAX_REQUEST;
-	/** This is a call from a secure app, in which case entropy is
-	 *  gathered using CC3xx HW using the CTR_DRBG features of the
-	 *  nrf_cc310_platform/nrf_cc312_platform library.
-	 */
-	while (offset < length) {
 
-		if ((length - offset) < CTR_DRBG_MAX_REQUEST) {
-			chunk_size = length - offset;
-		}
+	res = nrf_cc3xx_platform_entropy_get(
+						buffer,
+						length,
+						&olen);
 
-		#if defined(CONFIG_SPM)
-			/** This is a call from a non-secure app that
-			 * enables secure services, in which case entropy
-			 * is gathered by calling through SPM.
-			 */
-			res = spm_request_random_number(buffer + offset,
-								chunk_size,
-								&olen);
-		#elif defined(CONFIG_HARDWARE_DEVICE_CS_GENERATOR)
-			/** This is a call from a secure app, in which
-			 * case entropy is gathered using CC3xx HW
-			 * using the CTR_DRBG features of the
-			 * nrf_cc310_platform/nrf_cc312_platform library.
-			 */
-			res = nrf_cc3xx_platform_ctr_drbg_get(&ctr_drbg_ctx,
-								buffer + offset,
-								chunk_size,
-								&olen);
-		#else
-			/** This is a call from a secure app, but with
-			 * a configuration to calculate CSPRNG using
-			 * CTR_DRBG_CSPRNG_GENERATOR.
-			 */
-			res = nrf_cc3xx_platform_entropy_get(
-								buffer + offset,
-								chunk_size,
-								&olen);
-		#endif
-
-		if (olen != chunk_size) {
-			return -EINVAL;
-		}
-
-		if (res != 0) {
-			break;
-		}
-
-		offset += chunk_size;
+	if (olen != length) {
+		return -EINVAL;
 	}
 #endif
+
+
 
 	return res;
 }
@@ -123,16 +87,6 @@ static int entropy_cc3xx_rng_init(const struct device *dev)
 		if (ret != PSA_SUCCESS) {
 			return -EINVAL;
 		}
-
-	#elif !defined(CONFIG_SPM) && defined(CONFIG_HARDWARE_DEVICE_CS_GENERATOR)
-		int ret = 0;
-
-		ret = nrf_cc3xx_platform_ctr_drbg_init(&ctr_drbg_ctx, NULL, 0);
-		if (ret != 0) {
-			return -EINVAL;
-		}
-	#else
-		/* Nothing to do. */
 	#endif
 
 	return 0;
