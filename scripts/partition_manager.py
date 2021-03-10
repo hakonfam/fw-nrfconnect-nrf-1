@@ -344,27 +344,33 @@ def get_size_source(reqs, sharer):
     return size_source
 
 
-def set_shared_size(all_reqs, total_size, dp):
-    for req in all_reqs.keys():
-        if 'share_size' in all_reqs[req].keys():
-            size_source = get_size_source(all_reqs, req)
-            if 'sharers' not in all_reqs[size_source].keys():
-                all_reqs[size_source]['sharers'] = 0
-            all_reqs[size_source]['sharers'] += 1
-            all_reqs[req]['share_size'] = [size_source]
+def set_shared_size(regions, pm_config):
+    for req in pm_config.keys():
+        if 'share_size' in pm_config[req].keys():
+            size_source = get_size_source(pm_config, req)
+            if 'sharers' not in pm_config[size_source].keys():
+                pm_config[size_source]['sharers'] = 0
+            pm_config[size_source]['sharers'] += 1
+            pm_config[req]['share_size'] = [size_source]
 
     new_sizes = dict()
 
-    # Find partitions which share size with dynamic partition or a container partition which spans dynamic partition.
-    dynamic_size_sharers = get_dependent_partitions(all_reqs, dp)
-    static_size_sharers = [k for k, v in all_reqs.items() if 'share_size' in v.keys() and k not in dynamic_size_sharers]
-    for req in static_size_sharers:
-        all_reqs[req]['size'] = shared_size(all_reqs, all_reqs[req]['share_size'][0], total_size, dp)
-    for req in dynamic_size_sharers:
-        new_sizes[req] = shared_size(all_reqs, all_reqs[req]['share_size'][0], total_size, dp)
-    # Update all sizes after-the-fact or else the calculation will be messed up.
-    for key, value in new_sizes.items():
-        all_reqs[key]['size'] = value
+    # Find partitions which share size with dynamic partition or a container partition which spans
+    # dynamic partition. Note that this can only occur in regions with 'complex' placement.
+    for name, props in {x: y for x, y in regions.items()
+                        if y['placement_strategy'] == COMPLEX}.items():
+        dp = props['dynamic_partition']
+        free_size = props['free_size']
+        dynamic_size_sharers = get_dependent_partitions(pm_config, dp)
+        static_size_sharers = [k for k, v in pm_config.items()
+                               if 'share_size' in v.keys() and k not in dynamic_size_sharers]
+        for req in static_size_sharers:
+            pm_config[req]['size'] = shared_size(pm_config, pm_config[req]['share_size'][0], free_size, dp)
+        for req in dynamic_size_sharers:
+            new_sizes[req] = shared_size(pm_config, pm_config[req]['share_size'][0], free_size, dp)
+        # Update all sizes after-the-fact or else the calculation will be messed up.
+        for key, value in new_sizes.items():
+            pm_config[key]['size'] = value
 
 
 def get_dependent_partitions(all_reqs, target):
@@ -399,7 +405,6 @@ def verify_layout(reqs, solution, total_size, flash_start):
 
 def set_addresses_and_align(reqs, sub_partitions, solution, size, dp, start=0):
     all_reqs = dict(reqs, **sub_partitions)
-    set_shared_size(all_reqs, size, dp)
     dynamic_partitions = [dp]
     dynamic_partitions += get_dependent_partitions(all_reqs, dp)
     reqs[dp]['size'] = dynamic_partitions_size(reqs, size, dp)
@@ -645,38 +650,6 @@ def load_reqs(input_config):
     return reqs
 
 
-def get_dynamic_area_start_and_size(static_config, base, size, dp):
-    # Remove app from this dict to simplify the case where partitions
-    # before and after are removed.
-    proper_partitions = [config for name, config in static_config.items()
-                         if 'span' not in config.keys() and
-                         name != dp]
-
-    first_address = base
-    last_address = base + size
-
-    starts = {last_address} | {config['address']
-                               for config in proper_partitions}
-    ends = {first_address} | {config['address'] + config['size']
-                              for config in proper_partitions}
-    gaps = list(zip(sorted(ends - starts), sorted(starts - ends)))
-
-    if len(gaps) != 1:
-        raise PartitionError(
-            "Incorrect amount of gaps found in static configuration. "
-            "There must be exactly one gap in the static configuration to "
-            "support placing the dynamic partitions (such as 'app'). "
-            f"Gaps found ({len(gaps)}):" +
-            " ".join([f"0x{gap[0]:x}-0x{gap[1]:x}" for gap in gaps]) +
-            " The most common solution to this problem is to fill the "
-            "smallest of these gaps with statically defined partition(s) until"
-            " there is only one gap left. Alternatively re-order the already "
-            "defined static partitions so that only one gap remains.")
-
-    start, end = gaps[0]
-    return start, end - start
-
-
 def calculate_end_address(pm_config):
     for part in pm_config:
         pm_config[part]['end_address'] = pm_config[part]['address'] + pm_config[part]['size']
@@ -713,21 +686,17 @@ def get_region_config(pm_config, region_config, static_conf=None):
     calculate_end_address(pm_config)
 
 
-def solve_simple_region(pm_config, start, size, placement_strategy, region_name, device, static_conf):
-    reserved = 0
-    if static_conf:
-        verify_static_conf_simple(size, start, placement_strategy, static_conf)
-        reserved = sum([config['size'] for name, config in static_conf.items()
-                        if 'region' in config.keys() and config['region'] == region_name])
-        pm_config.update(static_conf)
+def solve_simple_region(pm_config, start, size, region, device, static_conf):
+    region_name = region['name']
+    reserved = region['size'] - region['free_size']
+    placement_strategy = region['placement_strategy']
 
     if placement_strategy == END_TO_START:
         address = start + size - reserved
     else:
         address = start + reserved
 
-    # Static partitions are now added to the pm_config dict. These partitions
-    # already have their 'address' set, so skip these partitions in this loop.
+    # Static partitions already have their 'address' set, so skip these partitions in this loop.
     for partition_name in [k for k in pm_config if 'address' not in pm_config[k]]:
         if placement_strategy == END_TO_START:
             address -= pm_config[partition_name]['size']
@@ -740,9 +709,9 @@ def solve_simple_region(pm_config, start, size, placement_strategy, region_name,
         if device:
             pm_config[partition_name]['device'] = device
 
+    # Generate the region partition containing the non-reserved memory.
     if not static_conf or (region_name not in static_conf):
-        # Generate the region partition containing the non-reserved memory.
-        # But first, verify that the user hasn't created a partition with the name of the region.
+        # Verify that the user hasn't created a partition with the name of the region.
         if region_name in pm_config:
             raise PartitionError(
                 f'Found partition named {region_name}, this is the name of a'
@@ -759,53 +728,14 @@ def solve_simple_region(pm_config, start, size, placement_strategy, region_name,
             pm_config[region_name]['size'] = (start + size) - address
 
 
-def verify_static_conf_simple(size, start, placement_strategy, static_conf):
-    # Verify the static configuration of a region with 'simple' placement.
-    # Ensure that all statically defined partitions have a given address,
-    # and that they are packed at the end/start of the region.
-    starts = {start + size} | {c['address']
-                               for c in static_conf.values() if 'size' in c}
-    ends = {start} | {c['address'] + c['size']
-                      for c in static_conf.values() if 'size' in c}
-    gaps = list(zip(sorted(ends - starts), sorted(starts - ends)))
-
-    # The whole region is filled, which is valid.
-    if len(gaps) == 0:
-        return
-
-    if placement_strategy == START_TO_END:
-        start_end_correct = gaps[0][0] == start + size
-    else:
-        start_end_correct = gaps[0][0] == start
-
-    if len(gaps) != 1:
-        raise PartitionError(
-            "Incorrect amount of gaps found in static configuration for region"
-            f" '{list(static_conf.values())[0]['region']}'. "
-            "There must be exactly one gap in the static configuration to "
-            "support placing the non-statically-defined partitions. "
-            f"Gaps found ({len(gaps)}):" +
-            " ".join([f"0x{gap[0]:x}-0x{gap[1]:x}" for gap in gaps]) +
-            " The most common solution to this problem is to re-order the "
-            "defined static partitions so that only one gap remains.")
-    elif not start_end_correct:
-        raise PartitionError(
-            f"Statically defined partitions are not packed at "
-            f"{'start' if placement_strategy == START_TO_END else 'end'} of "
-            f"region '{list(static_conf.values())[0]['region']}'.")
-
-
-def solve_complex_region(pm_config, start, size, placement_strategy, region_name, device, static_conf, dp):
-    free_size = size
+def solve_complex_region(pm_config, region, static_conf, dp):
+    free_size = region['free_size']
+    start = region['free_start']
 
     if static_conf:
-        start, free_size = \
-            get_dynamic_area_start_and_size(static_conf, start, size, dp)
-
         # If nothing is unresolved (only dynamic partition remaining),
         # simply return the pre defined config with dynamic_partition
         if len(pm_config) == 1:
-            pm_config.update(static_conf)
             pm_config[dp]['address'] = start
             pm_config[dp]['size'] = free_size
             return
@@ -813,10 +743,6 @@ def solve_complex_region(pm_config, start, size, placement_strategy, region_name
     solution, sub_partitions = resolve(pm_config, dp)
     set_addresses_and_align(pm_config, sub_partitions, solution, free_size, dp, start=start)
     set_sub_partition_address_and_size(pm_config, sub_partitions)
-
-    if static_conf:
-        # Merge the results, take the new dynamic_partition as that has the correct size.
-        pm_config.update({name: config for name, config in static_conf.items() if name != dp})
 
 
 def write_yaml_out_file(pm_config, out_path):
@@ -934,29 +860,126 @@ def load_static_configuration(args, pm_config):
     return static_config
 
 
+def verify_static_conf_simple(size, start, placement_strategy, static_conf):
+    # Verify the static configuration of a region with 'simple' placement.
+    # Ensure that all statically defined partitions have a given address,
+    # and that they are packed at the end/start of the region.
+    starts = {start + size} | {c['address']
+                               for c in static_conf.values() if 'size' in c}
+    ends = {start} | {c['address'] + c['size']
+                      for c in static_conf.values() if 'size' in c}
+    gaps = list(zip(sorted(ends - starts), sorted(starts - ends)))
+
+    # The whole region is filled, which is valid.
+    if len(gaps) == 0:
+        return
+
+    if placement_strategy == START_TO_END:
+        start_end_correct = gaps[0][0] == start + size
+    else:
+        start_end_correct = gaps[0][0] == start
+
+    if len(gaps) != 1:
+        raise PartitionError(
+            "Incorrect amount of gaps found in static configuration for region"
+            f" '{list(static_conf.values())[0]['region']}'. "
+            "There must be exactly one gap in the static configuration to "
+            "support placing the non-statically-defined partitions. "
+            f"Gaps found ({len(gaps)}):" +
+            " ".join([f"0x{gap[0]:x}-0x{gap[1]:x}" for gap in gaps]) +
+            " The most common solution to this problem is to re-order the "
+            "defined static partitions so that only one gap remains.")
+    elif not start_end_correct:
+        raise PartitionError(
+            f"Statically defined partitions are not packed at "
+            f"{'start' if placement_strategy == START_TO_END else 'end'} of "
+            f"region '{list(static_conf.values())[0]['region']}'.")
+
+
+def get_dynamic_area_start_and_size(static_config, base, size, dp):
+    # Remove app from this dict to simplify the case where partitions
+    # before and after are removed.
+    proper_partitions = [config for name, config in static_config.items()
+                         if 'span' not in config.keys() and
+                         name != dp]
+
+    first_address = base
+    last_address = base + size
+
+    starts = {last_address} | {config['address']
+                               for config in proper_partitions}
+    ends = {first_address} | {config['address'] + config['size']
+                              for config in proper_partitions}
+    gaps = list(zip(sorted(ends - starts), sorted(starts - ends)))
+
+    if len(gaps) != 1:
+        raise PartitionError(
+            "Incorrect amount of gaps found in static configuration. "
+            "There must be exactly one gap in the static configuration to "
+            "support placing the dynamic partitions (such as 'app'). "
+            f"Gaps found ({len(gaps)}):" +
+            " ".join([f"0x{gap[0]:x}-0x{gap[1]:x}" for gap in gaps]) +
+            " The most common solution to this problem is to fill the "
+            "smallest of these gaps with statically defined partition(s) until"
+            " there is only one gap left. Alternatively re-order the already "
+            "defined static partitions so that only one gap remains.")
+
+    start, end = gaps[0]
+    return start, end - start
+
+
+def update_regions_with_static_config(regions, static_config):
+    for name, region in regions.items():
+        region_static_conf = {x: y for x, y in static_config.items() if y['region'] == name}
+        start = region['base_address']
+        region['free_start'] = start
+        size = region['size']
+        region['free_size'] = size
+        dp = region['dynamic_partition']
+        complex_region = region['placement_strategy'] == 'complex'
+
+        if not region_static_conf:
+            continue
+
+        if complex_region:
+            region['free_start'], region['free_size'] = \
+                get_dynamic_area_start_and_size(region_static_conf, start, size, dp)
+        else:
+            verify_static_conf_simple(size, start, region['placement_strategy'], region_static_conf)
+            region['free_size'] = sum([v['size'] for v in region_static_conf.values()])
+
+
 def main():
     args, ranges_configuration = parse_args()
     pm_config = load_reqs(args.input_files)
     static_config = load_static_configuration(args, pm_config) if args.static_config else dict()
     fix_syntactic_sugar(pm_config)
 
+    # Load all regions from the set of configuration files.
     regions = get_region_config_from_args(args, ranges_configuration)
+
+    # Verify that static configurations are valid, and update regions with information
+    # about the start address and size of the memory area which is not reserved statically.
+    update_regions_with_static_config(regions, static_config)
+
+    # Load static configuration into the map of configurations.
+    pm_config.update(static_config)
+
+    # Resolve all use of "shared_size"
+    set_shared_size(regions, pm_config)
 
     solution = dict()
     for region, region_config in regions.items():
         try:
-            solution.update(solve_region(pm_config, region, region_config,
-                                         static_config))
+            solution.update(solve_region(pm_config, region, region_config, static_config))
         except PartitionError as e:
             print(f"Partition manager failed: {str(e)}")
             print(f"Failed to partition region {region},"
                   f" size of region: {region_config['size']}")
             print('Partition Configuration:')
-            to_print = \
-                {x: {a: b for a, b in y.items() if a in
-                     ['size', 'placement', 'align']}
-                 for x, y in {**pm_config, **static_config}.items()
-                 if 'size' in y and 'region' in y and y['region'] == region}
+            to_print = {x: {a: b for a, b in y.items() if a in ['size', 'placement', 'align']}
+                        for x, y in {**pm_config, **static_config}.items()
+                        if 'size' in y and 'region' in y and y['region'] == region}
             print(yaml.dump(to_print))
             sys.exit(1)
 
