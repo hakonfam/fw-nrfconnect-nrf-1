@@ -350,8 +350,9 @@ def get_size_source(reqs, sharer):
     return size_source
 
 
-def set_shared_size(pm_config, region, regions, total_size, dp):
+def set_shared_size(pm_config, region, regions, total_size):
     region_pm_config = for_region(pm_config, region)
+    dp = region['dynamic_partition'] if 'dynamic_partition' in region else None
     for req in region_pm_config.keys():
         if 'share_size' in pm_config[req].keys():
             size_source = get_size_source(pm_config, req)
@@ -370,8 +371,7 @@ def set_shared_size(pm_config, region, regions, total_size, dp):
     for req in static_size_sharers:
         # TODO find the dp in the region where the 'share_size' partition is
         size_source = pm_config[req]['share_size'][0]
-        region_dp = regions[pm_config[size_source['region']]]['dynamic_partition']
-        pm_config[req]['size'] = shared_size(pm_config, pm_config[req]['share_size'][0], total_size, region_dp)
+        pm_config[req]['size'] = pm_config[size_source]['size']
     for req in dynamic_size_sharers:
         new_sizes[req] = shared_size(pm_config, pm_config[req]['share_size'][0], total_size, dp)
     # Update all sizes after-the-fact or else the calculation will be messed up.
@@ -409,10 +409,10 @@ def verify_layout(reqs, solution, total_size, flash_start):
                              ' address')
 
 
-def set_addresses_and_align(pm_config, region_config, sub_partitions, solution, size, dp, start=0):
+def set_addresses_and_align(pm_config, region, regions, sub_partitions, solution, size, dp, start=0):
     all_reqs = dict(pm_config, **sub_partitions)
-    region_pm_config = for_region(pm_config, region_config)
-    set_shared_size(all_reqs, region_config, size, dp)
+    region_pm_config = for_region(pm_config, region)
+    set_shared_size(all_reqs, region, regions, size)
     dynamic_partitions = [dp]
     dynamic_partitions += get_dependent_partitions(all_reqs, dp)
     pm_config[dp]['size'] = dynamic_partitions_size(region_pm_config, size, dp)
@@ -700,9 +700,11 @@ def get_region_config(pm_config, region, regions, static_conf=None):
     if region['placement_strategy'] in [END_TO_START, START_TO_END]:
         solve_simple_region(pm_config, region, regions, static_conf)
     else:
-        dp = region['dynamic_partition'] \
-            if ('dynamic_partition' in region and region['dynamic_partition'] is not None) \
-            else 'app'
+        if 'dynamic_partition' in region and region['dynamic_partition'] is not None:
+            dp = region['dynamic_partition']
+        else:
+            dp = 'app'
+            region['dynamic_partition'] = dp
 
         if dp != 'app' and region['name'] == 'flash_primary':
             # All configurations use 'app' to denote the dynamic partition.
@@ -717,7 +719,7 @@ def get_region_config(pm_config, region, regions, static_conf=None):
         pm_config[dp] = dict()
         pm_config[dp]['region'] = region['name']
 
-        solve_complex_region(pm_config, region, static_conf, dp)
+        solve_complex_region(pm_config, region, regions, static_conf)
 
     calculate_end_address(pm_config, region)
 
@@ -742,7 +744,7 @@ def solve_simple_region(pm_config, region, regions, static_conf):
         address = start + reserved
 
     # Resolve shared size
-    set_shared_size(pm_config, region, regions, size, None)
+    set_shared_size(pm_config, region, regions, size)
 
     # Static partitions are now added to the pm_config dict. These partitions
     # already have their 'address' set, so skip these partitions in this loop.
@@ -817,12 +819,13 @@ def for_region(something, region):
     return {x: y for x, y in something.items() if y['region'] == region['name']}
 
 
-def solve_complex_region(pm_config, region_config, static_conf, dp):
-    size = region_config['size']
+def solve_complex_region(pm_config, region, regions, static_conf):
+    dp = region['dynamic_partition']
+    size = region['size']
     free_size = size
-    start = region_config['base_address']
-    region_static_conf = for_region(static_conf, region_config)
-    # region_pm_conf = for_region(pm_config, region_config)
+    start = region['base_address']
+    region_static_conf = for_region(static_conf, region)
+
     if static_conf:
         start, free_size = \
             get_dynamic_area_start_and_size(region_static_conf, start, size, dp)
@@ -835,8 +838,8 @@ def solve_complex_region(pm_config, region_config, static_conf, dp):
             pm_config[dp]['size'] = free_size
             return
 
-    solution, sub_partitions = resolve(pm_config, region_config, dp)
-    set_addresses_and_align(pm_config, region_config, sub_partitions, solution, free_size, dp, start=start)
+    solution, sub_partitions = resolve(pm_config, region, dp)
+    set_addresses_and_align(pm_config, region, regions, sub_partitions, solution, free_size, dp, start=start)
     set_span_address_and_size(pm_config, sub_partitions)
 
     if region_static_conf:
@@ -934,11 +937,12 @@ def get_region_config_from_args(args, ranges_configuration):
 
 def solve_region(pm_config, region_name, regions, static_config):
     solution = dict()
-    regions[region_name]['name'] = region_name
+    region = regions[region_name]
+    region['name'] = region_name
 
     get_region_config(pm_config, region, regions, static_config)
 
-    solution.update(for_region(pm_config, region_config))
+    solution.update(for_region(pm_config, region))
 
     return solution
 

@@ -184,6 +184,7 @@ void main(void)
 
 	printk("HTTP full modem update sample started\n");
 
+	printk("%s\n", EXT_FLASH_DEVICE);
 	flash_dev = device_get_binding(EXT_FLASH_DEVICE);
 	if (flash_dev == NULL) {
 		printk("Failed to get flash device: %s\n", EXT_FLASH_DEVICE);

@@ -1,4 +1,4 @@
-.. _partition_manager:
+. _partition_mananer:
 
 Partition Manager
 #################
@@ -507,6 +507,10 @@ The following example assumes that the flash device has been initialized as foll
 .. code-block:: c
 
    DEVICE_AND_API_INIT(spi_flash_memory, "name_of_flash_device", ... );
+
+   TODO note about enabling driver (QSPI for 52dk SPI for 91dk)
+   CONFIG_SPI_NOR
+   CONFIG_NORDIC_QSPI_NOR
 
 
 To enable external flash support in the Partition Manager, configure the following options:
