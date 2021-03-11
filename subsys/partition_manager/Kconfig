@@ -116,6 +116,10 @@ config PM_SINGLE_IMAGE
 menuconfig PM_EXTERNAL_FLASH
 	bool "Support external flash in Partition Manager"
 
+config PM_MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH
+	bool "Store MCUboot secondary in external flash"
+	depends on PM_EXTERNAL_FLASH || MCUBOOT
+
 if PM_EXTERNAL_FLASH
 
 config PM_EXTERNAL_FLASH_DEV_NAME

@@ -132,3 +132,12 @@ if (PM_SUBSYS_PATHS)
       )
   endforeach()
 endif()
+
+# This needs to be passed to the mcuboot image to ensure that its pm.yml
+# correctly sets the region of the 'mcuboot_secondary' partition.
+if (CONFIG_PM_MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH)
+  add_overlay_config(
+    mcuboot
+    ${NRF_DIR}/subsys/partition_manager/mcuboot_ext_flash.conf
+    )
+endif()
