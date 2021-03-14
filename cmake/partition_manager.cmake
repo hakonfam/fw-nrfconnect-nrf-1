@@ -548,3 +548,17 @@ set_property(
   PROPERTY       yaml_contents
   ${new}
   )
+
+# If MCUboot secondary is stored in external flash, we want to ensure that
+# the size matches that of the primary partition. We can only do this here, as
+# it is only now we know the actual size of the primary partition.
+if (mcuboot_EXTERNAL_SECONDARY_PARTITION_SIZE)
+  message("Yes boy")
+  if (mcuboot_EXTERNAL_SECONDARY_PARTITION_SIZE NOT EQUAL
+      PM_MCUBOOT_PRIMARY_SIZE)
+    message(FATAL_ERROR "The size of the MCUboot secondary partition does not \
+    match the primary partition. Please set
+    'CONFIG_MCUBOOT_EXTERNAL_SECONDARY_PARTITION_SIZE to
+    ${PM_MCUBOOT_PRIMARY_SIZE}")
+  endif()
+endif()

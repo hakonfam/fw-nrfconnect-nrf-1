@@ -509,6 +509,8 @@ The following example assumes that the flash device has been initialized as foll
    DEVICE_AND_API_INIT(spi_flash_memory, "name_of_flash_device", ... );
 
    TODO note about enabling driver (QSPI for 52dk SPI for 91dk)
+   TODO use DT reference intsead for the argument here.
+   TODO note how this should be done for a child image
    CONFIG_SPI_NOR
    CONFIG_NORDIC_QSPI_NOR
 

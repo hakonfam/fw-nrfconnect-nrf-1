@@ -33,6 +33,13 @@ if(IMAGE_NAME)
    share("set(${IMAGE_NAME}SIGNATURE_KEY_FILE ${CONFIG_BOOT_SIGNATURE_KEY_FILE})")
   endif()
 
+  # If external flash is used for storing the MCUboot secondary, we need to
+  # share the size so it can be verified against the size of the primary
+  # partition.
+  if (CONFIG_MCUBOOT AND CONFIG_PM_MCUBOOT_EXTERNAL_SECONDARY_PARTITION_SIZE)
+    share("set(${IMAGE_NAME}_EXTERNAL_SECONDARY_PARTITION_SIZE ${CONFIG_PM_MCUBOOT_EXTERNAL_SECONDARY_PARTITION_SIZE})")
+  endif()
+
   file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/shared_vars.cmake
     CONTENT $<TARGET_PROPERTY:zephyr_property_target,shared_vars>
     )

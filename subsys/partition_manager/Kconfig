@@ -113,12 +113,23 @@ config PM_SINGLE_IMAGE
 	  when a subsystem that defines its own Partition Manager configuration
 	  is included in the build.
 
-menuconfig PM_EXTERNAL_FLASH
-	bool "Support external flash in Partition Manager"
-
 config PM_MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH
 	bool "Store MCUboot secondary in external flash"
 	depends on PM_EXTERNAL_FLASH || MCUBOOT
+	default y if MCUBOOT
+
+config PM_MCUBOOT_EXTERNAL_SECONDARY_PARTITION_SIZE
+	hex "Size of MCUboot secondary partition in external flash"
+	depends on MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH
+	help
+	  This size must match the size of the 'mcuboot_primary' partition.
+	  To find the size of the 'mcuboot_primary' partition, run the
+	  'ninja partition_manager_report' target, or inspect the file
+	  'partitions.yml' in the build directory.
+
+
+menuconfig PM_EXTERNAL_FLASH
+	bool "Support external flash in Partition Manager"
 
 if PM_EXTERNAL_FLASH
 
