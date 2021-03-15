@@ -36,8 +36,8 @@ if(IMAGE_NAME)
   # If external flash is used for storing the MCUboot secondary, we need to
   # share the size so it can be verified against the size of the primary
   # partition.
-  if (CONFIG_MCUBOOT AND CONFIG_PM_MCUBOOT_EXTERNAL_SECONDARY_PARTITION_SIZE)
-    share("set(${IMAGE_NAME}_EXTERNAL_SECONDARY_PARTITION_SIZE ${CONFIG_PM_MCUBOOT_EXTERNAL_SECONDARY_PARTITION_SIZE})")
+  if (CONFIG_MCUBOOT AND CONFIG_PM_MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH)
+    share("set(${IMAGE_NAME}EXTERNAL_SECONDARY_PARTITION_SIZE ${CONFIG_PM_MCUBOOT_EXTERNAL_SECONDARY_PARTITION_SIZE})")
   endif()
 
   file(GENERATE OUTPUT ${CMAKE_BINARY_DIR}/shared_vars.cmake

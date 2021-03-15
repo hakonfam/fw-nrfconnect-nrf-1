@@ -120,7 +120,8 @@ config PM_MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH
 
 config PM_MCUBOOT_EXTERNAL_SECONDARY_PARTITION_SIZE
 	hex "Size of MCUboot secondary partition in external flash"
-	depends on MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH
+	depends on PM_MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH
+	default 0x10000
 	help
 	  This size must match the size of the 'mcuboot_primary' partition.
 	  To find the size of the 'mcuboot_primary' partition, run the

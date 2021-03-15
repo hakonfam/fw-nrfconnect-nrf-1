@@ -143,3 +143,11 @@ if (CONFIG_NCS_SAMPLE_EMPTY_APP_CORE_CHILD_IMAGE)
     DOMAIN CPUAPP
     BOARD ${CONFIG_DOMAIN_CPUAPP_BOARD})
 endif()
+
+if (CONFIG_BOOTLOADER_MCUBOOT AND
+    CONFIG_PM_MCUBOOT_SECONDARY_IN_EXTERNAL_FLASH)
+      add_overlay_config(
+        mcuboot
+        "${ZEPHYR_NRF_MODULE_DIR}/subsys/partition_manager/mcuboot_ext_flash.conf"
+        )
+endif()
