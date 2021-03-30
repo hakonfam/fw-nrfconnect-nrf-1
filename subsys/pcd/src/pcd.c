@@ -8,7 +8,10 @@
 #include <device.h>
 #include <dfu/pcd.h>
 #include <logging/log.h>
+
+#if defined(CONFIG_PCD) || defined(CONFIG_PCD_NET)
 #include <storage/stream_flash.h>
+#endif
 
 LOG_MODULE_REGISTER(pcd, CONFIG_PCD_LOG_LEVEL);
 
@@ -19,13 +22,22 @@ LOG_MODULE_REGISTER(pcd, CONFIG_PCD_LOG_LEVEL);
 /** Magic value written to indicate that a copy is done. */
 #define PCD_CMD_MAGIC_DONE 0xf103ce5d
 
-#if defined(CONFIG_SOC_NRF5340_CPUAPP) && defined(CONFIG_MCUBOOT)
-#include <pm_config.h>
+#if defined(CONFIG_SOC_NRF5340_CPUAPP)
+#if defined(CONFIG_PCD) || defined(CONFIG_PCD_APP)
+
 #include <hal/nrf_reset.h>
 #include <hal/nrf_spu.h>
+
 /** Offset which the application should be copied into */
+#if defined(CONFIG_NET_CORE_APP_OFFSET)
+#define NET_CORE_APP_OFFSET CONFIG_NET_CORE_APP_OFFSET
+#else
+#include <pm_config.h>
 #define NET_CORE_APP_OFFSET PM_CPUNET_B0N_CONTAINER_SIZE
 #endif
+
+#endif /* defined(CONFIG_PCD) || defined(CONFIG_PCD_APP) */
+#endif /* defined(CONFIG_SOC_NRF5340_CPUAPP) */
 
 struct pcd_cmd {
 	uint32_t magic; /* Magic value to identify this structure in memory */
@@ -56,6 +68,8 @@ const void *pcd_cmd_data_ptr_get(void)
 {
 	return cmd->data;
 }
+
+#if defined(CONFIG_PCD) || defined(CONFIG_PCD_NET)
 
 int pcd_fw_copy(const struct device *fdev)
 {
@@ -92,7 +106,10 @@ void pcd_fw_copy_done(void)
 	cmd->magic = PCD_CMD_MAGIC_DONE;
 }
 
-#if defined(CONFIG_SOC_NRF5340_CPUAPP) && defined(CONFIG_MCUBOOT)
+#endif /* defined(CONFIG_PCD) || defined(CONFIG_PCD_NET) */
+
+#if defined(CONFIG_SOC_NRF5340_CPUAPP)
+#if defined(CONFIG_PCD) || defined(CONFIG_PCD_APP)
 
 /** @brief Construct a PCD CMD for copying data/firmware.
  *
@@ -167,4 +184,6 @@ void pcd_lock_ram(void)
 	nrf_spu_ramregion_set(NRF_SPU, region, false, NRF_SPU_MEM_PERM_READ,
 			true);
 }
-#endif /* CONFIG_SOC_NRF5340_CPUAPP && CONFIG_MCUBOOT */
+
+#endif /* defined(CONFIG_PCD) || defined(CONFIG_PCD_APP) */
+#endif /* defined(CONFIG_SOC_NRF5340_CPUAPP) */
