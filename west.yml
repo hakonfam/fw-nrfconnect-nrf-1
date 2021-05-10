@@ -139,7 +139,7 @@ manifest:
     - name: mbedtls-nrf
       path: mbedtls
       repo-path: mbedtls
-      revision: mbedtls-2.24.0
+      revision: mbedtls-2.25.0
       remote: armmbed
     - name: nanopb
       path: modules/lib/nanopb
