@@ -106,9 +106,9 @@ manifest:
       path: nrfxlib
       revision: pull/528/head
     - name: trusted-firmware-m
-      repo-path: sdk-trusted-firmware-m
+      url: https://github.com/mbolivar-nordic/sdk-trusted-firmware-m
       path: modules/tee/tfm
-      revision: pull/27/head
+      revision: pull/2/head
     - name: tfm-mcuboot # This is used by the trusted-firmware-m module.
       repo-path: sdk-mcuboot
       path: modules/tee/tfm-mcuboot
