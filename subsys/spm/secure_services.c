@@ -77,6 +77,9 @@ int spm_request_read_nse(void *destination, uint32_t addr, size_t len)
 		 .size = PM_MCUBOOT_PAD_SIZE},
 #endif
 #ifdef PM_MCUBOOT_PAD_1_ADDRESS
+		/* Allow reads of mcuboot metadata for second image in a multi
+		 * image context.
+		 */
 		{.start = PM_MCUBOOT_PAD_1_ADDRESS,
 		 .size = PM_MCUBOOT_PAD_1_SIZE},
 #endif

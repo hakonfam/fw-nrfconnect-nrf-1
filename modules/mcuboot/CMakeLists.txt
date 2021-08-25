@@ -12,6 +12,7 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
     # Required arguments are:
     # SIGNED_BIN_FILE_IN - (required) Hex image to sign
     # SIGNED_HEX_FILE_NAME_PREFIX - (required) Prefix of the output image
+    # SLOT_SIZE - (required) The size of the primary partition
     # START_ADDRESS_OFFSET - (required) Offset
     # SIGNED_HEX_FILE_OUT - (required) Signed hex output image
     # DEPENDS - (optional) One or more dependencies for signing the hex image
@@ -19,14 +20,7 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
     set(oneValueArgs SIGNED_BIN_FILE_IN SIGNED_HEX_FILE_NAME_PREFIX SLOT_SIZE START_ADDRESS_OFFSET SIGNED_HEX_FILE_OUT)
     set(multiValueArgs DEPENDS)
     cmake_parse_arguments(SIGN_ARG "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-    if (NOT DEFINED SIGN_ARG_SIGNED_BIN_FILE_IN
-        OR NOT DEFINED SIGN_ARG_SIGNED_HEX_FILE_OUT
-        OR NOT DEFINED SIGN_ARG_SIGNED_HEX_FILE_NAME_PREFIX
-        OR NOT DEFINED SIGN_ARG_START_ADDRESS_OFFSET
-        OR NOT DEFINED SIGN_ARG_SLOT_SIZE)
-      message(FATAL_ERROR "Missing parameter, required: SIGNED_BIN_FILE_IN SIGNED_HEX_FILE_NAME_PREFIX START_ADDRESS_OFFSET SIGNED_HEX_FILE_OUT SLOT_SIZE")
-    endif()
+    check_arguments_required_all(sign SIGN_ARG ${oneValueArgs})
 
     set(signed_hex ${SIGN_ARG_SIGNED_HEX_FILE_NAME_PREFIX}_signed.hex)
     set(${SIGN_ARG_SIGNED_HEX_FILE_OUT} ${signed_hex} PARENT_SCOPE)
@@ -80,7 +74,6 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
       ${sign_cmd}
       --slot-size ${SIGN_ARG_SLOT_SIZE}
       --pad # Adds IMAGE_MAGIC to end of slot.
-      --hex-addr ${SIGN_ARG_START_ADDRESS_OFFSET}
       ${SIGN_ARG_SIGNED_BIN_FILE_IN}
       ${test_update_hex}
 
@@ -182,7 +175,6 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
       return()
     endif()
 
-
     set(sign_cmd
       ${PYTHON_EXECUTABLE}
       ${ZEPHYR_MCUBOOT_MODULE_DIR}/scripts/imgtool.py
@@ -211,11 +203,13 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
         set(zb_add_ota_header_cmd "")
       endif(CONFIG_ZIGBEE AND CONFIG_ZIGBEE_FOTA)
 
+    set(app_offset $<TARGET_PROPERTY:partition_manager,app_TO_SECONDARY>)
+
     sign(
       SIGNED_BIN_FILE_IN ${app_to_sign_hex}
       SIGNED_HEX_FILE_NAME_PREFIX ${PROJECT_BINARY_DIR}/app
       SLOT_SIZE $<TARGET_PROPERTY:partition_manager,PM_MCUBOOT_PRIMARY_SIZE>
-      START_ADDRESS_OFFSET $<TARGET_PROPERTY:partition_manager,app_TO_SECONDARY>
+      START_ADDRESS_OFFSET ${app_offset}
       SIGNED_HEX_FILE_OUT app_signed_hex
       DEPENDS ${app_sign_depends}
       )
@@ -226,7 +220,6 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
       mcuboot_primary_app_PM_HEX_FILE
       ${app_signed_hex}
       )
-
     set_property(GLOBAL PROPERTY
       mcuboot_primary_app_PM_TARGET
       mcuboot_sign_target
@@ -274,33 +267,36 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
         net_core_app_sign_target
         )
 
-      generate_dfu_zip(
-        TARGET mcuboot_sign_target
-        OUTPUT ${PROJECT_BINARY_DIR}/dfu_application.zip
-        BIN_FILES ${PROJECT_BINARY_DIR}/${app_core_binary_name} ${PROJECT_BINARY_DIR}/${net_core_binary_name}
-        TYPE application
-        SCRIPT_PARAMS
+      set(generate_bin_files
+        ${PROJECT_BINARY_DIR}/${app_core_binary_name}
+        ${PROJECT_BINARY_DIR}/${net_core_binary_name}
+        )
+      set(generate_script_params
         "${app_core_binary_name}load_address=$<TARGET_PROPERTY:partition_manager,PM_APP_ADDRESS>"
-	"${net_core_binary_name}load_address=$<TARGET_PROPERTY:partition_manager,CPUNET_PM_APP_ADDRESS>"
+        "${net_core_binary_name}load_address=$<TARGET_PROPERTY:partition_manager,CPUNET_PM_APP_ADDRESS>"
         "${app_core_binary_name}version_MCUBOOT=${CONFIG_MCUBOOT_IMAGE_VERSION}"
-        "${net_core_binary_name}version_BN0=${hci_rpmsg_fw_info}"
-	"${net_core_binary_name}board=${CONFIG_DOMAIN_CPUNET_BOARD}"
-	"${net_core_binary_name}soc=${hci_rpmsg_soc}"
+        "${net_core_binary_name}board=${CONFIG_DOMAIN_CPUNET_BOARD}"
         "${app_core_binary_name}image_slot=2" # image_1
         "${net_core_binary_name}image_slot=4" # image_3
         )
-
     else()
-      generate_dfu_zip(
-        TARGET mcuboot_sign_target
-        OUTPUT ${PROJECT_BINARY_DIR}/dfu_application.zip
-        BIN_FILES ${PROJECT_BINARY_DIR}/${app_core_binary_name}
-        TYPE application
-        SCRIPT_PARAMS
+      # No network core update
+      set(generate_bin_files
+        ${PROJECT_BINARY_DIR}/${app_core_binary_name}
+        )
+      set(generate_script_params
         "load_address=$<TARGET_PROPERTY:partition_manager,PM_APP_ADDRESS>"
         "version_MCUBOOT=${CONFIG_MCUBOOT_IMAGE_VERSION}"
         )
     endif()
+
+    generate_dfu_zip(
+      TARGET mcuboot_sign_target
+      OUTPUT ${PROJECT_BINARY_DIR}/dfu_application.zip
+      BIN_FILES ${generate_bin_files}
+      TYPE application
+      SCRIPT_PARAMS ${generate_script_params}
+      )
 
     if (CONFIG_BUILD_S1_VARIANT AND ("${CONFIG_S1_VARIANT_IMAGE_NAME}" STREQUAL "mcuboot"))
       # Secure Boot (B0) is enabled, and we have to build update candidates

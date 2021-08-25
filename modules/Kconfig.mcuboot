@@ -25,3 +25,8 @@ config INIT_ARCH_HW_AT_BOOT
 	  The image will be booted directly by an unknown image which might not
 	  leave the system in a clean state, so it is necessary to perform
 	  architecture specific hardware initialization.
+
+config BOOT_IMAGE_ACCESS_HOOKS_FILE
+	string
+	default "${ZEPHYR_NRF_MODULE_DIR}/modules/mcuboot/hooks/nrf53_hooks.c"
+	depends on MCUBOOT
