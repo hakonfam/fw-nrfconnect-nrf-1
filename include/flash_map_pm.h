@@ -15,13 +15,8 @@
 #define image_1 mcuboot_secondary
 #define image_0_nonsecure mcuboot_primary
 #define image_1_nonsecure mcuboot_secondary
-#if PM_mcuboot_primary_1_IS_ENABLED
 #define image_2 mcuboot_primary_1
-#endif
-#if PM_mcuboot_secondary_1_IS_ENABLED
 #define image_3 mcuboot_secondary_1
-#endif
-
 #define image_scratch mcuboot_scratch
 
 #if (CONFIG_SETTINGS_FCB || CONFIG_SETTINGS_NVS)
