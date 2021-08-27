@@ -146,5 +146,5 @@ int boot_serial_uploaded_hook(int img_index, const struct flash_area *area,
 		return network_core_update(img_index, area);
 	}
 
-	return BOOT_HOOK_REGULAR;
+	return 0;
 }
