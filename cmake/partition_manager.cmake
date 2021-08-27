@@ -4,17 +4,12 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
-# secondary_slot([EXT_START <address>] [EXT_BASE <address>])
-function(secondary_slot)
-  cmake_parse_arguments(SEC_SLOT "" "NET_APP_SLOT_SIZE;EXT_START;EXT_BASE" "" ${ARGN})
+# set_dfu_hex_offset([EXT_START <address>] [EXT_BASE <address>])
+function(set_dfu_hex_offset)
+  cmake_parse_arguments(SEC_SLOT "NET_CORE" "EXT_START;EXT_BASE" "" ${ARGN})
 
   # Get the amount of updateable images from the MCUboot child image
   get_shared(no IMAGE mcuboot PROPERTY UPDATEABLE_IMAGE_NUMBER)
-
-  # The address coming from other domains are not available in this scope
-  # since it is imported by a different domain. Hence, it must be fetched
-  # through the 'partition_manager' target.
-  get_target_property(net_app_addr partition_manager CPUNET_PM_APP_ADDRESS)
 
   # This check whether multi image updates are enabled, in which case we need
   # to use the "_1" variant of the secondary partition for the network core.
@@ -23,38 +18,39 @@ function(secondary_slot)
     set(ext_start "${SEC_SLOT_EXT_START} +")
   endif()
 
-  print(ext_start)
-  print(SEC_SLOT_EXT_BASE)
-  print(SEC_SLOT_EXT_START)
+  if (SEC_SLOT_NET_CORE)
+    # The address coming from other domains are not available in this scope
+    # since it is imported by a different domain. Hence, it must be fetched
+    # through the 'partition_manager' target.
+    get_target_property(net_app_addr partition_manager CPUNET_PM_APP_ADDRESS)
 
-  # Calculate the offset fram the address which the net/app core app is linked
-  # against to the secondary slot. We need these values to generate hex files
-  # which targets the secondary slot.
-  set(net_to_sec_sum
-    "${ext_start} ${SEC_SLOT_EXT_BASE} + ${PM_MCUBOOT_SECONDARY${sec_slot_idx}_ADDRESS} - ${net_app_addr} + ${PM_MCUBOOT_PAD${sec_slot_idx}_SIZE}")
-  print(net_to_sec_sum)
-  math(EXPR net_app_to_secondary ${net_to_sec_sum})
-  set_property(
-    TARGET partition_manager
-    PROPERTY net_app_TO_SECONDARY
-    ${net_app_to_secondary}
-    )
+    # Calculate the offset fram the address which the net/app core app is linked
+    # against to the secondary slot. We need these values to generate hex files
+    # which targets the secondary slot.
+    set(net_to_sec_sum
+      "${ext_start} ${SEC_SLOT_EXT_BASE} + ${PM_MCUBOOT_SECONDARY${sec_slot_idx}_ADDRESS} - ${net_app_addr} + ${PM_MCUBOOT_PAD${sec_slot_idx}_SIZE}")
+    math(EXPR net_app_to_secondary ${net_to_sec_sum})
+    set_property(
+      TARGET partition_manager
+      PROPERTY net_app_TO_SECONDARY
+      ${net_app_to_secondary}
+      )
+
+    # This value is needed by `imgtool.py` which is used to sign the images.
+    set_property(
+      TARGET partition_manager
+      PROPERTY net_app_slot_size
+      ${PM_MCUBOOT_SECONDARY${sec_slot_idx}_SIZE}
+      )
+  endif()
 
   set(app_to_sec_sum
     "${SEC_SLOT_EXT_START} + ${SEC_SLOT_EXT_BASE} + ${PM_MCUBOOT_SECONDARY_ADDRESS} - ${PM_MCUBOOT_PRIMARY_ADDRESS}")
-  print(app_to_sec_sum)
   math(EXPR app_to_secondary ${app_to_sec_sum} )
   set_property(
     TARGET partition_manager
     PROPERTY app_TO_SECONDARY
     ${app_to_secondary}
-    )
-
-  # This value is needed by `imgtool.py` which is used to sign the images.
-  set_property(
-    TARGET partition_manager
-    PROPERTY net_app_slot_size
-    ${PM_MCUBOOT_SECONDARY${sec_slot_idx}_SIZE}
     )
 endfunction()
 
@@ -511,32 +507,27 @@ else()
           ${${name}}
           )
       endforeach()
-
-      if (CONFIG_NRF53_UPGRADE_NETWORK_CORE
-          AND CONFIG_HCI_RPMSG_BUILD_STRATEGY_FROM_SOURCE)
-          # The memory mapped address of the external flash is different
-          # for the net core and the app core
-          if(CONFIG_SOC_NRF5340_CPUAPP)
-            set(EXT_ADDR 0x10000000)
-          else()
-            set(EXT_ADDR 0x12000000) # TODO Remove this and rework the logics
-          endif()
-
-          # Create symbols for the offset reqired for moving the signed network
-          # core application to MCUBoots secondary slot. This is needed
-          # because  objcopy does not support arithmetic expressions as argument
-          # (e.g. '0x100+0x200'), and all of the symbols used to generate the
-          # offset are only available as a generator expression when MCUBoots
-          # cmake code exectues.
-          if(CONFIG_PM_EXTERNAL_FLASH)
-            secondary_slot(EXT_START ${EXT_ADDR} EXT_BASE ${CONFIG_PM_EXTERNAL_FLASH_BASE})
-          else()
-            secondary_slot()
-          endif()
-        endif()
-
     endif()
   endforeach()
+
+  if (CONFIG_NRF53_UPGRADE_NETWORK_CORE
+      AND CONFIG_HCI_RPMSG_BUILD_STRATEGY_FROM_SOURCE  # TODO replace with generic 'sign_net_core' option
+      AND CONFIG_PM_EXTERNAL_FLASH)
+    # Create symbols for the offset reqired for moving the signed network
+    # core application to MCUBoots secondary slot. This is needed
+    # because  objcopy does not support arithmetic expressions as argument
+    # (e.g. '0x100+0x200'), and all of the symbols used to generate the
+    # offset are only available as a generator expression when MCUBoots
+    # cmake code exectues.
+    set(ext_addr 0x10000000)
+    set_dfu_hex_offset(
+      NET_CORE
+      EXT_START ${ext_addr}
+      EXT_BASE ${CONFIG_PM_EXTERNAL_FLASH_BASE}
+      )
+  else()
+    set_dfu_hex_offset()
+  endif()
 
   # Explicitly add the root image domain hex file to the list
   list(APPEND domain_hex_files ${PROJECT_BINARY_DIR}/${merged}.hex)

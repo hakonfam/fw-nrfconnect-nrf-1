@@ -43,14 +43,14 @@ extern uint8_t mock_flash[FLASH_SIMULATOR_FLASH_SIZE];
  *         othervise an error-code value.
  */
 int boot_read_image_header_hook(int img_index, int slot,
-                                struct image_header *img_head)
+		struct image_header *img_head)
 {
-    if (img_index == 1 && slot == 0) {
-            img_head->ih_magic = IMAGE_MAGIC;
-            return 0;
-    }
+	if (img_index == 1 && slot == 0) {
+		img_head->ih_magic = IMAGE_MAGIC;
+		return 0;
+	}
 
-    return BOOT_HOOK_REGULAR;
+	return BOOT_HOOK_REGULAR;
 }
 
 /* @retval FIH_SUCCESS: image is valid,
@@ -60,38 +60,38 @@ int boot_read_image_header_hook(int img_index, int slot,
  */
 fih_int boot_image_check_hook(int img_index, int slot)
 {
-    if (img_index == 1 && slot == 0) {
-        FIH_RET(FIH_SUCCESS);
-    }
+	if (img_index == 1 && slot == 0) {
+		FIH_RET(FIH_SUCCESS);
+	}
 
-    FIH_RET(fih_int_encode(BOOT_HOOK_REGULAR));
+	FIH_RET(fih_int_encode(BOOT_HOOK_REGULAR));
 }
 
 int boot_perform_update_hook(int img_index, struct image_header *img_head,
-                             const struct flash_area *area)
+		const struct flash_area *area)
 {
-    return BOOT_HOOK_REGULAR;
+	return BOOT_HOOK_REGULAR;
 }
 
 int boot_read_swap_state_primary_slot_hook(int image_index,
-                                           struct boot_swap_state *state)
+		struct boot_swap_state *state)
 {
-    if (image_index == 1) {
-	/* Populate with fake data */
-        state->magic = BOOT_MAGIC_UNSET;
-        state->swap_type = BOOT_SWAP_TYPE_NONE;
-        state->image_num = image_index;
-        state->copy_done = BOOT_FLAG_UNSET;
-        state->image_ok = BOOT_FLAG_UNSET;
+	if (image_index == 1) {
+		/* Populate with fake data */
+		state->magic = BOOT_MAGIC_UNSET;
+		state->swap_type = BOOT_SWAP_TYPE_NONE;
+		state->image_num = image_index;
+		state->copy_done = BOOT_FLAG_UNSET;
+		state->image_ok = BOOT_FLAG_UNSET;
 
-	/*
-	 * Skip more handling of the primary slot for Image 1 as the slot
-	 * exsists in RAM and is empty.
-	 */
-        return 0;
-    }
+		/*
+		 * Skip more handling of the primary slot for Image 1 as the slot
+		 * exsists in RAM and is empty.
+		 */
+		return 0;
+	}
 
-    return BOOT_HOOK_REGULAR;
+	return BOOT_HOOK_REGULAR;
 }
 
 int network_core_update(int img_index, const struct flash_area *primary_fa)
@@ -100,12 +100,12 @@ int network_core_update(int img_index, const struct flash_area *primary_fa)
 	uint32_t vtable_addr = 0;
 	uint32_t *vtable = 0;
 	uint32_t reset_addr = 0;
-	
+
 	const struct flash_area *secondary_fa; 
-        int rc = flash_area_open(flash_area_id_from_multi_image_slot(
-                    img_index,
-                    SECONDARY_SLOT),
-                &secondary_fa);
+	int rc = flash_area_open(flash_area_id_from_multi_image_slot(
+				img_index,
+				SECONDARY_SLOT),
+			&secondary_fa);
 	if (rc != 0) {
 		/* Failed to open flash area*/
 		return rc;
@@ -129,17 +129,18 @@ int network_core_update(int img_index, const struct flash_area *primary_fa)
 }
 
 int boot_copy_region_post_hook(int img_index, const struct flash_area *area,
-                               size_t size)
+		size_t size)
 {
 
-    if (img_index == 1) {
-	    network_core_update(img_index, area);
-    }
-    return 0;
+	if (img_index == 1) {
+		network_core_update(img_index, area);
+	}
+
+	return 0;
 }
 
 int boot_serial_uploaded_hook(int img_index, const struct flash_area *area,
-                               size_t size)
+		size_t size)
 {
 	if (img_index == 1) {
 		return network_core_update(img_index, area);

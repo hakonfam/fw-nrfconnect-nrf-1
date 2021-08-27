@@ -2,7 +2,9 @@ add_subdirectory(${ZEPHYR_MCUBOOT_MODULE_DIR}/boot/bootutil/zephyr
                  ${CMAKE_CURRENT_BINARY_DIR}/boot/bootutil/zephyr
 )
 
+# Check if it is the MCUboot image being built
 if(CONFIG_MCUBOOT)
+  # Share some varibles which are used by the parent image
   if (CONFIG_UPDATEABLE_IMAGE_NUMBER)
     set_shared(IMAGE ${IMAGE_NAME} PROPERTY UPDATEABLE_IMAGE_NUMBER ${CONFIG_UPDATEABLE_IMAGE_NUMBER})
   endif()
