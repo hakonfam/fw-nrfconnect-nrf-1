@@ -76,7 +76,7 @@ int spm_request_read_nse(void *destination, uint32_t addr, size_t len)
 		{.start = PM_MCUBOOT_PAD_ADDRESS,
 		 .size = PM_MCUBOOT_PAD_SIZE},
 #endif
-#ifdef PM_MCUBOOT_PAD_1_ADDRESS
+#ifdef PM_MCUBOOT_PAD_1_ADDRESS /* TODO these are not defined, are they needed? */
 		/* Allow reads of mcuboot metadata for second image in a multi
 		 * image context.
 		 */

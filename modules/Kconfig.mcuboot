@@ -29,4 +29,29 @@ config INIT_ARCH_HW_AT_BOOT
 config BOOT_IMAGE_ACCESS_HOOKS_FILE
 	string
 	default "${ZEPHYR_NRF_MODULE_DIR}/modules/mcuboot/hooks/nrf53_hooks.c"
-	depends on MCUBOOT
+	depends on MCUBOOT && NRF53_MULTI_IMAGE_UPDATE
+
+config NRF53_MULTI_IMAGE_UPDATE
+	bool "Support updating app core and net core in a single operation"
+	default y
+	depends on UPDATEABLE_IMAGE_NUMBER > 1
+	depends on NRF53_UPGRADE_NETWORK_CORE
+	depends on BOOT_IMAGE_ACCESS_HOOKS
+	depends on PM_EXTERNAL_FLASH
+	depends on FLASH_SIMULATOR
+	depends on FLASH_SIMULATOR_DOUBLE_WRITES
+	depends on !STATS
+	depends on PM_EXTERNAL_FLASH_MCUBOOT_SECONDARY
+
+config NRF53_RAM_FLASH_SIZE
+	hex
+	depends on NRF53_MULTI_IMAGE_UPDATE
+	default 0x40000
+	help
+	  256kB - The maximum size of a net core image.
+	  When performing a multi image update on the nRF53 the net core app
+	  image is buffered in RAM. This option is used to define the size of
+	  the reserved RAM area. Note that this area is only used when the
+	  MCUboot image is running, so no its value will affect the RAM
+	  available for the running application.
+

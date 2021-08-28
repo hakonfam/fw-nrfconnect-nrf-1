@@ -6,19 +6,30 @@
 
 # set_dfu_hex_offset([EXT_START <address>] [EXT_BASE <address>])
 function(set_dfu_hex_offset)
-  cmake_parse_arguments(SEC_SLOT "NET_CORE" "EXT_START;EXT_BASE" "" ${ARGN})
+  cmake_parse_arguments(SEC_SLOT "" "EXT_START;EXT_BASE" "" ${ARGN})
 
-  # Get the amount of updateable images from the MCUboot child image
-  get_shared(no IMAGE mcuboot PROPERTY UPDATEABLE_IMAGE_NUMBER)
+  get_shared(
+    mcuboot_NRF53_MULTI_IMAGE_UPDATE
+    IMAGE mcuboot
+    PROPERTY NRF53_MULTI_IMAGE_UPDATE
+    )
 
   # This check whether multi image updates are enabled, in which case we need
   # to use the "_1" variant of the secondary partition for the network core.
-  if(${no} GREATER 1)
+  if(DEFINED mcuboot_NRF53_MULTI_IMAGE_UPDATE)
     set(sec_slot_idx "_1")
-    set(ext_start "${SEC_SLOT_EXT_START} +")
   endif()
 
-  if (SEC_SLOT_NET_CORE)
+  set(ext_start "${SEC_SLOT_EXT_START} +")
+
+  # Check if a signed version of the network core application is defined.
+  # If so, this indicates that we need to support firmware updates on the
+  # network core. This again means that we should generate the required
+  # hex files.
+  get_shared(cpunet_signed_app_hex IMAGE CPUNET PROPERTY PM_SIGNED_APP_HEX)
+
+  if (CONFIG_NRF53_UPGRADE_NETWORK_CORE
+      AND DEFINED cpunet_signed_app_hex)
     # The address coming from other domains are not available in this scope
     # since it is imported by a different domain. Hence, it must be fetched
     # through the 'partition_manager' target.
@@ -28,7 +39,7 @@ function(set_dfu_hex_offset)
     # against to the secondary slot. We need these values to generate hex files
     # which targets the secondary slot.
     set(net_to_sec_sum
-      "${ext_start} ${SEC_SLOT_EXT_BASE} + ${PM_MCUBOOT_SECONDARY${sec_slot_idx}_ADDRESS} - ${net_app_addr} + ${PM_MCUBOOT_PAD${sec_slot_idx}_SIZE}")
+      "${ext_start} ${SEC_SLOT_EXT_BASE} + ${PM_MCUBOOT_SECONDARY${sec_slot_idx}_ADDRESS} - ${net_app_addr} + ${PM_MCUBOOT_PAD_SIZE}")
     math(EXPR net_app_to_secondary ${net_to_sec_sum})
     set_property(
       TARGET partition_manager
@@ -237,24 +248,18 @@ if (CONFIG_PM_EXTERNAL_FLASH)
     )
 endif()
 
-# Check if we are performing simultaneous update of the app core and network
-# core on the nRF53. To do this check, we need to fetch the value of the
-# UPDATEABLE_IMAGE_NUMBER value set in the mcuboot child image.
-get_shared(
-  mcuboot_UPDATEABLE_IMAGE_NUMBER
-  IMAGE mcuboot
-  PROPERTY UPDATEABLE_IMAGE_NUMBER
-  )
-
 # If simultaneous updates of the network core and application core is supported
 # we add a region which is used to emulate flash. In reality this data is being
 # placed in RAM. This is used to bank the network core update in RAM while
 # the application core update is banked in flash. This works since the nRF53
 # application core has 512kB of RAM and the network core only has 256kB of flash
-if (CONFIG_NRF53_UPGRADE_NETWORK_CORE
-  AND CONFIG_HCI_RPMSG_BUILD_STRATEGY_FROM_SOURCE
-  AND (mcuboot_UPDATEABLE_IMAGE_NUMBER GREATER 1))
+get_shared(
+  mcuboot_NRF53_MULTI_IMAGE_UPDATE
+  IMAGE mcuboot
+  PROPERTY NRF53_MULTI_IMAGE_UPDATE
+  )
 
+if (DEFINED mcuboot_NRF53_MULTI_IMAGE_UPDATE)
   # This region will contain the 'mcuboot_secondary' partition, and the banked
   # updates for the network core will be stored here.
   add_region(
@@ -510,24 +515,21 @@ else()
     endif()
   endforeach()
 
-  if (CONFIG_NRF53_UPGRADE_NETWORK_CORE
-      AND CONFIG_HCI_RPMSG_BUILD_STRATEGY_FROM_SOURCE  # TODO replace with generic 'sign_net_core' option
-      AND CONFIG_PM_EXTERNAL_FLASH)
-    # Create symbols for the offset reqired for moving the signed network
-    # core application to MCUBoots secondary slot. This is needed
-    # because  objcopy does not support arithmetic expressions as argument
-    # (e.g. '0x100+0x200'), and all of the symbols used to generate the
-    # offset are only available as a generator expression when MCUBoots
-    # cmake code exectues.
-    set(ext_addr 0x10000000)
-    set_dfu_hex_offset(
-      NET_CORE
-      EXT_START ${ext_addr}
-      EXT_BASE ${CONFIG_PM_EXTERNAL_FLASH_BASE}
-      )
-  else()
-    set_dfu_hex_offset()
+  if (CONFIG_PM_EXTERNAL_FLASH)
+    set(ext_start_arg ${CONFIG_PM_EXTERNAL_FLASH_XSPI_MEM_MAPPED_ADDRESS})
+    set(ext_base_arg ${CONFIG_PM_EXTERNAL_FLASH_BASE})
   endif()
+
+  # Create symbols for the offset reqired for moving the signed network
+  # core application to MCUBoots secondary slot. This is needed
+  # because  objcopy does not support arithmetic expressions as argument
+  # (e.g. '0x100+0x200'), and all of the symbols used to generate the
+  # offset are only available as a generator expression when MCUBoots
+  # cmake code exectues.
+  set_dfu_hex_offset(
+    EXT_START ${ext_start_arg}
+    EXT_BASE ${ext_base_arg}
+    )
 
   # Explicitly add the root image domain hex file to the list
   list(APPEND domain_hex_files ${PROJECT_BINARY_DIR}/${merged}.hex)

@@ -130,13 +130,18 @@ config PM_SINGLE_IMAGE
 	  The option is always defined in builds where a TF-M image for the
 	  Secure Execution environment is generated.
 
-menuconfig PM_EXTERNAL_FLASH
+config PM_EXTERNAL_FLASH
 	bool "Support external flash in Partition Manager"
-
-if PM_EXTERNAL_FLASH
+	depends on PM_EXTERNAL_FLASH_DEV_NAME != ""
+	depends on PM_EXTERNAL_FLASH_SIZE != 0
+	depends on PM_EXTERNAL_FLASH_XSPI_MEM_MAPPED_ADDRESS != 0
 
 config PM_EXTERNAL_FLASH_DEV_NAME
-	 string "Name of the external flash device"
+	string "Name of the external flash device"
+	default "MX25R64" if BOARD_NRF5340DK_NRF5340_CPUAPP || BOARD_NRF5340DK_NRF5340_CPUAPP_NS
+	default "MX25R64" if BOARD_THINGY53_NRF5340_CPUAPP || BOARD_THINGY53_NRF5340_CPUAPPNS
+	default "MX25R64" if BOARD_NRF52840DK_NRF52840
+	default ""
 	help
 	  Must match the 'drv_name' argument used when initializing the
 	  driver for the external flash through the 'DEVICE...INIT'
@@ -144,12 +149,40 @@ config PM_EXTERNAL_FLASH_DEV_NAME
 
 config PM_EXTERNAL_FLASH_SIZE
 	hex "External flash size (in bytes)"
+	default 0x200000 if BOARD_NRF5340DK_NRF5340_CPUAPP || BOARD_NRF5340DK_NRF5340_CPUAPP_NS
+	default 0x200000 if BOARD_THINGY53_NRF5340_CPUAPP || BOARD_THINGY53_NRF5340_CPUAPPNS
+	default 0x200000 if BOARD_NRF52840DK_NRF52840
+	default 0
 
 config PM_EXTERNAL_FLASH_BASE
 	hex "External flash base address"
 	default 0
 
-endif
+config PM_EXTERNAL_FLASH_XSPI_MEM_MAPPED_ADDRESS
+	hex "Address for the QSPI interface connected to the external flash"
+	default 0x10000000 if BOARD_NRF5340DK_NRF5340_CPUAPP || BOARD_NRF5340DK_NRF5340_CPUAPP_NS
+	default 0x10000000 if BOARD_THINGY53_NRF5340_CPUAPP || BOARD_THINGY53_NRF5340_CPUAPPNS
+	default 0x12000000 if BOARD_NRF52840DK_NRF52840
+	default 0  # This indicates that the value is not set
+	help
+	  See 'Memory Map' chapter in product specification. This value is only
+	  used when generating hex files which can be flashed directly to the
+	  secondary slot.
+
+config PM_PARTITION_SIZE_MCUBOOT_SECONDARY
+	hex "Size of MCUboot secondary partition"
+	default 0
+	depends on PM_EXTERNAL_FLASH
+	help
+	  Must be set to the same size as the 'MCUBOOT_PRIMARY' partition.
+
+config PM_EXTERNAL_FLASH_MCUBOOT_SECONDARY
+	bool "Locate secondary slot of MCUboot in external flash"
+	depends on PM_EXTERNAL_FLASH
+	depends on PM_PARTITION_SIZE_MCUBOOT_SECONDARY != 0
+	help
+	  Place the secondary partition of MCUboot in the external flash instead
+	  of the internal flash.
 
 config PM_IMAGE_NOT_BUILT_FROM_SOURCE
 	bool

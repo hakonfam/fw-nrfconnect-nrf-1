@@ -4,13 +4,8 @@ add_subdirectory(${ZEPHYR_MCUBOOT_MODULE_DIR}/boot/bootutil/zephyr
 
 # Check if it is the MCUboot image being built
 if(CONFIG_MCUBOOT)
-  # Share some varibles which are used by the parent image
-  if (CONFIG_UPDATEABLE_IMAGE_NUMBER)
-    set_shared(IMAGE ${IMAGE_NAME} PROPERTY UPDATEABLE_IMAGE_NUMBER ${CONFIG_UPDATEABLE_IMAGE_NUMBER})
-  endif()
-
-  if(CONFIG_BOOT_IMAGE_ACCESS_HOOKS)
-    set_shared(IMAGE ${IMAGE_NAME} PROPERTY BOOT_IMAGE_ACCESS_HOOKS ${CONFIG_BOOT_IMAGE_ACCESS_HOOKS})
+  if (CONFIG_NRF53_MULTI_IMAGE_UPDATE)
+    set_shared(IMAGE ${IMAGE_NAME} PROPERTY NRF53_MULTI_IMAGE_UPDATE ${CONFIG_NRF53_MULTI_IMAGE_UPDATE})
   endif()
 endif()
 
@@ -116,6 +111,15 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
     add_overlay_config(
       mcuboot
       ${ZEPHYR_NRF_MODULE_DIR}/subsys/bootloader/image/build_s1.conf
+      )
+  endif()
+
+  # TODO they also need to set the size of mcuboot secondary
+  if (CONFIG_PM_EXTERNAL_FLASH)
+    # Inject this configuration from parent image to mcuboot.
+    add_overlay_config(
+      mcuboot
+      ${ZEPHYR_NRF_MODULE_DIR}/subsys/bootloader/image/pm_external_flash.conf
       )
   endif()
 

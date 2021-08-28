@@ -22,20 +22,16 @@
 #include "bootutil/fault_injection_hardening.h"
 #include "flash_map_backend/flash_map_backend.h"
 
-#ifdef CONFIG_FLASH_SIMULATOR
 #define DT_DRV_COMPAT zephyr_sim_flash
 #define SOC_NV_FLASH_NODE DT_CHILD(DT_DRV_INST(0), flash_sim_0)
 #define FLASH_SIMULATOR_FLASH_SIZE DT_REG_SIZE(SOC_NV_FLASH_NODE)
 
 extern uint8_t mock_flash[FLASH_SIMULATOR_FLASH_SIZE];
-#endif
 
-#define SECONDARY_SLOT 1
+#define NET_CORE_SECONDARY_SLOT 1
+#define NET_CORE_VIRTUAL_PRIMARY_SLOT 3
 
-
-#ifdef CONFIG_SOC_NRF5340_CPUAPP
 #include <dfu/pcd.h>
-#endif
 
 /* @retval 0: header was read/populated
  *         FIH_FAILURE: image is invalid,
@@ -94,35 +90,19 @@ int boot_read_swap_state_primary_slot_hook(int image_index,
 	return BOOT_HOOK_REGULAR;
 }
 
-int network_core_update(int img_index, const struct flash_area *primary_fa)
+int network_core_update(void)
 {
-#if CONFIG_FLASH_SIMULATOR
-	uint32_t vtable_addr = 0;
-	uint32_t *vtable = 0;
-	uint32_t reset_addr = 0;
-
-	const struct flash_area *secondary_fa; 
-	int rc = flash_area_open(flash_area_id_from_multi_image_slot(
-				img_index,
-				SECONDARY_SLOT),
-			&secondary_fa);
-	if (rc != 0) {
-		/* Failed to open flash area*/
-		return rc;
-	}
-
 	struct image_header *hdr = (struct image_header *) mock_flash;
 	if (hdr->ih_magic == IMAGE_MAGIC) {
 		uint32_t fw_size = hdr->ih_img_size;
-		vtable_addr = (uint32_t)hdr + hdr->ih_hdr_size;
-		vtable = (uint32_t *)(vtable_addr);
-		reset_addr = vtable[1];
+		uint32_t vtable_addr = (uint32_t)hdr + hdr->ih_hdr_size;
+		uint32_t *vtable = (uint32_t *)(vtable_addr);
+		uint32_t reset_addr = vtable[1];
 		if (reset_addr > PM_CPUNET_B0N_ADDRESS) {
 			int rc = pcd_network_core_update(vtable, fw_size);
 			return rc;
 		}
 	}
-#endif
 
 	/* No IMAGE_MAGIC no valid image */
 	return -ENODATA;
@@ -131,9 +111,8 @@ int network_core_update(int img_index, const struct flash_area *primary_fa)
 int boot_copy_region_post_hook(int img_index, const struct flash_area *area,
 		size_t size)
 {
-
-	if (img_index == 1) {
-		network_core_update(img_index, area);
+	if (img_index == NET_CORE_SECONDARY_SLOT) {
+		return network_core_update();
 	}
 
 	return 0;
@@ -142,8 +121,8 @@ int boot_copy_region_post_hook(int img_index, const struct flash_area *area,
 int boot_serial_uploaded_hook(int img_index, const struct flash_area *area,
 		size_t size)
 {
-	if (img_index == 1) {
-		return network_core_update(img_index, area);
+	if (img_index == NET_CORE_VIRTUAL_PRIMARY_SLOT) {
+		return network_core_update();
 	}
 
 	return 0;

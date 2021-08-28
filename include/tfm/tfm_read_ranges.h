@@ -21,7 +21,7 @@ static const struct tfm_read_service_range ranges[] = {
 	/* Allow reads of mcuboot metadata */
 	{.start = PM_MCUBOOT_PAD_ADDRESS,
 		.size = PM_MCUBOOT_PAD_SIZE},
-#ifdef PM_MCUBOOT_PAD_1_ADDRESS
+#ifdef PM_MCUBOOT_PAD_1_ADDRESS /* TODO these are not defined, are they needed? */
 	/* Allow reads of mcuboot metadata for second image in a multi image
 	 * context.
 	 */
