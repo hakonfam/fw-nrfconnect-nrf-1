@@ -8,6 +8,18 @@
 function(set_dfu_hex_offset)
   cmake_parse_arguments(SEC_SLOT "" "EXT_START;EXT_BASE" "" ${ARGN})
 
+  get_shared(
+    mcuboot_NRF53_MULTI_IMAGE_UPDATE
+    IMAGE mcuboot
+    PROPERTY NRF53_MULTI_IMAGE_UPDATE
+    )
+
+  # Check if multi image updates are enabled, in which case we need
+  # to use the "_1" variant of the secondary partition for the network core.
+  if(DEFINED mcuboot_NRF53_MULTI_IMAGE_UPDATE)
+    set(sec_slot_idx "_1")
+  endif()
+
   # Check if a signed version of the network core application is defined.
   # If so, this indicates that we need to support firmware updates on the
   # network core. This again means that we should generate the required
@@ -32,7 +44,7 @@ function(set_dfu_hex_offset)
     # against to the secondary slot. We need these values to generate hex files
     # which targets the secondary slot.
     set(net_to_sec_sum
-      "${ext_offset} ${PM_MCUBOOT_SECONDARY_ADDRESS} - ${net_app_addr} + ${PM_MCUBOOT_PAD_SIZE}")
+      "${ext_offset} ${PM_MCUBOOT_SECONDARY${sec_slot_idx}_ADDRESS} - ${net_app_addr} + ${PM_MCUBOOT_PAD_SIZE}")
     math(EXPR net_app_to_secondary ${net_to_sec_sum})
     set_property(
       TARGET partition_manager
@@ -44,7 +56,7 @@ function(set_dfu_hex_offset)
     set_property(
       TARGET partition_manager
       PROPERTY net_app_slot_size
-      ${PM_MCUBOOT_SECONDARY_SIZE}
+      ${PM_MCUBOOT_SECONDARY${sec_slot_idx}_SIZE}
       )
   endif()
 
@@ -259,6 +271,33 @@ fix this, or enable `CONFIG_PM_EXTERNAL_FLASH_SUPPORT_LEGACY` in Kconfig.")
     BASE ${CONFIG_PM_EXTERNAL_FLASH_BASE}
     PLACEMENT start_to_end
     DEVICE ${CONFIG_PM_EXTERNAL_FLASH_DEV_NAME}
+    )
+endif()
+
+# If simultaneous updates of the network core and application core is supported
+# we add a region which is used to emulate flash. In reality this data is being
+# placed in RAM. This is used to bank the network core update in RAM while
+# the application core update is banked in flash. This works since the nRF53
+# application core has 512kB of RAM and the network core only has 256kB of flash
+get_shared(
+  mcuboot_NRF53_MULTI_IMAGE_UPDATE
+  IMAGE mcuboot
+  PROPERTY NRF53_MULTI_IMAGE_UPDATE
+  )
+
+if (DEFINED mcuboot_NRF53_MULTI_IMAGE_UPDATE)
+  # This region will contain the 'mcuboot_secondary' partition, and the banked
+  # updates for the network core will be stored here.
+  get_shared(ram_flash_label IMAGE mcuboot PROPERTY RAM_FLASH_LABEL)
+  get_shared(ram_flash_addr IMAGE mcuboot PROPERTY RAM_FLASH_ADDR)
+  get_shared(ram_flash_size IMAGE mcuboot PROPERTY RAM_FLASH_SIZE)
+
+  add_region(
+    NAME ram_flash
+    SIZE ${ram_flash_size}
+    BASE ${ram_flash_addr}
+    PLACEMENT start_to_end
+    DEVICE ${ram_flash_label}
     )
 endif()
 
