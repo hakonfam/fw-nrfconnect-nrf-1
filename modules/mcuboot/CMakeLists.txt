@@ -10,10 +10,9 @@ if (CONFIG_MCUBOOT)
   set_shared(IMAGE ${IMAGE_NAME} PROPERTY SECONDARY_SIZE
     ${CONFIG_PM_PARTITION_SIZE_MCUBOOT_SECONDARY})
 
-  # See 'flash_sim.overlay'
-  dt_nodelabel(ram_flash_ctrl_dev NODELABEL "nordic_ram_flash_controller")
+  dt_nodelabel(ram_flash_ctrl_dev NODELABEL nordic_ram_flash_controller)
   if (DEFINED ram_flash_ctrl_dev)
-    dt_nodelabel(ram_flash_dev NODELABEL "nordic_ram_flash")
+    dt_nodelabel(ram_flash_dev NODELABEL flash_sim0)
     dt_prop(ram_flash_ctrl_label PATH ${ram_flash_ctrl_dev} PROPERTY label)
     dt_reg_addr(ram_flash_addr PATH ${ram_flash_dev})
     dt_reg_size(ram_flash_size PATH ${ram_flash_dev})
