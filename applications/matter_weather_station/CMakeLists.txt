@@ -6,11 +6,6 @@
 
 cmake_minimum_required(VERSION 3.13.1)
 
-if (NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE ZDebug)
-endif()
-
-set(CONF_FILE           ${CMAKE_CURRENT_SOURCE_DIR}/configuration/${BOARD}/prj_${CMAKE_BUILD_TYPE}.conf)
 set(PM_STATIC_YML_FILE  ${CMAKE_CURRENT_SOURCE_DIR}/configuration/${BOARD}/pm_static.yml)
 
 find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})

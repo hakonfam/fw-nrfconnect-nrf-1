@@ -11,3 +11,8 @@
         reg = <0x76>;
     };
 };
+/ {
+	chosen {
+		nordic,pm-ext-flash = &mx25r64;
+	};
+};
