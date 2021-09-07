@@ -481,13 +481,24 @@ else()
 
   if (CONFIG_BOOTLOADER_MCUBOOT)
     if (CONFIG_PM_EXTERNAL_FLASH_MCUBOOT_SECONDARY)
-      get_filename_component(qspi_node ${ext_flash_dev} DIRECTORY)
-      dt_reg_addr(xip_addr PATH ${qspi_node} NAME qspi_mm)
-      if (NOT DEFINED xip_addr)
-        message(WARNING "\
+      # First we see if an ext flash dev has been chosen, if not, then we look
+      # up the 'qspi' node and assume that this has the required address.
+      if (DEFINED ext_flash_dev)
+        get_filename_component(qspi_node ${ext_flash_dev} DIRECTORY)
+      else()
+        dt_nodelabel(qspi_node NODELABEL "qspi")
+      endif()
+
+      if(DEFINED qspi_node)
+        dt_reg_addr(xip_addr PATH ${qspi_node} NAME qspi_mm)
+        if(NOT DEFINED xip_addr)
+          message(WARNING "\
 Could not find memory mapped address for XIP. Generated update hex files will \
 not have the correct base address. Hence they can not be programmed directly \
 to the external flash")
+        endif()
+      else()
+        message(WARNING "Unable to locate QSPI node")
       endif()
     endif()
 
@@ -630,12 +641,21 @@ endif()
 # child image.
 if (CONFIG_PM_EXTERNAL_FLASH_MCUBOOT_SECONDARY)
   get_shared(mcuboot_secondary_size IMAGE mcuboot PROPERTY SECONDARY_SIZE)
-  if (NOT "${mcuboot_secondary_size}" EQUAL "${PM_MCUBOOT_PRIMARY_SIZE}")
+  if (NOT ${PM_MCUBOOT_SECONDARY_SIZE} EQUAL ${PM_MCUBOOT_PRIMARY_SIZE})
     message(WARNING "\
-The property 'PM_PARTITION_SIZE_MCUBOOT_SECONDARY' for \
-the mcuboot child image has an incorrect value ${mcuboot_secondary_size}. \
-Its value must be set to ${PM_MCUBOOT_PRIMARY_SIZE} so that it matches the \
-primary partition.")
+    The property 'PM_PARTITION_SIZE_MCUBOOT_SECONDARY' for \
+    the mcuboot child image has an incorrect value ${PM_MCUBOOT_SECONDARY_SIZE}. \
+    Its value must be set to ${PM_MCUBOOT_PRIMARY_SIZE} so that it matches the \
+    primary partition.")
+    if (NOT DEFINED static_configuration)
+      message(WARNING "\
+      Like this \
+      primary partition.")
+    else()
+      message(WARNING "\
+      Like that \
+      primary partition.")
+    endif()
   endif()
 endif()
 
