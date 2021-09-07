@@ -41,7 +41,7 @@ config NORDIC_QSPI_NOR_FLASH_LAYOUT_PAGE_SIZE
 config BOOT_IMAGE_ACCESS_HOOKS_FILE
 	string
 	default "${ZEPHYR_NRF_MODULE_DIR}/modules/mcuboot/hooks/nrf53_hooks.c"
-	depends on MCUBOOT
+	depends on MCUBOOT_BOOTUTIL_LIB
 
 config BOOT_IMAGE_ACCESS_HOOKS
 	bool
