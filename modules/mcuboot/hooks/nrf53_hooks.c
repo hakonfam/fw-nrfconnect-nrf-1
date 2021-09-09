@@ -65,12 +65,23 @@ int boot_read_swap_state_primary_slot_hook(int image_index,
 	return BOOT_HOOK_REGULAR;
 }
 
+struct k_work_delayable netcore_update_work;
+static uint32_t *netcore_ptr;
+static size_t netcore_size;
+
+static void do_netcore_update(struct k_work *work)
+{
+	(void)pcd_network_core_update(netcore_ptr, netcore_size);
+}
+
 int network_core_update(void)
 {
 	struct image_header *hdr;
 	static const struct device *mock_flash_dev;
 	void *mock_flash;
 	size_t mock_size;
+
+	k_work_init_delayable(netcore_update_work, do_netcore_update);
 
 	mock_flash_dev = device_get_binding(PM_MCUBOOT_PRIMARY_1_DEV_NAME);
 	if (mock_flash_dev == NULL) {
@@ -86,7 +97,9 @@ int network_core_update(void)
 		uint32_t reset_addr = vtable[1];
 
 		if (reset_addr > PM_CPUNET_B0N_ADDRESS) {
-			int rc = pcd_network_core_update(vtable, fw_size);
+			netcore_ptr = vtable;
+			netcore_size = fw_size;
+			k_delayed_work_submit(&netcore_update_work, K_NO_WAIT);
 			return rc;
 		}
 	}
