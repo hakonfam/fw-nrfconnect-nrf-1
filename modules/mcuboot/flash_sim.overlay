@@ -19,16 +19,15 @@
 		 * simulator can use it. None of the other properties in this
 		 * node is used for anything.
 		 */
-		nordic_ram_flash_controller: nordic_ram-flash-controller@0 {
+		nordic_ram_flash_controller: nordic_ram-flash-controller {
 			compatible = "zephyr,sim-flash";
-			reg = <0x00000000 DT_SIZE_K(40)>;
-			#address-cells = <1>;
-			#size-cells = <1>;
-			erase-value = <0xff>;
+			#address-cells = <0>;
+			#size-cells = <0>;
 			label = "nordic_ram_flash_flash_controller";
 
 			/* This node label must match that used in the flash
-			 * simulator.
+			 * simulator. The size of this node is used to set
+			 * the size of the RAM buffer.
 			 */
 			flash_sim0: flash_sim@0 {
 				status = "okay";
