@@ -4,6 +4,16 @@
 # SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
 #
 
+if (CONFIG_IS_S1_IMAGE)
+  # When building the S1 variant of an image, the configuration of the s1 image
+  # is identical to the base image, except 'CONFIG_IS_S1_IMAGE'. This file is
+  # included if 'CONFIG_SECURE_BOOT' is set, which can be the case for the base
+  # image. However, the logic in this file should only be performed once, for
+  # the base image, not for the s1 variant. Hence, we have this check to avoid
+  # execution of this file for the s1 variant.
+  return()
+endif()
+
 # This CMakeLists.txt is executed by the root application only when
 # B0 (SECURE_BOOT) is enabled. First, figure out what image will be
 # booted by B0, and set the required properties for that image to be
