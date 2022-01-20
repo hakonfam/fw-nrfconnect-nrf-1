@@ -238,7 +238,17 @@ function(add_child_image_from_source)
       PROPERTY source_dir
       )
 
-    list(APPEND extra_cmake_args "-DCONFIG_NCS_IS_VARIANT_IMAGE=y")
+    # Create a variant specific Kconfig file to use.
+    # This allows for injecting additional Kconfig settings that should not be
+    # present for a regular image build.
+    if(EXISTS ${source_dir}/Kconfig)
+      set(BASE_IMAGE_KCONFIG_ROOT ${source_dir}/Kconfig)
+    else()
+      set(BASE_IMAGE_KCONFIG_ROOT ${ZEPHYR_BASE}/Kconfig)
+    endif()
+    set(VARIANT_KCONFIG_ROOT ${CMAKE_BINARY_DIR}/${ACI_NAME}/Kconfig.variant)
+    configure_file(${NRF_DIR}/subsys/bootloader/Kconfig.variant.template ${VARIANT_KCONFIG_ROOT})
+    list(APPEND extra_cmake_args "-DKCONFIG_ROOT=${VARIANT_KCONFIG_ROOT}")
   else()
     set(source_dir ${ACI_SOURCE_DIR})
 

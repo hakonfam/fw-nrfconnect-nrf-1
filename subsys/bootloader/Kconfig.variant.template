@@ -1,0 +1,14 @@
+#
+# Copyright (c) 2022 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+comment "${ACI_PRELOAD_IMAGE} variant build"
+
+config NCS_IS_VARIANT_IMAGE
+	bool
+	default y
+
+# Load the regular Kconfig root of the base image.
+source "${BASE_IMAGE_KCONFIG_ROOT}"
