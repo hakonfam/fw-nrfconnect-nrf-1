@@ -12,7 +12,6 @@ config NCS_SAMPLE_MCUMGR_BT_OTA_DFU
 	select MCUMGR
 	select MCUMGR_TRANSPORT_BT
 	select NET_BUF
-	select ZCBOR
 	imply MCUMGR_GRP_OS
 	imply MCUMGR_GRP_OS_BOOTLOADER_INFO
 	imply MCUMGR_TRANSPORT_BT_CONN_PARAM_CONTROL
@@ -20,6 +19,7 @@ config NCS_SAMPLE_MCUMGR_BT_OTA_DFU
 	imply NCS_SAMPLE_MCUMGR_BT_OTA_DFU_SPEEDUP
 	depends on BT_PERIPHERAL
 	depends on BOOTLOADER_MCUBOOT || SUIT
+	depends on ZCBOR
 	help
 	  Enable this option to include MCUmgr in the build which will enable
 	  the Bluetooth transport and image management group, which allows

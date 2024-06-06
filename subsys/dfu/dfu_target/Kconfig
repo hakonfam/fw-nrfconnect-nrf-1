@@ -117,10 +117,10 @@ config DFU_TARGET_SUIT
 	default y
 	depends on SUIT
 	depends on SUIT_ENVELOPE_INFO
+	depends on ZCBOR
+	depends on ZCBOR_CANONICAL
 	imply MPU_ALLOW_FLASH_WRITE
 	select SUIT_UTILS
-	select ZCBOR
-	select ZCBOR_CANONICAL
 	select FLASH
 	select STREAM_FLASH
 	select DFU_TARGET_STREAM

@@ -111,8 +111,8 @@ endmenu # "nRF RPC over UART configuration"
 
 config NRF_RPC_CBOR
 	bool
-	select ZCBOR
-	select ZCBOR_STOP_ON_ERROR
+	depends on ZCBOR
+	depends on ZCBOR_STOP_ON_ERROR
 
 # End of Zephyr port dependencies selection
 
