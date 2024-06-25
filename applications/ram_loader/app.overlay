@@ -1,0 +1,6 @@
+/ {
+	chosen {
+		zephyr,flash = &cpuapp_ram0;
+		zephyr,code-partition = &cpuapp_ram0;
+	};
+};
