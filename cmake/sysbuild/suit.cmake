@@ -65,6 +65,7 @@ function(suit_register_post_build_commands)
   if (SB_CONFIG_SUIT_BUILD_RECOVERY)
     list(APPEND dependencies recovery)
   endif()
+  message("LOCOB OLO")
 
   add_custom_target(
     create_suit_artifacts
@@ -112,6 +113,7 @@ function(suit_create_package)
     COMMENT
     "Create DFU output directory"
   )
+  message("start")
   set(SUIT_OUTPUT_ARTIFACTS_ITEMS)
   set(SUIT_OUTPUT_ARTIFACTS_TARGETS)
   set(CORE_ARGS)
@@ -219,6 +221,7 @@ function(suit_create_package)
     storage
     ${STORAGE_BOOT_ARGS}
   )
+  message("here")
   suit_setup_merge()
   suit_register_post_build_commands()
 endfunction()
@@ -341,7 +344,9 @@ if(SB_CONFIG_SUIT_BUILD_RECOVERY)
   suit_build_recovery()
 endif()
 
+  message("Yes??")
 if(SB_CONFIG_SUIT_ENVELOPE)
+  message("Yes")
   suit_create_package()
   suit_generate_dfu_zip()
 endif()

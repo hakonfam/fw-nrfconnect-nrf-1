@@ -1,0 +1,27 @@
+sample:
+  name: Domain Asset loader
+  description: |
+    Used for loading assets for a domain
+
+common:
+  build_only: true
+
+tests:
+  mram:
+    platform_allow: nrf54h20dk/nrf54h20/cpuapp
+    integration_platforms:
+      - nrf54h20dk/nrf54h20/cpuapp
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=run_from_mram.overlay
+      - EXTRA_CONF_FILE=run_from_mram.conf
+      - SB_CONFIG_SUIT_ENVELOPE=y
+      - SNIPPET=crypto_service
+  ram:
+    platform_allow: nrf54h20dk/nrf54h20/cpuapp
+    integration_platforms:
+      - nrf54h20dk/nrf54h20/cpuapp
+    extra_args: EXTRA_CONF_FILE=run_from_ram.conf
+    extra_args:
+      - EXTRA_CONF_FILE=run_from_ram.conf
+      - SB_CONFIG_SUIT_ENVELOPE=n
+      - SNIPPET=crypto_service

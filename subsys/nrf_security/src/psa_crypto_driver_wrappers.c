@@ -10,6 +10,7 @@
  *  Warning: This file will be auto-generated in the future.
  */
 
+#include <zephyr/sys/printk.h>
 #include "common.h"
 #include "psa_crypto_core.h"
 #include "psa_crypto_driver_wrappers.h"
@@ -455,16 +456,19 @@ psa_driver_wrapper_get_key_buffer_size_from_key_data(const psa_key_attributes_t 
 {
 	psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION(attributes->core.lifetime);
 	psa_key_type_t key_type = attributes->core.type;
+	printk("moi");
 
 	*key_buffer_size = 0;
 	switch (location) {
 #if defined(PSA_NEED_CRACEN_KEY_MANAGEMENT_DRIVER)
 	case PSA_KEY_LOCATION_CRACEN:
 	case PSA_KEY_LOCATION_CRACEN_KMU:
+		printk("location es cracet\n");
 		*key_buffer_size = cracen_get_opaque_size(attributes);
 		return *key_buffer_size != 0 ? PSA_SUCCESS : PSA_ERROR_INVALID_ARGUMENT;
 #endif
 	default:
+		printk("actually here, location: %d\n", location);
 		(void)key_type;
 		(void)data;
 		(void)data_length;
@@ -576,6 +580,7 @@ psa_status_t psa_driver_wrapper_generate_key(const psa_key_attributes_t *attribu
 	return status;
 }
 
+#include <zephyr/sys/printk.h>
 psa_status_t psa_driver_wrapper_import_key(const psa_key_attributes_t *attributes,
 					   const uint8_t *data, size_t data_length,
 					   uint8_t *key_buffer, size_t key_buffer_size,
@@ -635,6 +640,7 @@ psa_status_t psa_driver_wrapper_import_key(const psa_key_attributes_t *attribute
 
 	default:
 		(void)status;
+		printk("invalid location\n");
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 }

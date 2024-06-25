@@ -3,6 +3,7 @@
  *
  * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
  */
+#include <zephyr/sys/printk.h>
 
 #include "common.h"
 #include <cracen/mem_helpers.h>
@@ -1175,23 +1176,29 @@ psa_status_t cracen_generate_key(const psa_key_attributes_t *attributes, uint8_t
 
 size_t cracen_get_opaque_size(const psa_key_attributes_t *attributes)
 {
+	printk("get_opaque_size\n");
 	if (PSA_KEY_LIFETIME_GET_LOCATION(psa_get_key_lifetime(attributes)) ==
 	    PSA_KEY_LOCATION_CRACEN) {
+		printk("location cracen\n");
 		switch (MBEDTLS_SVC_KEY_ID_GET_KEY_ID(psa_get_key_id(attributes))) {
 		case CRACEN_BUILTIN_IDENTITY_KEY_ID:
+			printk("BUILTIN\n");
 			if (psa_get_key_type(attributes) ==
 			    PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1)) {
+				printk("its 2\n");
 				return 2;
 			}
 			break;
 		case CRACEN_BUILTIN_MEXT_ID:
 		case CRACEN_BUILTIN_MKEK_ID:
 			if (psa_get_key_type(attributes) == PSA_KEY_TYPE_AES) {
+				printk("its 2 mekek\n");
 				return 2;
 			}
 			break;
 #ifdef CONFIG_PSA_NEED_CRACEN_PLATFORM_KEYS
 		default:
+			printk("plat keys get size\n");
 			return cracen_platform_keys_get_size(attributes);
 #endif
 		}
@@ -1199,12 +1206,16 @@ size_t cracen_get_opaque_size(const psa_key_attributes_t *attributes)
 
 	if (PSA_KEY_LIFETIME_GET_LOCATION(psa_get_key_lifetime(attributes)) ==
 	    PSA_KEY_LOCATION_CRACEN_KMU) {
+		printk("its 2 mekek\n");
 		if (PSA_KEY_TYPE_IS_ECC(psa_get_key_type(attributes))) {
+			printk("bits 2 bytes\n");
 			return PSA_BITS_TO_BYTES(psa_get_key_bits(attributes));
 		} else {
+			printk("opaque key buffery\n");
 			return sizeof(kmu_opaque_key_buffer);
 		}
 	}
+	printk("just 0\n");
 	return 0;
 }
 
