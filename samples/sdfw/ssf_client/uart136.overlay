@@ -1,0 +1,13 @@
+&uart135 {
+    status = "disabled";
+};
+
+/ {
+    chosen {
+        zephyr,console = &uart136;
+    };
+};
+&uart136 {
+    status = "okay";
+    memory-regions = <&cpurad_dma_region>;
+};

@@ -1,0 +1,13 @@
+# Copyright (c) 2024 Nordic Semiconductor ASA
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+
+config NRF_KEY_LOADER
+	default y
+
+config NRF_KEY_LOADER_BASE_PATH
+	default "${ZEPHYR_NRF_MODULE_DIR}/applications/platform_key_loader/keys"
+
+config SSF_ECHO_SERVICE_ENABLED
+	default y
+
+source "Kconfig.zephyr"
