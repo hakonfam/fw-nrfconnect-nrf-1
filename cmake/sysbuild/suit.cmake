@@ -50,6 +50,7 @@ endfunction()
 #   suit_register_post_build_commands()
 #
 function(suit_register_post_build_commands)
+  message("WHAT")
   get_property(
     post_build_commands
     GLOBAL PROPERTY
@@ -393,8 +394,10 @@ endfunction()
 if(SB_CONFIG_SUIT_BUILD_RECOVERY)
   suit_build_recovery()
 endif()
+  message("here for X time")
 
 if(SB_CONFIG_SUIT_ENVELOPE)
+  message("CReating invelope")
   suit_create_package()
   suit_generate_dfu_zip()
 endif()

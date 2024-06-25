@@ -1,0 +1,24 @@
+#
+# Copyright (c) 2024 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+menuconfig NRF_KEY_LOADER
+	bool "Key loader"
+	depends on NRF_SECURITY
+	depends on PSA_WANT_ALG_PURE_EDDSA
+	help
+	  Enable support for loading keys built in at compile time.
+
+if NRF_KEY_LOADER
+
+config NRF_KEY_LOADER_BASE_PATH
+	string "Path to directory that contains all key bin files"
+	help
+	  All required keys must be located in this directory with the correct name.
+	  The required keys are:
+	  - MANIFEST_PUBKEY_APPLICATION_GEN0-3
+	  - MANIFEST_PUBKEY_RADIO_GEN0-3
+
+endif # NRF_KEY_LOADER

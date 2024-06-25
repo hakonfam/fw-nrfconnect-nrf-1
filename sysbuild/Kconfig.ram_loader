@@ -1,0 +1,23 @@
+#
+# Copyright (c) 2024 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+menu "RAM Loader"
+
+menuconfig NRF_RAM_LOADER
+	bool "RAM Loader"
+	help
+	  Enable RAM Loader used to provision keys
+
+if NRF_RAM_LOADER
+
+config NRF_RAM_LOADER_TEST
+	bool "Test configuration"
+	help
+	  For testing purposes
+
+endif # NRF_RAM_LOADER
+
+endmenu
