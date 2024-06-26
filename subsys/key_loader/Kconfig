@@ -1,0 +1,20 @@
+#
+# Copyright (c) 2024 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+menuconfig NRF_KEY_LOADER
+	bool "Key loader"
+	help
+	  Enable support for loading keys built in at compile time.
+
+if NRF_KEY_LOADER
+
+config NRF_KEY_LOADER_MANIFEST_PUBKEY_APPLICATION_GEN0_PATH
+	string "Path to key bin file"
+
+config NRF_KEY_LOADER_MANIFEST_PUBKEY_APPLICATION_GEN0_NAME
+	string "Name of generated file for APPLICATION_GEN0"
+
+endif # NRF_KEY_LOADER

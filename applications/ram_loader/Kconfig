@@ -1,0 +1,19 @@
+# Copyright (c) 2024 Nordic Semiconductor ASA
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+
+menu "RAM Loader"
+
+config NRF_KEY_LOADER
+	default y
+
+config NRF_KEY_LOADER_MANIFEST_PUBKEY_APPLICATION_GEN0_NAME
+	default "pukey_application_gen0.bin"
+
+config NRF_KEY_LOADER_MANIFEST_PUBKEY_APPLICATION_GEN0_PATH
+	default "${ZEPHYR_NRF_MODULE_DIR}/applications/ram_loader/PUBKEY_0.bin"
+
+endmenu
+
+menu "Zephyr Kernel"
+source "Kconfig.zephyr"
+endmenu
