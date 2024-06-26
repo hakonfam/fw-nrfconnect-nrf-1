@@ -12,6 +12,9 @@ config NRF_KEY_LOADER_MANIFEST_PUBKEY_APPLICATION_GEN0_NAME
 config NRF_KEY_LOADER_MANIFEST_PUBKEY_APPLICATION_GEN0_PATH
 	default "${ZEPHYR_NRF_MODULE_DIR}/applications/ram_loader/PUBKEY_0.bin"
 
+config SSF_ECHO_SERVICE_ENABLED
+	default y
+
 endmenu
 
 menu "Zephyr Kernel"
