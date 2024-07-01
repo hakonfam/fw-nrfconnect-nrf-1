@@ -20,9 +20,30 @@
 	status = "okay";
 };
 
+&cpuapp_ram0x_region {
+	ram_loader_partitions: ram-loader-partitions {
+		compatible = "nordic,owned-partitions", "fixed-partitions";
+		status = "disabled";
+		perm-read;
+		perm-write;
+		perm-execute;
+		perm-secure;
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		code: memory@0 {
+			reg = < 0x0 0x20000>;
+		};
+		ram: memory@20000{
+			reg = < 0x20000 0x20000>;
+		};
+	};
+};
+
 / {
 	chosen {
-		zephyr,flash = &cpurad_ram0;
-		zephyr,code-partition = &cpurad_ram0;
+		zephyr,flash = &cpuapp_ram0x_region;
+		zephyr,code-partition = &code;
+		zephyr,sram = &ram;
 	};
 };

@@ -27,7 +27,7 @@ static void echo_request(void)
 int main(void)
 {
 	printk("RAM loader running from %p\n", __rom_region_start);
-	echo_request();
+	//echo_request();
 
 	return 0;
 }
