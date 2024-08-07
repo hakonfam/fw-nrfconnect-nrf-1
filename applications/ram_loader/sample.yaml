@@ -1,14 +1,25 @@
 sample:
-  name: RAM Loader
+  name: Domain Asset loader
   description: |
-    Used for provisioning devices
+    Used for loading assets for a domain
 
 common:
   build_only: true
-  sysbuild: true
 
 tests:
-    appliacations.ram_loader:
-      - nrf54h20dk/nrf54h20/cpuapp
+  mram:
+    platform_allow: nrf54h20dk/nrf54h20/cpuapp
     integration_platforms:
       - nrf54h20dk/nrf54h20/cpuapp
+    extra_args:
+      - EXTRA_DTC_OVERLAY_FILE=run_from_mram.overlay
+      - EXTRA_CONF_FILE=run_from_mram.conf
+      - SB_CONFIG_SUIT_ENVELOPE=y
+  ram:
+    platform_allow: nrf54h20dk/nrf54h20/cpuapp
+    integration_platforms:
+      - nrf54h20dk/nrf54h20/cpuapp
+    extra_args: EXTRA_CONF_FILE=run_from_ram.conf
+    extra_args:
+      - EXTRA_CONF_FILE=run_from_ram.conf
+      - SB_CONFIG_SUIT_ENVELOPE=n

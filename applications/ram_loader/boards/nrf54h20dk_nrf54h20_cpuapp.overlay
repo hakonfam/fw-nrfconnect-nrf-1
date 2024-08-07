@@ -47,6 +47,6 @@
 	chosen {
 		zephyr,flash = &cpuapp_ram0x_region;
 		zephyr,code-partition = &code;
-		zephyr,sram = &ram;
+		zephyr,sram = &cpuapp_ram0;
 	};
 };
