@@ -92,6 +92,7 @@ static suit_plat_err_t load_keys(uint32_t *key_id)
 
 	/* Add keys */
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+
 	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_VERIFY_HASH);
 	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
 	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1));
