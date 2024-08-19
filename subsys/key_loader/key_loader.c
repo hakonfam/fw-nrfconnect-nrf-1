@@ -32,6 +32,7 @@ static int load_verify_key(mbedtls_svc_key_id_t key_id, const uint8_t *key, size
 	printk("attributes %p\n", &key_attributes);
 	printk("usage address%p\n",&key_attributes.MBEDTLS_PRIVATE(core).MBEDTLS_PRIVATE(policy).MBEDTLS_PRIVATE(usage));
 	printk("Usage %x\n", key_attributes.MBEDTLS_PRIVATE(core).MBEDTLS_PRIVATE(policy).MBEDTLS_PRIVATE(usage));
+	printk("location %x\n", key_attributes.MBEDTLS_PRIVATE(core).MBEDTLS_PRIVATE(lifetime));
 	psa_status_t status = psa_import_key(&key_attributes, key, key_len, &volatile_key_id);
 
 	if (status == PSA_SUCCESS) {
