@@ -510,11 +510,7 @@ psa_status_t cracen_platform_get_key_slot(mbedtls_svc_key_id_t key_id, psa_key_l
 
 	uint32_t domain = PLATFORM_KEY_GET_DOMAIN(MBEDTLS_SVC_KEY_ID_GET_KEY_ID(key_id));
 
-	psa_status_t status = verify_access(MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(key_id),
-					    MBEDTLS_SVC_KEY_ID_GET_KEY_ID(key_id));
-	if (status != PSA_SUCCESS) {
-		return status;
-	}
+	psa_status_t status;
 
 	if (type == SICR || type == EMBEDDED || type == DERIVED) {
 		*slot_number = MBEDTLS_SVC_KEY_ID_GET_KEY_ID(key_id);
@@ -544,12 +540,7 @@ psa_status_t cracen_platform_keys_provision(const psa_key_attributes_t *attribut
 		return PSA_ERROR_INVALID_ARGUMENT;
 	}
 
-	psa_status_t status =
-		verify_access(MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(psa_get_key_id(attributes)),
-			      MBEDTLS_SVC_KEY_ID_GET_KEY_ID(psa_get_key_id(attributes)));
-	if (status != PSA_SUCCESS) {
-		return status;
-	}
+	psa_status_t status;
 
 	/* The memory is required to be filled with 0xFF before the keys are provisioned. If another
 	 * value is found, we assume the key has already been provisioned.
