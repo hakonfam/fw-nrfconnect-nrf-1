@@ -21,6 +21,11 @@
 	status = "okay";
 };
 
+&cpurad_ram0x_region {
+	reg = < 0x2f051000 0x20000 >;
+	ranges = < 0x0 0x2f051000 0x20000 >;
+};
+
 &cpuapp_ram0x_region {
 	perm-execute;
 
@@ -45,7 +50,7 @@
 
 / {
 	chosen {
-		zephyr,flash = &cpuapp_ram0x_region;
+		zephyr,flash = &cpurad_ram0x_region;
 		zephyr,code-partition = &code;
 		zephyr,sram = &cpuapp_ram0;
 	};
