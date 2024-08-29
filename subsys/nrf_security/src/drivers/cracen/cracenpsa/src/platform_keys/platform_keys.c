@@ -289,11 +289,19 @@ static psa_status_t verify_access(uint32_t domain_id, uint32_t key_id)
 
 		/* Check if access to the target domain key is allowed depending on LCS */
 		enum lcs_domain_id domain_lcs = 0;
-		int status = nrf_domain_to_lcs_domain(PLATFORM_KEY_GET_DOMAIN(key_id), &domain_lcs);
+		const int key_domain = PLATFORM_KEY_GET_DOMAIN(key_id);
+
+		if (key_domain == 0) {
+			/* OEM keys can be installed by any domain */
+			return PSA_SUCCESS;
+		}
+
+		int status = nrf_domain_to_lcs_domain(key_domain, &domain_lcs);
 
 		if (status != 0) {
-			return PSA_ERROR_NOT_PERMITTED;
+			return PSA_ERROR_DOES_NOT_EXIST;
 		}
+
 
 		switch (lcs_get(domain_lcs)) {
 		case LCS_EMPTY:
