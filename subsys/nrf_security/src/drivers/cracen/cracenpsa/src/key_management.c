@@ -636,11 +636,7 @@ static psa_status_t export_ecc_public_key_from_keypair(const psa_key_attributes_
 
 	if (PSA_KEY_LIFETIME_GET_LOCATION(psa_get_key_lifetime(attributes)) ==
 	    PSA_KEY_LOCATION_CRACEN) {
-		if (key_buffer_size != sizeof(ikg_opaque_key)) {
-			return PSA_ERROR_INVALID_ARGUMENT;
-		}
-		priv_key =
-			si_sig_fetch_ikprivkey(sx_curve, ((ikg_opaque_key *)key_buffer)->owner_id);
+		priv_key = si_sig_fetch_ikprivkey(sx_curve, *key_buffer);
 		data[0] = SI_ECC_PUBKEY_UNCOMPRESSED;
 		pub_key.key.eckey.qx = &data[1];
 		pub_key.key.eckey.qy = &data[1 + sx_pk_curve_opsize(sx_curve)];
@@ -1176,13 +1172,13 @@ size_t cracen_get_opaque_size(const psa_key_attributes_t *attributes)
 		case CRACEN_BUILTIN_IDENTITY_KEY_ID:
 			if (psa_get_key_type(attributes) ==
 			    PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1)) {
-				return sizeof(ikg_opaque_key);
+				return 2;
 			}
 			break;
 		case CRACEN_BUILTIN_MEXT_ID:
 		case CRACEN_BUILTIN_MKEK_ID:
 			if (psa_get_key_type(attributes) == PSA_KEY_TYPE_AES) {
-				return sizeof(ikg_opaque_key);
+				return 2;
 			}
 			break;
 #ifdef CONFIG_PSA_NEED_CRACEN_PLATFORM_KEYS
@@ -1235,10 +1231,8 @@ psa_status_t cracen_get_builtin_key(psa_drv_slot_number_t slot_number,
 		 */
 		if (key_buffer_size >= cracen_get_opaque_size(attributes)) {
 			*key_buffer_length = cracen_get_opaque_size(attributes);
-			*((ikg_opaque_key *)key_buffer) =
-				(ikg_opaque_key){.slot_number = slot_number,
-						 .owner_id = MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(
-							 psa_get_key_id(attributes))};
+			key_buffer[0] = slot_number;
+			key_buffer[1] = MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(psa_get_key_id(attributes));
 			return PSA_SUCCESS;
 		} else {
 			return PSA_ERROR_BUFFER_TOO_SMALL;
@@ -1261,10 +1255,8 @@ psa_status_t cracen_get_builtin_key(psa_drv_slot_number_t slot_number,
 		 */
 		if (key_buffer_size >= cracen_get_opaque_size(attributes)) {
 			*key_buffer_length = cracen_get_opaque_size(attributes);
-			*((ikg_opaque_key *)key_buffer) =
-				(ikg_opaque_key){.slot_number = slot_number,
-						 .owner_id = MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(
-							 psa_get_key_id(attributes))};
+			key_buffer[0] = slot_number;
+			key_buffer[1] = MBEDTLS_SVC_KEY_ID_GET_OWNER_ID(psa_get_key_id(attributes));
 			return PSA_SUCCESS;
 		} else {
 			return PSA_ERROR_BUFFER_TOO_SMALL;
