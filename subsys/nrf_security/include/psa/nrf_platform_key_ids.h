@@ -16,7 +16,7 @@
 extern "C" {
 #endif
 
-#define HALTIUM_PLATFORM_PSA_KEY_ID(access, domain, usage, generation)                             \
+#define PLAT_KEY_ID(access, domain, usage, generation)                             \
 	((0x4 << 28) | ((access & 0xF) << 24) | ((domain & 0xFF) << 16) | ((usage & 0xFF) << 8) |  \
 	 (generation & 0xF))
 
@@ -50,102 +50,40 @@ extern "C" {
 #define USAGE_RMOEM	   0xAA
 #define USAGE_RMNORDIC	   0xBB
 
+#define GEN1 0x0
+#define GEN2 0x1
+#define GEN3 0x2
+
 /* KeyIDs used by SDFW for Identity Attestation Keys (IAKs) */
 
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: SECURE (0x01),      Usage: IAK (0x01),
- * Generation: 1 (0x0)
- */
-#define IAK_SECDOM_GEN1 0x40010100
-
-/* Class: Platform (0x4), Access: Local (0x1),    Domain: APPLICATION (0x02), Usage: IAK (0x01),
- * Generation: 1 (0x0)
- */
-#define IAK_APPLICATION_GEN1 0x41020100
-
-/* Class: Platform (0x4), Access: Local (0x1),    Domain: RADIO (0x03),       Usage: IAK (0x01),
- * Generation: 1 (0x0)
- */
-#define IAK_RADIO_GEN1 0x41030100
-
-/* Class: Platform (0x4), Access: Local (0x1),    Domain: CELL (0x04),        Usage: IAK (0x01),
- * Generation: 1 (0x0)
- */
-#define IAK_CELL_GEN1 0x41040100
-
-/* Class: Platform (0x4), Access: Local (0x1),    Domain: WIFI (0x06),        Usage: IAK (0x01),
- * Generation: 1 (0x0)
- */
-#define IAK_WIFI_GEN1 0x41060100
+#define IAK_SECDOM_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_SECURE, USAGE_IAK, GEN1)
+#define IAK_APPLICATION_GEN1 PLAT_KEY_ID(ACCESS_LOCAL, DOMAIN_APPLICATION, USAGE_IAK, GEN1)
+#define IAK_RADIO_GEN1 PLAT_KEY_ID(ACCESS_LOCAL, DOMAIN_RADIO, USAGE_IAK, GEN1)
+#define IAK_CELL_GEN1 PLAT_KEY_ID(ACCESS_LOCAL, DOMAIN_CELL, USAGE_IAK, GEN1)
+#define IAK_WIFI_GEN1 PLAT_KEY_ID(ACCESS_LOCAL, DOMAIN_WIFI, USAGE_IAK, GEN1)
 
 /* KeyIDs used by SDFW for Master Key Encryption Keys (MKEKs) */
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: SECURE (0x01),      Usage: MKEK (0x02),
- * Generation: 1 (0x0)
- */
-#define MKEK_SECDOM_GEN1 0x40010200
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: APPLICATION (0x02), Usage: MKEK (0x02),
- * Generation: 1 (0x0)
- */
-#define MKEK_APPLICATION_GEN1 0x40020200
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: RADIO (0x03),       Usage: MKEK (0x02),
- * Generation: 1 (0x0)
- */
-#define MKEK_RADIO_GEN1 0x40030200
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: CELL (0x04),        Usage: MKEK (0x02),
- * Generation: 1 (0x0)
- */
-#define MKEK_CELL_GEN1 0x40040200
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: WIFI (0x06),        Usage: MKEK (0x02),
- * Generation: 1 (0x0)
- */
-#define MKEK_WIFI_GEN1 0x40060200
+#define MKEK_SECDOM_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_SECURE, USAGE_MKEK, GEN1)
+#define MKEK_APPLICATION_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_APPLICATION, USAGE_MKEK, GEN1)
+#define MKEK_RADIO_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_RADIO, USAGE_MKEK, GEN1)
+#define MKEK_CELL_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_CELL, USAGE_MKEK, GEN1)
+#define MKEK_WIFI_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_WIFI, USAGE_MKEK, GEN1)
 
 /* KeyIDs used by SDFW for Master External Storage Keys (MEXTs) */
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: SECURE (0x01),      Usage: MEXT (0x03),
- * Generation: 1 (0x0)
- */
-#define MEXT_SECDOM_GEN1 0x40010300
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: APPLICATION (0x02), Usage: MEXT (0x03),
- * Generation: 1 (0x0)
- */
-#define MEXT_APPLICATION_GEN1 0x40020300
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: RADIO (0x03),       Usage: MEXT (0x03),
- * Generation: 1 (0x0)
- */
-#define MEXT_RADIO_GEN1 0x40030300
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: CELL (0x04),        Usage: MEXT (0x03),
- * Generation: 1 (0x0)
- */
-#define MEXT_CELL_GEN1 0x40040300
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: WIFI (0x06),        Usage: MEXT (0x03),
- * Generation: 1 (0x0)
- */
-#define MEXT_WIFI_GEN1 0x40060300
+#define MEXT_SECDOM_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_SECURE, USAGE_MEXT, GEN1)
+#define MEXT_APPLICATION_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_APPLICATION, USAGE_MEXT, GEN1)
+#define MEXT_RADIO_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_RADIO, USAGE_MEXT, GEN1)
+#define MEXT_CELL_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_CELL, USAGE_MEXT, GEN1)
+#define MEXT_WIFI_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_WIFI, USAGE_MEXT, GEN1)
 
 /* KeyIDs used by SDFW for IETF SUIT manifest verification */
+#define MANIFEST_PUBKEY_OEM_ROOT_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_NONE, USAGE_RMOEM, GEN1)
+#define MANIFEST_PUBKEY_OEM_ROOT_GEN2 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_NONE, USAGE_RMOEM, GEN2)
+#define MANIFEST_PUBKEY_OEM_ROOT_GEN3 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_NONE, USAGE_RMOEM, GEN3)
 
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: NONE (0x00),        Usage:
- * MANIFEST_OEM_ROOT (0xAA),   Generation: 1-3 (0x0-0x2)
- */
-#define MANIFEST_PUBKEY_OEM_ROOT_GEN1 0x4000AA00
-#define MANIFEST_PUBKEY_OEM_ROOT_GEN2 0x4000AA01
-#define MANIFEST_PUBKEY_OEM_ROOT_GEN3 0x4000AA02
-
-/* Class: Platform (0x4), Access: Internal (0x0), Domain: NONE (0x00),        Usage:
- * MANIFEST_NORDIC_TOP (0xBB), Generation: 1-3 (0x0-0x2)
- */
-#define MANIFEST_PUBKEY_NRF_TOP_GEN1 0x4000BB00
-#define MANIFEST_PUBKEY_NRF_TOP_GEN2 0x4000BB01
-#define MANIFEST_PUBKEY_NRF_TOP_GEN3 0x4000BB02
+#define MANIFEST_PUBKEY_NRF_TOP_GEN1 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_NONE, USAGE_RMNORDIC, GEN1)
+#define MANIFEST_PUBKEY_NRF_TOP_GEN2 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_NONE, USAGE_RMNORDIC, GEN2)
+#define MANIFEST_PUBKEY_NRF_TOP_GEN3 PLAT_KEY_ID(ACCESS_INTERNAL, DOMAIN_NONE, USAGE_RMNORDIC, GEN3)
 
 /* KeyIDs used by SDFW for IETF SUIT secure boot of local domain FW */
 
