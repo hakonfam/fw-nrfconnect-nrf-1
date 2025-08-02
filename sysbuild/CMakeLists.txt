@@ -897,5 +897,6 @@ include(${CMAKE_CURRENT_LIST_DIR}/secureboot.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/mcuboot.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/suit.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/hpf.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/vrfw.cmake)
 
 store_ncs_vars()

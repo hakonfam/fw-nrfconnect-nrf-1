@@ -1,0 +1,10 @@
+# Copyright (c) 2025 Nordic Semiconductor
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+
+config NRF_VRFW_IMAGE
+	string "Path to NRF VRFW image"
+	help
+	  Specify the path to the NRF VRFW image source directory.
+	  If this option is set, the image will be included in the build.
+	  Leave empty to disable inclusion of the VRFW image.
