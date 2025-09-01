@@ -1,0 +1,13 @@
+sample:
+  name: Simple Jump Bootloader for nRF54H20
+  description: A minimal bootloader that jumps to firmware at address 0x0e102000
+tests:
+  sample.bootloader.simple_jump_nrf54h20:
+    build_only: true
+    integration_platforms:
+      - nrf54h20dk/nrf54h20/cpuapp
+    platform_allow:
+      - nrf54h20dk/nrf54h20/cpuapp
+    tags:
+      - bootloader
+      - nrf54h20
